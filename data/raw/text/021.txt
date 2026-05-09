@@ -1,1 +1,1 @@
-﻿Chuong trinh nay yeu cau toi thieu hai muoi mau ghi am.
+﻿Chương trình này yêu cầu tối thiểu hai mươi mẫu ghi âm.

@@ -1,1 +1,1 @@
-﻿Toi dang thu nghiem mo hinh chuyen doi van ban thanh giong noi.
+﻿Tôi đang thử nghiệm mô hình chuyển đổi văn bản thành giọng nói.
