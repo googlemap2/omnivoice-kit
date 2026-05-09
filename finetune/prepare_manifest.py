@@ -8,6 +8,11 @@ def read_text(txt_path: Path) -> str:
     return txt_path.read_text(encoding="utf-8").strip()
 
 
+def collect_audio_files(audio_dir: Path):
+    # Accept .wav/.WAV consistently across OS and upload tools.
+    return sorted([p for p in audio_dir.iterdir() if p.is_file() and p.suffix.lower() == ".wav"])
+
+
 def main():
     parser = argparse.ArgumentParser(description="Prepare train/dev JSONL for single-speaker fine-tuning")
     parser.add_argument("--audio_dir", type=str, required=True, help="Directory containing wav files")
@@ -23,14 +28,18 @@ def main():
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    wavs = sorted(audio_dir.glob("*.wav"))
+    wavs = collect_audio_files(audio_dir)
     items = []
+    missing_text = []
+    empty_text = []
     for wav in wavs:
         txt = text_dir / f"{wav.stem}.txt"
         if not txt.is_file():
+            missing_text.append(wav.name)
             continue
         text = read_text(txt)
         if not text:
+            empty_text.append(txt.name)
             continue
         items.append(
             {
@@ -40,6 +49,15 @@ def main():
                 "language_id": args.language_id,
             }
         )
+
+    if missing_text:
+        print(f"Skipped {len(missing_text)} audio files without matching .txt:")
+        for name in missing_text:
+            print(f"  - {name}")
+    if empty_text:
+        print(f"Skipped {len(empty_text)} empty transcript files:")
+        for name in empty_text:
+            print(f"  - {name}")
 
     if len(items) < 20:
         raise ValueError("Need at least 20 valid samples (wav+txt) for a meaningful fine-tune.")
