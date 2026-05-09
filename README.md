@@ -1,4 +1,4 @@
-# OmniVoice Voice Clone Kit
+﻿# OmniVoice Voice Clone Kit
 
 Project rieng cho nhu cau clone giong TTS voi OmniVoice.
 
@@ -27,9 +27,9 @@ uv export --format requirements-txt --no-hashes -o requirements.txt
 python app.py
 ```
 
-Mo: `http://127.0.0.1:7861`
+Mo trinh duyet: `http://127.0.0.1:7861`
 
-## 3) Chay CLI
+## 3) Chay CLI clone giong nhanh
 
 ```bash
 python clone_tts.py \
@@ -52,14 +52,36 @@ Tuy chon:
 
 ## 5) Fine-tune 1 giong (speaker-specific)
 
-Muc tieu la giong sat hon clone thuong, nhung khong the dam bao 100% tuyet doi.
+### 5.1 Chuan bi du lieu
 
-Buoc A - Chuan bi du lieu:
-- Dat wav vao `data/raw/audio/`
-- Dat transcript txt cung ten file vao `data/raw/text/`
-- Vi du: `001.wav` <-> `001.txt`
+Cau truc du lieu de tao token:
 
-Buoc B - Tao manifest train/dev:
+- `data/raw/audio/*.wav`
+- `data/raw/text/*.txt`
+
+Ten file phai trung nhau:
+- `001.wav` <-> `001.txt`
+
+### 5.2 Tao manifest train/dev
+
+Lenh nhanh (khuyen nghi):
+
+```powershell
+./finetune/run_prepare_manifest.ps1
+```
+
+Tuy chinh tham so:
+
+```powershell
+./finetune/run_prepare_manifest.ps1 `
+  -AudioDir data/raw/audio `
+  -TextDir data/raw/text `
+  -OutDir data/finetune/manifests `
+  -LanguageId vi `
+  -DevRatio 0.05
+```
+
+Lenh Python goc:
 
 ```bash
 uv run python finetune/prepare_manifest.py \
@@ -70,21 +92,64 @@ uv run python finetune/prepare_manifest.py \
   --dev_ratio 0.05
 ```
 
-Buoc C - Chay fine-tune (PowerShell tren Windows):
+Ket qua:
+- `data/finetune/manifests/train.jsonl`
+- `data/finetune/manifests/dev.jsonl`
+
+### 5.3 Tao token (Stage 1 local)
+
+```powershell
+./finetune/run_extract_tokens.ps1 -NjPerGpu 1 -SkipErrors
+```
+
+Ket qua chinh:
+- `data/finetune/tokens/train/data.lst`
+- `data/finetune/tokens/dev/data.lst`
+- token shards trong `audios/` va `txts/`
+
+### 5.4 Chay fine-tune (Stage 2)
 
 ```powershell
 ./finetune/run_finetune.ps1 -GpuIds "0" -NumGpus 1
 ```
 
-Checkpoint se nam o: `exp/voice_clone_finetune`
+Checkpoint mac dinh:
+- `exp/voice_clone_finetune`
 
-Buoc D - Infer bang checkpoint da fine-tune:
+### 5.5 Infer bang checkpoint da fine-tune
 
 ```bash
 uv run python clone_tts.py \
-  --model exp/voice_clone_finetune/checkpoint-3000 \
+  --model exp/voice_clone_finetune/checkpoint-1200 \
   --text "Xin chao, day la giong sau fine-tune." \
   --ref_audio path/to/ref.wav \
   --output out_finetuned.wav \
+  --language vi \
   --device cuda
 ```
+
+## 6) Dung Colab cho Stage 2 (khuyen nghi)
+
+Neu may local gap loi train tren Windows, ban co the:
+
+1. Tao token local theo muc 5.3.
+2. Zip token:
+
+```powershell
+Compress-Archive -Path data/finetune/tokens/* -DestinationPath tokens.zip -Force
+```
+
+3. Upload `tokens.zip` len Colab va dung notebook `colab_finetune_one_voice.ipynb`.
+
+Notebook da duoc chinh de:
+- Nap `tokens.zip`
+- Chuan hoa cau truc `train/dev`
+- Rewrite `data.lst` sang duong dan Linux (`/content/...`)
+- Chay Stage 2 train
+
+## 7) Luu y khi train
+
+- Can GPU de train hieu qua.
+- Neu OOM, giam `batch_tokens` trong `finetune/train_config_finetune_sdpa.json` (vi du 4096 hoac thap hon).
+- Co the tang `gradient_accumulation_steps` de doi lay bo nho.
+- Khuyen khich dat `HF_TOKEN` tren Colab de download model nhanh hon.

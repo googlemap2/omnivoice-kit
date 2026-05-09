@@ -1,12 +1,14 @@
 {
   "train": [
     {
-      "manifest_path": ["data/finetune/tokens/train/data.lst"]
+      "manifest_path": ["data/finetune/tokens/train/data.lst"],
+      "repeat": 1
     }
   ],
   "dev": [
     {
-      "manifest_path": ["data/finetune/tokens/dev/data.lst"]
+      "manifest_path": ["data/finetune/tokens/dev/data.lst"],
+      "repeat": 1
     }
   ]
 }
