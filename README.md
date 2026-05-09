@@ -15,6 +15,12 @@ Hoac dung pip:
 pip install -r requirements.txt
 ```
 
+Dong bo `requirements.txt` theo `uv.lock`:
+
+```bash
+uv export --format requirements-txt --no-hashes -o requirements.txt
+```
+
 ## 2) Chay Web UI
 
 ```bash
