@@ -1,0 +1,7 @@
+{
+  "my_voice": {
+    "prompt_path": "assets/speakers/my_voice.pt",
+    "language": "vi"
+  }
+}
+

@@ -1,0 +1,10 @@
+{
+  "adam": {
+    "prompt_path": "assets/speakers/adam.pt",
+    "language": "vi"
+  },
+  "yen": {
+    "prompt_path": "assets/speakers/yen.pt",
+    "language": "vi"
+  }
+}

@@ -153,3 +153,50 @@ Notebook da duoc chinh de:
 - Neu OOM, giam `batch_tokens` trong `finetune/train_config_finetune_sdpa.json` (vi du 4096 hoac thap hon).
 - Co the tang `gradient_accumulation_steps` de doi lay bo nho.
 - Khuyen khich dat `HF_TOKEN` tren Colab de download model nhanh hon.
+
+## 8) Speaker ID rieng khong fine-tune
+
+Ban co the dung `speaker_id` ao bang cach luu `voice_clone_prompt` (token prompt) tu 1 file wav mau.
+
+### 8.1 Tao prompt tu wav
+
+Luu full prompt (.pt):
+
+```bash
+python build_speaker_prompt.py \
+  --ref_audio assets/voices/my_voice.wav \
+  --ref_text "xin chao day la mau giong cua toi" \
+  --out assets/speakers/my_voice.pt
+```
+
+Hoac luu token (.npy + .json metadata):
+
+```bash
+python build_speaker_prompt.py \
+  --ref_audio assets/voices/my_voice.wav \
+  --ref_text "xin chao day la mau giong cua toi" \
+  --out assets/speakers/my_voice.npy
+```
+
+### 8.2 Tao registry speaker_id
+
+Copy `speakers.example.json` thanh `speakers.json`, vi du:
+
+```json
+{
+  "my_voice": {
+    "prompt_path": "assets/speakers/my_voice.pt",
+    "language": "vi"
+  }
+}
+```
+
+### 8.3 Infer bang speaker_id
+
+```bash
+python clone_tts_with_speaker_id.py \
+  --speaker_id my_voice \
+  --text "Xin chao, day la speaker id ao khong can fine tune." \
+  --speakers speakers.json \
+  --output out.wav
+```
