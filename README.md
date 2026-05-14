@@ -21,6 +21,11 @@ Dong bo `requirements.txt` theo `uv.lock`:
 uv export --format requirements-txt --no-hashes -o requirements.txt
 ```
 
+Model duoc tai va load local trong project:
+- Thu muc mac dinh: `models/OmniVoice`
+- Lan chay dau se auto download tu Hugging Face vao thu muc nay.
+- Neu truyen `--model` la duong dan local thi se uu tien load tu duong dan do.
+
 ## 2) Chay Web UI
 
 ```bash
@@ -29,6 +34,15 @@ python app.py
 
 Mo trinh duyet: `http://127.0.0.1:7861`
 
+Web UI da tach 2 tab rieng:
+- `TTS by Speaker ID`: dung prompt da luu trong `speakers.json`
+- `Clone by Reference Audio`: upload wav moi lan infer
+
+Da bo sung cac tham so generation hoc tu project goc:
+- `instruct` (voice design mo rong)
+- `speed`, `duration`
+- `denoise`, `preprocess_prompt`, `postprocess_output`
+
 ## 3) Chay CLI clone giong nhanh
 
 ```bash
@@ -36,12 +50,17 @@ python clone_tts.py \
   --text "Xin chao, day la ban clone giong." \
   --ref_audio path/to/ref.wav \
   --output out.wav \
-  --num_step 16
+  --num_step 32
 ```
 
 Tuy chon:
 - `--ref_text "noi dung file ref"`: neu muon nhap transcript tay.
 - `--language vi` hoac `--language en`
+- `--instruct "female, low pitch, british accent"`
+- `--speed 1.0`, `--duration 8.0`
+- `--denoise true|false`
+- `--preprocess_prompt true|false`
+- `--postprocess_output true|false`
 - `--device cpu|cuda|mps`
 
 ## 4) Goi y chat luong
@@ -199,4 +218,32 @@ python clone_tts_with_speaker_id.py \
   --text "Xin chao, day la speaker id ao khong can fine tune." \
   --speakers speakers.json \
   --output out.wav
+```
+
+## 9) Backup model Hugging Face de tranh bi xoa repo
+
+Tao snapshot local + manifest checksum:
+
+```bash
+python backup_model.py \
+  --repo-id k2-fsa/OmniVoice \
+  --revision main \
+  --local-dir models/OmniVoice
+```
+
+Script se:
+- Pin ve commit hash cu the (khong phu thuoc `main` sau nay)
+- Luu manifest `models/OmniVoice/backup_manifest.json`
+- Ghi SHA256 cho tung file de verify
+
+Kiem tra toan ven sau khi copy/restore:
+
+```bash
+python verify_checksum.py --model-dir models/OmniVoice
+```
+
+Nen luu trữ them 1 ban archive:
+
+```powershell
+Compress-Archive -Path models/OmniVoice/* -DestinationPath model_backup_omnivoice.zip -Force
 ```

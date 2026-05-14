@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from omnivoice import OmniVoice
+from model_store import resolve_model_source
 
 
 def pick_device(device_arg: str | None) -> str:
@@ -42,7 +43,8 @@ def main() -> None:
 
     device = pick_device(args.device)
     dtype = torch.float16 if device in ("cuda", "mps") else torch.float32
-    model = OmniVoice.from_pretrained(args.model, device_map=device, dtype=dtype)
+    model_source = resolve_model_source(args.model)
+    model = OmniVoice.from_pretrained(model_source, device_map=device, dtype=dtype)
 
     prompt = model.create_voice_clone_prompt(
         ref_audio=args.ref_audio,
@@ -78,4 +80,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
