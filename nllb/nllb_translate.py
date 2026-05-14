@@ -108,6 +108,7 @@ def translate_text(
         generated_tokens = model.generate(
             **encoded,
             forced_bos_token_id=forced_bos_token_id,
+            max_length=None,
             max_new_tokens=max_new_tokens,
         )
     return tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)[0]
