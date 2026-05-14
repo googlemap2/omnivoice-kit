@@ -53,31 +53,31 @@ VALID_INSTRUCTS_EN = [
     "young adult",
 ]
 VALID_INSTRUCTS_ZH = [
-    "ä¸œåŒ—è¯",
-    "ä¸­å¹´",
-    "ä¸­éŸ³è°ƒ",
-    "äº‘å—è¯",
-    "ä½ŽéŸ³è°ƒ",
-    "å„¿ç«¥",
-    "å››å·è¯",
-    "å¥³",
-    "å®å¤è¯",
-    "å°‘å¹´",
-    "æžä½ŽéŸ³è°ƒ",
-    "æžé«˜éŸ³è°ƒ",
-    "æ¡‚æž—è¯",
-    "æ²³å—è¯",
-    "æµŽå—è¯",
-    "ç”˜è‚ƒè¯",
-    "ç”·",
-    "çŸ³å®¶åº„è¯",
-    "è€å¹´",
-    "è€³è¯­",
-    "è´µå·žè¯",
-    "é™•è¥¿è¯",
-    "é’å²›è¯",
-    "é’å¹´",
-    "é«˜éŸ³è°ƒ",
+    "东北话",
+    "中年",
+    "中音调",
+    "云南话",
+    "低音调",
+    "儿童",
+    "四川话",
+    "女",
+    "宁夏话",
+    "少年",
+    "极低音调",
+    "极高音调",
+    "桂林话",
+    "河南话",
+    "济南话",
+    "甘肃话",
+    "男",
+    "石家庄话",
+    "老年",
+    "耳语",
+    "贵州话",
+    "陕西话",
+    "青岛话",
+    "青年",
+    "高音调",
 ]
 VALID_INSTRUCTS = VALID_INSTRUCTS_EN + VALID_INSTRUCTS_ZH
 
@@ -159,7 +159,7 @@ def build_instruct_from_items(items):
     if en:
         return ", ".join(en), None
     if zh:
-        return "ï¼Œ".join(zh), None
+        return "，".join(zh), None
     return None, "Invalid instruct items selected."
 
 
@@ -490,306 +490,310 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
     gr.Markdown("Choose one mode: clone from `speaker_id` or clone from uploaded reference audio.")
 
     with gr.Tabs():
-        with gr.Tab("TTS by Speaker ID"):
-            with gr.Row():
-                with gr.Column():
-                    sid_text = gr.Textbox(label="Target Text", lines=4)
-                    sid_speaker_id = gr.Dropdown(
-                        choices=get_speaker_choices(),
-                        value="",
-                        label="Speaker ID (from speakers.json)",
-                        allow_custom_value=False,
-                    )
-                    sid_language = gr.Textbox(
-                        label="Language (optional, e.g. vi, en, Vietnamese)",
-                        lines=1,
-                    )
-                    sid_instruct_items = gr.CheckboxGroup(
-                        choices=VALID_INSTRUCTS,
-                        label="Instruct (optional, choose valid items only)",
-                    )
-                    sid_num_step = gr.Slider(4, 64, value=16, step=1, label="Inference Steps")
-                    sid_guidance_scale = gr.Slider(0.0, 4.0, value=2.0, step=0.1, label="Guidance Scale")
-                    sid_speed = gr.Slider(0.5, 1.5, value=1.0, step=0.05, label="Speed")
-                    sid_duration = gr.Number(value=None, label="Duration (seconds, optional)")
-                    sid_denoise = gr.Checkbox(value=True, label="Denoise")
-                    sid_preprocess_prompt = gr.Checkbox(value=True, label="Preprocess Prompt")
-                    sid_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
-                    sid_enable_translate = gr.Checkbox(value=False, label="Translate text with NLLB before TTS")
-                    sid_nllb_source = gr.Textbox(label="NLLB Source Lang (e.g. eng_Latn)", value="eng_Latn", lines=1)
-                    sid_nllb_target = gr.Textbox(label="NLLB Target Lang (e.g. vie_Latn)", value="vie_Latn", lines=1)
-                    sid_nllb_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
-                    sid_run = gr.Button("Generate", variant="primary")
-                    sid_refresh = gr.Button("Refresh Speaker IDs")
-                with gr.Column():
-                    sid_out_audio = gr.Audio(type="numpy", label="Output")
-                    sid_status = gr.Textbox(label="Status")
-
-            sid_run.click(
-                fn=generate_clone_with_speaker_id,
-                inputs=[
-                    sid_text,
-                    sid_speaker_id,
-                    sid_language,
-                    sid_instruct_items,
-                    sid_num_step,
-                    sid_guidance_scale,
-                    sid_speed,
-                    sid_duration,
-                    sid_denoise,
-                    sid_preprocess_prompt,
-                    sid_postprocess_output,
-                    sid_enable_translate,
-                    sid_nllb_source,
-                    sid_nllb_target,
-                    sid_nllb_model,
-                ],
-                outputs=[sid_out_audio, sid_status],
-            )
-            sid_refresh.click(
-                fn=lambda: gr.Dropdown(choices=get_speaker_choices(), value=""),
-                inputs=[],
-                outputs=[sid_speaker_id],
-            )
-
-        with gr.Tab("Clone by Reference Audio"):
-            with gr.Row():
-                with gr.Column():
-                    ref_text_target = gr.Textbox(label="Target Text", lines=4)
-                    ref_audio = gr.Audio(type="filepath", label="Reference Audio")
-                    ref_text = gr.Textbox(label="Reference Transcript (optional)", lines=2)
-                    ref_language = gr.Textbox(
-                        label="Language (optional, e.g. vi, en, Vietnamese)",
-                        lines=1,
-                    )
-                    ref_instruct_items = gr.CheckboxGroup(
-                        choices=VALID_INSTRUCTS,
-                        label="Instruct (optional, choose valid items only)",
-                    )
-                    ref_num_step = gr.Slider(4, 64, value=16, step=1, label="Inference Steps")
-                    ref_guidance_scale = gr.Slider(0.0, 4.0, value=2.0, step=0.1, label="Guidance Scale")
-                    ref_speed = gr.Slider(0.5, 1.5, value=1.0, step=0.05, label="Speed")
-                    ref_duration = gr.Number(value=None, label="Duration (seconds, optional)")
-                    ref_denoise = gr.Checkbox(value=True, label="Denoise")
-                    ref_preprocess_prompt = gr.Checkbox(value=True, label="Preprocess Prompt")
-                    ref_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
-                    ref_enable_translate = gr.Checkbox(value=False, label="Translate text with NLLB before TTS")
-                    ref_nllb_source = gr.Textbox(label="NLLB Source Lang (e.g. eng_Latn)", value="eng_Latn", lines=1)
-                    ref_nllb_target = gr.Textbox(label="NLLB Target Lang (e.g. vie_Latn)", value="vie_Latn", lines=1)
-                    ref_nllb_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
-                    ref_run = gr.Button("Generate", variant="primary")
-                with gr.Column():
-                    ref_out_audio = gr.Audio(type="numpy", label="Output")
-                    ref_status = gr.Textbox(label="Status")
-
-            ref_run.click(
-                fn=generate_clone_with_ref_audio,
-                inputs=[
-                    ref_text_target,
-                    ref_audio,
-                    ref_text,
-                    ref_language,
-                    ref_instruct_items,
-                    ref_num_step,
-                    ref_guidance_scale,
-                    ref_speed,
-                    ref_duration,
-                    ref_denoise,
-                    ref_preprocess_prompt,
-                    ref_postprocess_output,
-                    ref_enable_translate,
-                    ref_nllb_source,
-                    ref_nllb_target,
-                    ref_nllb_model,
-                ],
-                outputs=[ref_out_audio, ref_status],
-            )
-
-        with gr.Tab("Voice Design"):
-            with gr.Row():
-                with gr.Column():
-                    vd_text = gr.Textbox(label="Target Text", lines=4)
-                    vd_language = gr.Textbox(
-                        label="Language (optional, e.g. vi, en, Vietnamese)",
-                        lines=1,
-                    )
-                    vd_instruct_items = gr.CheckboxGroup(
-                        choices=VALID_INSTRUCTS,
-                        label="Instruct (required, choose valid items only)",
-                    )
-                    vd_num_step = gr.Slider(4, 64, value=16, step=1, label="Inference Steps")
-                    vd_guidance_scale = gr.Slider(0.0, 4.0, value=2.0, step=0.1, label="Guidance Scale")
-                    vd_speed = gr.Slider(0.5, 1.5, value=1.0, step=0.05, label="Speed")
-                    vd_duration = gr.Number(value=None, label="Duration (seconds, optional)")
-                    vd_denoise = gr.Checkbox(value=True, label="Denoise")
-                    vd_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
-                    vd_enable_translate = gr.Checkbox(value=False, label="Translate text with NLLB before TTS")
-                    vd_nllb_source = gr.Textbox(label="NLLB Source Lang (e.g. eng_Latn)", value="eng_Latn", lines=1)
-                    vd_nllb_target = gr.Textbox(label="NLLB Target Lang (e.g. vie_Latn)", value="vie_Latn", lines=1)
-                    vd_nllb_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
-                    vd_run = gr.Button("Generate", variant="primary")
-                with gr.Column():
-                    vd_out_audio = gr.Audio(type="numpy", label="Output")
-                    vd_status = gr.Textbox(label="Status")
-
-            vd_run.click(
-                fn=generate_voice_design,
-                inputs=[
-                    vd_text,
-                    vd_language,
-                    vd_instruct_items,
-                    vd_num_step,
-                    vd_guidance_scale,
-                    vd_speed,
-                    vd_duration,
-                    vd_denoise,
-                    vd_postprocess_output,
-                    vd_enable_translate,
-                    vd_nllb_source,
-                    vd_nllb_target,
-                    vd_nllb_model,
-                ],
-                outputs=[vd_out_audio, vd_status],
-            )
-
-        with gr.Tab("Translate (NLLB)"):
-            with gr.Row():
-                with gr.Column():
-                    tr_input = gr.Textbox(label="Input Text", lines=6)
-                    tr_source = gr.Dropdown(
-                        choices=NLLB_LANGUAGE_CHOICES,
-                        value="eng_Latn",
-                        label="Source Lang Code",
-                        allow_custom_value=True,
-                    )
-                    tr_target = gr.Dropdown(
-                        choices=NLLB_LANGUAGE_CHOICES,
-                        value="vie_Latn",
-                        label="Target Lang Code",
-                        allow_custom_value=True,
-                    )
-                    tr_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
-                    tr_run = gr.Button("Translate", variant="primary")
-                with gr.Column():
-                    tr_output = gr.Textbox(label="Translated Text", lines=6)
-                    tr_status = gr.Textbox(label="Status")
-
-            tr_run.click(
-                fn=run_translate_only,
-                inputs=[tr_input, tr_source, tr_target, tr_model],
-                outputs=[tr_output, tr_status],
-            )
-
-        with gr.Tab("Translate SRT (NLLB)"):
-            with gr.Row():
-                with gr.Column():
-                    srt_input = gr.File(label="Input .srt File", file_types=[".srt"], type="filepath")
-                    srt_source = gr.Dropdown(
-                        choices=NLLB_LANGUAGE_CHOICES,
-                        value="eng_Latn",
-                        label="Source Lang Code",
-                        allow_custom_value=True,
-                    )
-                    srt_target = gr.Dropdown(
-                        choices=NLLB_LANGUAGE_CHOICES,
-                        value="vie_Latn",
-                        label="Target Lang Code",
-                        allow_custom_value=True,
-                    )
-                    srt_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
-                    srt_device = gr.Dropdown(
-                        choices=["", "cuda", "mps", "cpu"],
-                        value="",
-                        label="NLLB Device (optional)",
-                        allow_custom_value=False,
-                    )
-                    srt_max_new_tokens = gr.Slider(16, 1024, value=256, step=16, label="Max New Tokens per Line")
-                    srt_run = gr.Button("Translate SRT", variant="primary")
-                with gr.Column():
-                    srt_output = gr.File(label="Translated .srt File")
-                    srt_input_preview = gr.Textbox(label="Input Preview", lines=12)
-                    srt_output_preview = gr.Textbox(label="Translated Preview", lines=12)
-                    srt_status = gr.Textbox(label="Status")
-
-            srt_run.click(
-                fn=run_translate_srt_file,
-                inputs=[srt_input, srt_source, srt_target, srt_model, srt_device, srt_max_new_tokens],
-                outputs=[srt_output, srt_input_preview, srt_output_preview, srt_status],
-            )
-
-        with gr.Tab("Create Speaker ID"):
+        with gr.Tab("OmniVoice"):
             with gr.Tabs():
-                with gr.Tab("Create"):
+                with gr.Tab("TTS by Speaker ID"):
                     with gr.Row():
                         with gr.Column():
-                            cs_speaker_id = gr.Textbox(label="Speaker ID", lines=1)
-                            cs_ref_audio = gr.Audio(type="filepath", label="Reference Audio")
-                            cs_ref_text = gr.Textbox(label="Reference Transcript (optional)", lines=2)
-                            cs_language = gr.Textbox(label="Language (optional, e.g. vi, en)", lines=1)
-                            cs_save_format = gr.Radio(
-                                choices=["pt", "npy"],
-                                value="pt",
-                                label="Prompt Save Format",
-                            )
-                            cs_create = gr.Button("Create", variant="primary")
-                        with gr.Column():
-                            cs_status = gr.Textbox(label="Status", lines=4)
-
-                    cs_create.click(
-                        fn=create_speaker_id,
-                        inputs=[cs_speaker_id, cs_ref_audio, cs_ref_text, cs_language, cs_save_format],
-                        outputs=[cs_status],
-                    )
-
-                with gr.Tab("Edit"):
-                    with gr.Row():
-                        with gr.Column():
-                            ce_selected = gr.Dropdown(
+                            sid_text = gr.Textbox(label="Target Text", lines=4)
+                            sid_speaker_id = gr.Dropdown(
                                 choices=get_speaker_choices(),
                                 value="",
-                                label="Existing Speaker ID",
+                                label="Speaker ID (from speakers.json)",
                                 allow_custom_value=False,
                             )
-                            ce_refresh = gr.Button("Refresh List")
+                            sid_language = gr.Textbox(
+                                label="Language (optional, e.g. vi, en, Vietnamese)",
+                                lines=1,
+                            )
+                            sid_instruct_items = gr.CheckboxGroup(
+                                choices=VALID_INSTRUCTS,
+                                label="Instruct (optional, choose valid items only)",
+                            )
+                            sid_num_step = gr.Slider(4, 64, value=16, step=1, label="Inference Steps")
+                            sid_guidance_scale = gr.Slider(0.0, 4.0, value=2.0, step=0.1, label="Guidance Scale")
+                            sid_speed = gr.Slider(0.5, 1.5, value=1.0, step=0.05, label="Speed")
+                            sid_duration = gr.Number(value=None, label="Duration (seconds, optional)")
+                            sid_denoise = gr.Checkbox(value=True, label="Denoise")
+                            sid_preprocess_prompt = gr.Checkbox(value=True, label="Preprocess Prompt")
+                            sid_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
+                            sid_enable_translate = gr.Checkbox(value=False, label="Translate text with NLLB before TTS")
+                            sid_nllb_source = gr.Textbox(label="NLLB Source Lang (e.g. eng_Latn)", value="eng_Latn", lines=1)
+                            sid_nllb_target = gr.Textbox(label="NLLB Target Lang (e.g. vie_Latn)", value="vie_Latn", lines=1)
+                            sid_nllb_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
+                            sid_run = gr.Button("Generate", variant="primary")
+                            sid_refresh = gr.Button("Refresh Speaker IDs")
                         with gr.Column():
-                            ce_new_name = gr.Textbox(label="New Speaker ID Name", lines=1)
-                            ce_rename = gr.Button("Rename Selected")
-                            ce_status = gr.Textbox(label="Edit Status", lines=4)
+                            sid_out_audio = gr.Audio(type="numpy", label="Output")
+                            sid_status = gr.Textbox(label="Status")
 
-                    ce_refresh.click(
+                    sid_run.click(
+                        fn=generate_clone_with_speaker_id,
+                        inputs=[
+                            sid_text,
+                            sid_speaker_id,
+                            sid_language,
+                            sid_instruct_items,
+                            sid_num_step,
+                            sid_guidance_scale,
+                            sid_speed,
+                            sid_duration,
+                            sid_denoise,
+                            sid_preprocess_prompt,
+                            sid_postprocess_output,
+                            sid_enable_translate,
+                            sid_nllb_source,
+                            sid_nllb_target,
+                            sid_nllb_model,
+                        ],
+                        outputs=[sid_out_audio, sid_status],
+                    )
+                    sid_refresh.click(
                         fn=lambda: gr.Dropdown(choices=get_speaker_choices(), value=""),
                         inputs=[],
-                        outputs=[ce_selected],
-                    )
-                    ce_rename.click(
-                        fn=rename_speaker_id,
-                        inputs=[ce_selected, ce_new_name],
-                        outputs=[ce_status],
+                        outputs=[sid_speaker_id],
                     )
 
-                with gr.Tab("Delete"):
+                with gr.Tab("Clone by Reference Audio"):
                     with gr.Row():
                         with gr.Column():
-                            cd_selected = gr.Dropdown(
-                                choices=get_speaker_choices(),
+                            ref_text_target = gr.Textbox(label="Target Text", lines=4)
+                            ref_audio = gr.Audio(type="filepath", label="Reference Audio")
+                            ref_text = gr.Textbox(label="Reference Transcript (optional)", lines=2)
+                            ref_language = gr.Textbox(
+                                label="Language (optional, e.g. vi, en, Vietnamese)",
+                                lines=1,
+                            )
+                            ref_instruct_items = gr.CheckboxGroup(
+                                choices=VALID_INSTRUCTS,
+                                label="Instruct (optional, choose valid items only)",
+                            )
+                            ref_num_step = gr.Slider(4, 64, value=16, step=1, label="Inference Steps")
+                            ref_guidance_scale = gr.Slider(0.0, 4.0, value=2.0, step=0.1, label="Guidance Scale")
+                            ref_speed = gr.Slider(0.5, 1.5, value=1.0, step=0.05, label="Speed")
+                            ref_duration = gr.Number(value=None, label="Duration (seconds, optional)")
+                            ref_denoise = gr.Checkbox(value=True, label="Denoise")
+                            ref_preprocess_prompt = gr.Checkbox(value=True, label="Preprocess Prompt")
+                            ref_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
+                            ref_enable_translate = gr.Checkbox(value=False, label="Translate text with NLLB before TTS")
+                            ref_nllb_source = gr.Textbox(label="NLLB Source Lang (e.g. eng_Latn)", value="eng_Latn", lines=1)
+                            ref_nllb_target = gr.Textbox(label="NLLB Target Lang (e.g. vie_Latn)", value="vie_Latn", lines=1)
+                            ref_nllb_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
+                            ref_run = gr.Button("Generate", variant="primary")
+                        with gr.Column():
+                            ref_out_audio = gr.Audio(type="numpy", label="Output")
+                            ref_status = gr.Textbox(label="Status")
+
+                    ref_run.click(
+                        fn=generate_clone_with_ref_audio,
+                        inputs=[
+                            ref_text_target,
+                            ref_audio,
+                            ref_text,
+                            ref_language,
+                            ref_instruct_items,
+                            ref_num_step,
+                            ref_guidance_scale,
+                            ref_speed,
+                            ref_duration,
+                            ref_denoise,
+                            ref_preprocess_prompt,
+                            ref_postprocess_output,
+                            ref_enable_translate,
+                            ref_nllb_source,
+                            ref_nllb_target,
+                            ref_nllb_model,
+                        ],
+                        outputs=[ref_out_audio, ref_status],
+                    )
+
+                with gr.Tab("Voice Design"):
+                    with gr.Row():
+                        with gr.Column():
+                            vd_text = gr.Textbox(label="Target Text", lines=4)
+                            vd_language = gr.Textbox(
+                                label="Language (optional, e.g. vi, en, Vietnamese)",
+                                lines=1,
+                            )
+                            vd_instruct_items = gr.CheckboxGroup(
+                                choices=VALID_INSTRUCTS,
+                                label="Instruct (required, choose valid items only)",
+                            )
+                            vd_num_step = gr.Slider(4, 64, value=16, step=1, label="Inference Steps")
+                            vd_guidance_scale = gr.Slider(0.0, 4.0, value=2.0, step=0.1, label="Guidance Scale")
+                            vd_speed = gr.Slider(0.5, 1.5, value=1.0, step=0.05, label="Speed")
+                            vd_duration = gr.Number(value=None, label="Duration (seconds, optional)")
+                            vd_denoise = gr.Checkbox(value=True, label="Denoise")
+                            vd_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
+                            vd_enable_translate = gr.Checkbox(value=False, label="Translate text with NLLB before TTS")
+                            vd_nllb_source = gr.Textbox(label="NLLB Source Lang (e.g. eng_Latn)", value="eng_Latn", lines=1)
+                            vd_nllb_target = gr.Textbox(label="NLLB Target Lang (e.g. vie_Latn)", value="vie_Latn", lines=1)
+                            vd_nllb_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
+                            vd_run = gr.Button("Generate", variant="primary")
+                        with gr.Column():
+                            vd_out_audio = gr.Audio(type="numpy", label="Output")
+                            vd_status = gr.Textbox(label="Status")
+
+                    vd_run.click(
+                        fn=generate_voice_design,
+                        inputs=[
+                            vd_text,
+                            vd_language,
+                            vd_instruct_items,
+                            vd_num_step,
+                            vd_guidance_scale,
+                            vd_speed,
+                            vd_duration,
+                            vd_denoise,
+                            vd_postprocess_output,
+                            vd_enable_translate,
+                            vd_nllb_source,
+                            vd_nllb_target,
+                            vd_nllb_model,
+                        ],
+                        outputs=[vd_out_audio, vd_status],
+                    )
+
+                with gr.Tab("Create Speaker ID"):
+                    with gr.Tabs():
+                        with gr.Tab("Create"):
+                            with gr.Row():
+                                with gr.Column():
+                                    cs_speaker_id = gr.Textbox(label="Speaker ID", lines=1)
+                                    cs_ref_audio = gr.Audio(type="filepath", label="Reference Audio")
+                                    cs_ref_text = gr.Textbox(label="Reference Transcript (optional)", lines=2)
+                                    cs_language = gr.Textbox(label="Language (optional, e.g. vi, en)", lines=1)
+                                    cs_save_format = gr.Radio(
+                                        choices=["pt", "npy"],
+                                        value="pt",
+                                        label="Prompt Save Format",
+                                    )
+                                    cs_create = gr.Button("Create", variant="primary")
+                                with gr.Column():
+                                    cs_status = gr.Textbox(label="Status", lines=4)
+
+                            cs_create.click(
+                                fn=create_speaker_id,
+                                inputs=[cs_speaker_id, cs_ref_audio, cs_ref_text, cs_language, cs_save_format],
+                                outputs=[cs_status],
+                            )
+
+                        with gr.Tab("Edit"):
+                            with gr.Row():
+                                with gr.Column():
+                                    ce_selected = gr.Dropdown(
+                                        choices=get_speaker_choices(),
+                                        value="",
+                                        label="Existing Speaker ID",
+                                        allow_custom_value=False,
+                                    )
+                                    ce_refresh = gr.Button("Refresh List")
+                                with gr.Column():
+                                    ce_new_name = gr.Textbox(label="New Speaker ID Name", lines=1)
+                                    ce_rename = gr.Button("Rename Selected")
+                                    ce_status = gr.Textbox(label="Edit Status", lines=4)
+
+                            ce_refresh.click(
+                                fn=lambda: gr.Dropdown(choices=get_speaker_choices(), value=""),
+                                inputs=[],
+                                outputs=[ce_selected],
+                            )
+                            ce_rename.click(
+                                fn=rename_speaker_id,
+                                inputs=[ce_selected, ce_new_name],
+                                outputs=[ce_status],
+                            )
+
+                        with gr.Tab("Delete"):
+                            with gr.Row():
+                                with gr.Column():
+                                    cd_selected = gr.Dropdown(
+                                        choices=get_speaker_choices(),
+                                        value="",
+                                        label="Existing Speaker ID",
+                                        allow_custom_value=False,
+                                    )
+                                    cd_refresh = gr.Button("Refresh List")
+                                with gr.Column():
+                                    cd_delete = gr.Button("Delete Selected", variant="stop")
+                                    cd_status = gr.Textbox(label="Delete Status", lines=4)
+
+                            cd_refresh.click(
+                                fn=lambda: gr.Dropdown(choices=get_speaker_choices(), value=""),
+                                inputs=[],
+                                outputs=[cd_selected],
+                            )
+                            cd_delete.click(
+                                fn=delete_speaker_id,
+                                inputs=[cd_selected],
+                                outputs=[cd_status],
+                            )
+
+        with gr.Tab("Translate NLLB"):
+            with gr.Tabs():
+                with gr.Tab("Translate (NLLB)"):
+                    with gr.Row():
+                        with gr.Column():
+                            tr_input = gr.Textbox(label="Input Text", lines=6)
+                            tr_source = gr.Dropdown(
+                                choices=NLLB_LANGUAGE_CHOICES,
+                                value="eng_Latn",
+                                label="Source Lang Code",
+                                allow_custom_value=True,
+                            )
+                            tr_target = gr.Dropdown(
+                                choices=NLLB_LANGUAGE_CHOICES,
+                                value="vie_Latn",
+                                label="Target Lang Code",
+                                allow_custom_value=True,
+                            )
+                            tr_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
+                            tr_run = gr.Button("Translate", variant="primary")
+                        with gr.Column():
+                            tr_output = gr.Textbox(label="Translated Text", lines=6)
+                            tr_status = gr.Textbox(label="Status")
+
+                    tr_run.click(
+                        fn=run_translate_only,
+                        inputs=[tr_input, tr_source, tr_target, tr_model],
+                        outputs=[tr_output, tr_status],
+                    )
+
+                with gr.Tab("Translate SRT (NLLB)"):
+                    with gr.Row():
+                        with gr.Column():
+                            srt_input = gr.File(label="Input .srt File", file_types=[".srt"], type="filepath")
+                            srt_source = gr.Dropdown(
+                                choices=NLLB_LANGUAGE_CHOICES,
+                                value="eng_Latn",
+                                label="Source Lang Code",
+                                allow_custom_value=True,
+                            )
+                            srt_target = gr.Dropdown(
+                                choices=NLLB_LANGUAGE_CHOICES,
+                                value="vie_Latn",
+                                label="Target Lang Code",
+                                allow_custom_value=True,
+                            )
+                            srt_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
+                            srt_device = gr.Dropdown(
+                                choices=["", "cuda", "mps", "cpu"],
                                 value="",
-                                label="Existing Speaker ID",
+                                label="NLLB Device (optional)",
                                 allow_custom_value=False,
                             )
-                            cd_refresh = gr.Button("Refresh List")
+                            srt_max_new_tokens = gr.Slider(16, 1024, value=256, step=16, label="Max New Tokens per Line")
+                            srt_run = gr.Button("Translate SRT", variant="primary")
                         with gr.Column():
-                            cd_delete = gr.Button("Delete Selected", variant="stop")
-                            cd_status = gr.Textbox(label="Delete Status", lines=4)
+                            srt_output = gr.File(label="Translated .srt File")
+                            srt_input_preview = gr.Textbox(label="Input Preview", lines=12)
+                            srt_output_preview = gr.Textbox(label="Translated Preview", lines=12)
+                            srt_status = gr.Textbox(label="Status")
 
-                    cd_refresh.click(
-                        fn=lambda: gr.Dropdown(choices=get_speaker_choices(), value=""),
-                        inputs=[],
-                        outputs=[cd_selected],
-                    )
-                    cd_delete.click(
-                        fn=delete_speaker_id,
-                        inputs=[cd_selected],
-                        outputs=[cd_status],
+                    srt_run.click(
+                        fn=run_translate_srt_file,
+                        inputs=[srt_input, srt_source, srt_target, srt_model, srt_device, srt_max_new_tokens],
+                        outputs=[srt_output, srt_input_preview, srt_output_preview, srt_status],
                     )
 
 
