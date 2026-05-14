@@ -6,5 +6,9 @@
   "adam1": {
     "prompt_path": "assets/speakers/adam1.pt",
     "language": "vi"
+  },
+  "mai_am_ap": {
+    "prompt_path": "assets/speakers/mai_am_ap.pt",
+    "language": "vi"
   }
 }

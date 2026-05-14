@@ -80,6 +80,19 @@ VALID_INSTRUCTS_ZH = [
     "高音调",
 ]
 VALID_INSTRUCTS = VALID_INSTRUCTS_EN + VALID_INSTRUCTS_ZH
+OMNIVOICE_LANGUAGE_CHOICES = [
+    ("Vietnamese (vi)", "vi"),
+    ("English (en)", "en"),
+    ("Chinese (zh)", "zh"),
+    ("Japanese (ja)", "ja"),
+    ("Korean (ko)", "ko"),
+    ("French (fr)", "fr"),
+    ("German (de)", "de"),
+    ("Spanish (es)", "es"),
+    ("Russian (ru)", "ru"),
+    ("Thai (th)", "th"),
+    ("Indonesian (id)", "id"),
+]
 
 
 def load_voice_clone_prompt(prompt_path: str) -> VoiceClonePrompt:
@@ -135,19 +148,6 @@ def run_generate(**kwargs):
         return None, f"Error: {type(e).__name__}: {e}"
 
 
-def maybe_translate_text(text, enable_translate, source_lang, target_lang, nllb_model_id):
-    text_clean = (text or "").strip()
-    if not enable_translate:
-        return text_clean, None
-    translated = translate_text(
-        text=text_clean,
-        source_lang=(source_lang or "eng_Latn").strip(),
-        target_lang=(target_lang or "vie_Latn").strip(),
-        model_id=(nllb_model_id or DEFAULT_NLLB_MODEL_ID).strip(),
-    )
-    return translated, translated
-
-
 def build_instruct_from_items(items):
     if not items:
         return None, None
@@ -175,10 +175,6 @@ def generate_clone_with_speaker_id(
     denoise,
     preprocess_prompt,
     postprocess_output,
-    enable_translate,
-    nllb_source_lang,
-    nllb_target_lang,
-    nllb_model_id,
 ):
     if not text or not text.strip():
         return None, "Please input target text."
@@ -196,13 +192,7 @@ def generate_clone_with_speaker_id(
     if instruct_error:
         return None, instruct_error
 
-    final_text, translated_text = maybe_translate_text(
-        text,
-        enable_translate,
-        nllb_source_lang,
-        nllb_target_lang,
-        nllb_model_id,
-    )
+    final_text = text.strip()
     kwargs = dict(
         text=final_text,
         language=chosen_language,
@@ -217,8 +207,6 @@ def generate_clone_with_speaker_id(
         postprocess_output=bool(postprocess_output),
     )
     out_audio, status = run_generate(**kwargs)
-    if translated_text:
-        status = f"{status} [NLLB translated]: {translated_text}"
     return out_audio, status
 
 
@@ -235,10 +223,6 @@ def generate_clone_with_ref_audio(
     denoise,
     preprocess_prompt,
     postprocess_output,
-    enable_translate,
-    nllb_source_lang,
-    nllb_target_lang,
-    nllb_model_id,
 ):
     if not text or not text.strip():
         return None, "Please input target text."
@@ -250,13 +234,7 @@ def generate_clone_with_ref_audio(
     if instruct_error:
         return None, instruct_error
 
-    final_text, translated_text = maybe_translate_text(
-        text,
-        enable_translate,
-        nllb_source_lang,
-        nllb_target_lang,
-        nllb_model_id,
-    )
+    final_text = text.strip()
     kwargs = dict(
         text=final_text,
         ref_audio=ref_audio,
@@ -272,8 +250,6 @@ def generate_clone_with_ref_audio(
         postprocess_output=bool(postprocess_output),
     )
     out_audio, status = run_generate(**kwargs)
-    if translated_text:
-        status = f"{status} [NLLB translated]: {translated_text}"
     return out_audio, status
 
 
@@ -287,10 +263,6 @@ def generate_voice_design(
     duration,
     denoise,
     postprocess_output,
-    enable_translate,
-    nllb_source_lang,
-    nllb_target_lang,
-    nllb_model_id,
 ):
     if not text or not text.strip():
         return None, "Please input target text."
@@ -302,13 +274,7 @@ def generate_voice_design(
     if not instruct:
         return None, "Please choose at least one instruct item."
 
-    final_text, translated_text = maybe_translate_text(
-        text,
-        enable_translate,
-        nllb_source_lang,
-        nllb_target_lang,
-        nllb_model_id,
-    )
+    final_text = text.strip()
     kwargs = dict(
         text=final_text,
         language=chosen_language,
@@ -321,8 +287,6 @@ def generate_voice_design(
         postprocess_output=bool(postprocess_output),
     )
     out_audio, status = run_generate(**kwargs)
-    if translated_text:
-        status = f"{status} [NLLB translated]: {translated_text}"
     return out_audio, status
 
 
@@ -503,9 +467,11 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                                 label="Speaker ID (from speakers.json)",
                                 allow_custom_value=False,
                             )
-                            sid_language = gr.Textbox(
-                                label="Language (optional, e.g. vi, en, Vietnamese)",
-                                lines=1,
+                            sid_language = gr.Dropdown(
+                                choices=OMNIVOICE_LANGUAGE_CHOICES,
+                                value=None,
+                                label="Language (optional)",
+                                allow_custom_value=True,
                             )
                             sid_instruct_items = gr.CheckboxGroup(
                                 choices=VALID_INSTRUCTS,
@@ -518,10 +484,6 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             sid_denoise = gr.Checkbox(value=True, label="Denoise")
                             sid_preprocess_prompt = gr.Checkbox(value=True, label="Preprocess Prompt")
                             sid_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
-                            sid_enable_translate = gr.Checkbox(value=False, label="Translate text with NLLB before TTS")
-                            sid_nllb_source = gr.Textbox(label="NLLB Source Lang (e.g. eng_Latn)", value="eng_Latn", lines=1)
-                            sid_nllb_target = gr.Textbox(label="NLLB Target Lang (e.g. vie_Latn)", value="vie_Latn", lines=1)
-                            sid_nllb_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
                             sid_run = gr.Button("Generate", variant="primary")
                             sid_refresh = gr.Button("Refresh Speaker IDs")
                         with gr.Column():
@@ -542,10 +504,6 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             sid_denoise,
                             sid_preprocess_prompt,
                             sid_postprocess_output,
-                            sid_enable_translate,
-                            sid_nllb_source,
-                            sid_nllb_target,
-                            sid_nllb_model,
                         ],
                         outputs=[sid_out_audio, sid_status],
                     )
@@ -561,9 +519,11 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             ref_text_target = gr.Textbox(label="Target Text", lines=4)
                             ref_audio = gr.Audio(type="filepath", label="Reference Audio")
                             ref_text = gr.Textbox(label="Reference Transcript (optional)", lines=2)
-                            ref_language = gr.Textbox(
-                                label="Language (optional, e.g. vi, en, Vietnamese)",
-                                lines=1,
+                            ref_language = gr.Dropdown(
+                                choices=OMNIVOICE_LANGUAGE_CHOICES,
+                                value=None,
+                                label="Language (optional)",
+                                allow_custom_value=True,
                             )
                             ref_instruct_items = gr.CheckboxGroup(
                                 choices=VALID_INSTRUCTS,
@@ -576,10 +536,6 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             ref_denoise = gr.Checkbox(value=True, label="Denoise")
                             ref_preprocess_prompt = gr.Checkbox(value=True, label="Preprocess Prompt")
                             ref_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
-                            ref_enable_translate = gr.Checkbox(value=False, label="Translate text with NLLB before TTS")
-                            ref_nllb_source = gr.Textbox(label="NLLB Source Lang (e.g. eng_Latn)", value="eng_Latn", lines=1)
-                            ref_nllb_target = gr.Textbox(label="NLLB Target Lang (e.g. vie_Latn)", value="vie_Latn", lines=1)
-                            ref_nllb_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
                             ref_run = gr.Button("Generate", variant="primary")
                         with gr.Column():
                             ref_out_audio = gr.Audio(type="numpy", label="Output")
@@ -600,10 +556,6 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             ref_denoise,
                             ref_preprocess_prompt,
                             ref_postprocess_output,
-                            ref_enable_translate,
-                            ref_nllb_source,
-                            ref_nllb_target,
-                            ref_nllb_model,
                         ],
                         outputs=[ref_out_audio, ref_status],
                     )
@@ -612,9 +564,11 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                     with gr.Row():
                         with gr.Column():
                             vd_text = gr.Textbox(label="Target Text", lines=4)
-                            vd_language = gr.Textbox(
-                                label="Language (optional, e.g. vi, en, Vietnamese)",
-                                lines=1,
+                            vd_language = gr.Dropdown(
+                                choices=OMNIVOICE_LANGUAGE_CHOICES,
+                                value=None,
+                                label="Language (optional)",
+                                allow_custom_value=True,
                             )
                             vd_instruct_items = gr.CheckboxGroup(
                                 choices=VALID_INSTRUCTS,
@@ -626,10 +580,6 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             vd_duration = gr.Number(value=None, label="Duration (seconds, optional)")
                             vd_denoise = gr.Checkbox(value=True, label="Denoise")
                             vd_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
-                            vd_enable_translate = gr.Checkbox(value=False, label="Translate text with NLLB before TTS")
-                            vd_nllb_source = gr.Textbox(label="NLLB Source Lang (e.g. eng_Latn)", value="eng_Latn", lines=1)
-                            vd_nllb_target = gr.Textbox(label="NLLB Target Lang (e.g. vie_Latn)", value="vie_Latn", lines=1)
-                            vd_nllb_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
                             vd_run = gr.Button("Generate", variant="primary")
                         with gr.Column():
                             vd_out_audio = gr.Audio(type="numpy", label="Output")
@@ -647,10 +597,6 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             vd_duration,
                             vd_denoise,
                             vd_postprocess_output,
-                            vd_enable_translate,
-                            vd_nllb_source,
-                            vd_nllb_target,
-                            vd_nllb_model,
                         ],
                         outputs=[vd_out_audio, vd_status],
                     )
@@ -663,7 +609,12 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                                     cs_speaker_id = gr.Textbox(label="Speaker ID", lines=1)
                                     cs_ref_audio = gr.Audio(type="filepath", label="Reference Audio")
                                     cs_ref_text = gr.Textbox(label="Reference Transcript (optional)", lines=2)
-                                    cs_language = gr.Textbox(label="Language (optional, e.g. vi, en)", lines=1)
+                                    cs_language = gr.Dropdown(
+                                        choices=OMNIVOICE_LANGUAGE_CHOICES,
+                                        value=None,
+                                        label="Language (optional)",
+                                        allow_custom_value=True,
+                                    )
                                     cs_save_format = gr.Radio(
                                         choices=["pt", "npy"],
                                         value="pt",
