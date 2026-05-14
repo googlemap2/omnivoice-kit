@@ -1,4 +1,5 @@
 ﻿import json
+import time
 from pathlib import Path
 
 import gradio as gr
@@ -8,7 +9,9 @@ from omnivoice import OmniVoice
 from omnivoice.models.omnivoice import VoiceClonePrompt
 
 from model_store import DEFAULT_MODEL_ID, resolve_model_source
+from nllb.language_options import NLLB_LANGUAGE_CHOICES
 from nllb.nllb_translate import DEFAULT_NLLB_MODEL_ID, translate_text
+from nllb.translate_srt import translate_srt_file
 
 
 def pick_device():
@@ -338,6 +341,30 @@ def run_translate_only(text, source_lang, target_lang, nllb_model_id):
         return "", f"Error: {type(e).__name__}: {e}"
 
 
+def run_translate_srt_file(srt_file, source_lang, target_lang, nllb_model_id, nllb_device, max_new_tokens):
+    if not srt_file:
+        return None, "", "", "Please upload an .srt file."
+    try:
+        input_path = Path(srt_file)
+        out_dir = Path("assets/translated_srt")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        output_path = out_dir / f"{input_path.stem}.translated.{int(time.time())}.srt"
+        translate_srt_file(
+            input_path=input_path,
+            output_path=output_path,
+            source_lang=(source_lang or "eng_Latn").strip(),
+            target_lang=(target_lang or "vie_Latn").strip(),
+            model_id=(nllb_model_id or DEFAULT_NLLB_MODEL_ID).strip(),
+            device=(nllb_device or "").strip() or None,
+            max_new_tokens=int(max_new_tokens),
+        )
+        input_preview = input_path.read_text(encoding="utf-8", errors="replace")[:4000]
+        output_preview = output_path.read_text(encoding="utf-8", errors="replace")[:4000]
+        return str(output_path), input_preview, output_preview, f"Done. Saved: {output_path}"
+    except Exception as e:
+        return None, "", "", f"Error: {type(e).__name__}: {e}"
+
+
 def get_speaker_choices():
     speakers = load_speakers()
     return [""] + sorted(speakers.keys())
@@ -629,15 +656,17 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
             with gr.Row():
                 with gr.Column():
                     tr_input = gr.Textbox(label="Input Text", lines=6)
-                    tr_source = gr.Textbox(
-                        label="Source Lang Code (e.g. eng_Latn, vie_Latn, zho_Hans)",
+                    tr_source = gr.Dropdown(
+                        choices=NLLB_LANGUAGE_CHOICES,
                         value="eng_Latn",
-                        lines=1,
+                        label="Source Lang Code",
+                        allow_custom_value=True,
                     )
-                    tr_target = gr.Textbox(
-                        label="Target Lang Code (e.g. vie_Latn, eng_Latn, zho_Hans)",
+                    tr_target = gr.Dropdown(
+                        choices=NLLB_LANGUAGE_CHOICES,
                         value="vie_Latn",
-                        lines=1,
+                        label="Target Lang Code",
+                        allow_custom_value=True,
                     )
                     tr_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
                     tr_run = gr.Button("Translate", variant="primary")
@@ -649,6 +678,43 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                 fn=run_translate_only,
                 inputs=[tr_input, tr_source, tr_target, tr_model],
                 outputs=[tr_output, tr_status],
+            )
+
+        with gr.Tab("Translate SRT (NLLB)"):
+            with gr.Row():
+                with gr.Column():
+                    srt_input = gr.File(label="Input .srt File", file_types=[".srt"], type="filepath")
+                    srt_source = gr.Dropdown(
+                        choices=NLLB_LANGUAGE_CHOICES,
+                        value="eng_Latn",
+                        label="Source Lang Code",
+                        allow_custom_value=True,
+                    )
+                    srt_target = gr.Dropdown(
+                        choices=NLLB_LANGUAGE_CHOICES,
+                        value="vie_Latn",
+                        label="Target Lang Code",
+                        allow_custom_value=True,
+                    )
+                    srt_model = gr.Textbox(label="NLLB Model ID", value=DEFAULT_NLLB_MODEL_ID, lines=1)
+                    srt_device = gr.Dropdown(
+                        choices=["", "cuda", "mps", "cpu"],
+                        value="",
+                        label="NLLB Device (optional)",
+                        allow_custom_value=False,
+                    )
+                    srt_max_new_tokens = gr.Slider(16, 1024, value=256, step=16, label="Max New Tokens per Line")
+                    srt_run = gr.Button("Translate SRT", variant="primary")
+                with gr.Column():
+                    srt_output = gr.File(label="Translated .srt File")
+                    srt_input_preview = gr.Textbox(label="Input Preview", lines=12)
+                    srt_output_preview = gr.Textbox(label="Translated Preview", lines=12)
+                    srt_status = gr.Textbox(label="Status")
+
+            srt_run.click(
+                fn=run_translate_srt_file,
+                inputs=[srt_input, srt_source, srt_target, srt_model, srt_device, srt_max_new_tokens],
+                outputs=[srt_output, srt_input_preview, srt_output_preview, srt_status],
             )
 
         with gr.Tab("Create Speaker ID"):
@@ -729,6 +795,8 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
 
 if __name__ == "__main__":
     demo.queue().launch(server_name="0.0.0.0", server_port=7861)
+
+
 
 
 
