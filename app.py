@@ -57,42 +57,53 @@ def load_speakers():
         return {}
 
 
-def generate_clone(text, speaker_id, ref_audio, ref_text, language, num_step, guidance_scale):
+def to_wav16(audio):
+    wav16 = (np.clip(audio, -1.0, 1.0) * 32767.0).astype(np.int16)
+    return MODEL.sampling_rate, wav16
+
+
+def generate_clone_with_speaker_id(text, speaker_id, language, num_step, guidance_scale):
     if not text or not text.strip():
         return None, "Please input target text."
+    if not speaker_id:
+        return None, "Please choose a speaker_id."
 
     speakers = load_speakers()
-    voice_clone_prompt = None
+    if speaker_id not in speakers:
+        return None, f"speaker_id '{speaker_id}' not found in speakers.json."
+
+    cfg = speakers[speaker_id]
+    voice_clone_prompt = load_voice_clone_prompt(cfg["prompt_path"])
+    chosen_language = language.strip() if language else cfg.get("language")
+
+    audio = MODEL.generate(
+        text=text.strip(),
+        language=chosen_language,
+        voice_clone_prompt=voice_clone_prompt,
+        num_step=int(num_step),
+        guidance_scale=float(guidance_scale),
+    )[0]
+
+    return to_wav16(audio), "Done."
+
+
+def generate_clone_with_ref_audio(text, ref_audio, ref_text, language, num_step, guidance_scale):
+    if not text or not text.strip():
+        return None, "Please input target text."
+    if not ref_audio:
+        return None, "Please upload reference audio."
+
     chosen_language = language.strip() if language else None
+    audio = MODEL.generate(
+        text=text.strip(),
+        ref_audio=ref_audio,
+        ref_text=ref_text.strip() if ref_text else None,
+        language=chosen_language,
+        num_step=int(num_step),
+        guidance_scale=float(guidance_scale),
+    )[0]
 
-    if speaker_id and speaker_id in speakers:
-        cfg = speakers[speaker_id]
-        voice_clone_prompt = load_voice_clone_prompt(cfg["prompt_path"])
-        if not chosen_language:
-            chosen_language = cfg.get("language")
-
-    if voice_clone_prompt is not None:
-        audio = MODEL.generate(
-            text=text.strip(),
-            language=chosen_language,
-            voice_clone_prompt=voice_clone_prompt,
-            num_step=int(num_step),
-            guidance_scale=float(guidance_scale),
-        )[0]
-    else:
-        if not ref_audio:
-            return None, "Please choose speaker_id or upload reference audio."
-        audio = MODEL.generate(
-            text=text.strip(),
-            ref_audio=ref_audio,
-            ref_text=ref_text.strip() if ref_text else None,
-            language=chosen_language,
-            num_step=int(num_step),
-            guidance_scale=float(guidance_scale),
-        )[0]
-
-    wav16 = (np.clip(audio, -1.0, 1.0) * 32767.0).astype(np.int16)
-    return (MODEL.sampling_rate, wav16), "Done."
+    return to_wav16(audio), "Done."
 
 
 def get_speaker_choices():
@@ -102,32 +113,58 @@ def get_speaker_choices():
 
 with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
     gr.Markdown("# OmniVoice Voice Clone Kit")
-    gr.Markdown("Upload a reference voice (3-10s recommended), enter text, and synthesize cloned speech.")
+    gr.Markdown("Choose one mode: clone from `speaker_id` or clone from uploaded reference audio.")
 
-    with gr.Row():
-        with gr.Column():
-            text = gr.Textbox(label="Target Text", lines=4)
-            speaker_id = gr.Dropdown(
-                choices=get_speaker_choices(),
-                value="",
-                label="Speaker ID (optional, from speakers.json)",
-                allow_custom_value=False,
+    with gr.Tabs():
+        with gr.Tab("TTS by Speaker ID"):
+            with gr.Row():
+                with gr.Column():
+                    sid_text = gr.Textbox(label="Target Text", lines=4)
+                    sid_speaker_id = gr.Dropdown(
+                        choices=get_speaker_choices(),
+                        value="",
+                        label="Speaker ID (from speakers.json)",
+                        allow_custom_value=False,
+                    )
+                    sid_language = gr.Textbox(
+                        label="Language (optional, e.g. vi, en, Vietnamese)",
+                        lines=1,
+                    )
+                    sid_num_step = gr.Slider(8, 64, value=16, step=1, label="Inference Steps")
+                    sid_guidance_scale = gr.Slider(0.0, 4.0, value=2.0, step=0.1, label="Guidance Scale")
+                    sid_run = gr.Button("Generate", variant="primary")
+                with gr.Column():
+                    sid_out_audio = gr.Audio(type="numpy", label="Output")
+                    sid_status = gr.Textbox(label="Status")
+
+            sid_run.click(
+                fn=generate_clone_with_speaker_id,
+                inputs=[sid_text, sid_speaker_id, sid_language, sid_num_step, sid_guidance_scale],
+                outputs=[sid_out_audio, sid_status],
             )
-            ref_audio = gr.Audio(type="filepath", label="Reference Audio")
-            ref_text = gr.Textbox(label="Reference Transcript (optional)", lines=2)
-            language = gr.Textbox(label="Language (optional, e.g. vi, en, Vietnamese)", lines=1)
-            num_step = gr.Slider(8, 64, value=16, step=1, label="Inference Steps")
-            guidance_scale = gr.Slider(0.0, 4.0, value=2.0, step=0.1, label="Guidance Scale")
-            run = gr.Button("Generate", variant="primary")
-        with gr.Column():
-            out_audio = gr.Audio(type="numpy", label="Output")
-            status = gr.Textbox(label="Status")
 
-    run.click(
-        fn=generate_clone,
-        inputs=[text, speaker_id, ref_audio, ref_text, language, num_step, guidance_scale],
-        outputs=[out_audio, status],
-    )
+        with gr.Tab("Clone by Reference Audio"):
+            with gr.Row():
+                with gr.Column():
+                    ref_text_target = gr.Textbox(label="Target Text", lines=4)
+                    ref_audio = gr.Audio(type="filepath", label="Reference Audio")
+                    ref_text = gr.Textbox(label="Reference Transcript (optional)", lines=2)
+                    ref_language = gr.Textbox(
+                        label="Language (optional, e.g. vi, en, Vietnamese)",
+                        lines=1,
+                    )
+                    ref_num_step = gr.Slider(8, 64, value=16, step=1, label="Inference Steps")
+                    ref_guidance_scale = gr.Slider(0.0, 4.0, value=2.0, step=0.1, label="Guidance Scale")
+                    ref_run = gr.Button("Generate", variant="primary")
+                with gr.Column():
+                    ref_out_audio = gr.Audio(type="numpy", label="Output")
+                    ref_status = gr.Textbox(label="Status")
+
+            ref_run.click(
+                fn=generate_clone_with_ref_audio,
+                inputs=[ref_text_target, ref_audio, ref_text, ref_language, ref_num_step, ref_guidance_scale],
+                outputs=[ref_out_audio, ref_status],
+            )
 
 
 if __name__ == "__main__":
