@@ -1,49 +1,49 @@
 ﻿# OmniVoice Voice Clone Kit
 
-Project rieng cho nhu cau clone giong TTS voi OmniVoice.
+Project riêng cho nhu cầu clone giọng TTS với OmniVoice.
 
-## 1) Cai dat
+## 1) Cài đặt
 
 ```bash
 cd omnivoice-voice-clone-kit
 uv sync
 ```
 
-Hoac dung pip:
+Hoặc dùng pip:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Dong bo `requirements.txt` theo `uv.lock`:
+Đồng bộ `requirements.txt` theo `uv.lock`:
 
 ```bash
 uv export --format requirements-txt --no-hashes -o requirements.txt
 ```
 
-Model duoc tai va load local trong project:
-- Thu muc mac dinh: `models/OmniVoice`
-- Lan chay dau se auto download tu Hugging Face vao thu muc nay.
-- Neu truyen `--model` la duong dan local thi se uu tien load tu duong dan do.
+Model được tải và load local trong project:
+- Thư mục mặc định: `models/OmniVoice`
+- Lần chạy đầu sẽ auto download từ Hugging Face vào thư mục này.
+- Nếu truyền `--model` là đường dẫn local thì sẽ ưu tiên load từ đường dẫn đó.
 
-## 2) Chay Web UI
+## 2) Chạy Web UI
 
 ```bash
 python app.py
 ```
 
-Mo trinh duyet: `http://127.0.0.1:7861`
+Mở trình duyệt: `http://127.0.0.1:7861`
 
-Web UI da tach 2 tab rieng:
-- `TTS by Speaker ID`: dung prompt da luu trong `speakers.json`
-- `Clone by Reference Audio`: upload wav moi lan infer
+Web UI đã tách 2 tab riêng:
+- `TTS by Speaker ID`: dùng prompt đã lưu trong `speakers.json`
+- `Clone by Reference Audio`: upload wav mỗi lần infer
 
-Da bo sung cac tham so generation hoc tu project goc:
+Đã bổ sung các tham số generation học từ project gốc:
 - `instruct` (voice design mo rong)
 - `speed`, `duration`
 - `denoise`, `preprocess_prompt`, `postprocess_output`
 
-## 3) Chay CLI clone giong nhanh
+## 3) Chạy CLI clone giọng nhanh
 
 ```bash
 python clone_tts.py \
@@ -53,9 +53,9 @@ python clone_tts.py \
   --num_step 32
 ```
 
-Tuy chon:
-- `--ref_text "noi dung file ref"`: neu muon nhap transcript tay.
-- `--language vi` hoac `--language en`
+Tùy chọn:
+- `--ref_text "noi dung file ref"`: nếu muốn nhập transcript tay.
+- `--language vi` hoặc `--language en`
 - `--instruct "female, low pitch, british accent"`
 - `--speed 1.0`, `--duration 8.0`
 - `--denoise true|false`
@@ -63,123 +63,118 @@ Tuy chon:
 - `--postprocess_output true|false`
 - `--device cpu|cuda|mps`
 
-## 4) Goi y chat luong
+CLI tổng hợp theo 3 tab web (không cần mở UI):
 
-- Reference audio nen dai `3-10 giay`, giong ro, it tap am.
-- Text ngan truoc de test pipeline, sau do tang do dai.
-- CPU chay duoc nhung cham hon GPU dang ke.
-
-## 5) Fine-tune 1 giong (speaker-specific)
-
-### 5.1 Chuan bi du lieu
-
-Cau truc du lieu de tao token:
-
-- `data/raw/audio/*.wav`
-- `data/raw/text/*.txt`
-
-Ten file phai trung nhau:
-- `001.wav` <-> `001.txt`
-
-### 5.2 Tao manifest train/dev
-
-Lenh nhanh (khuyen nghi):
-
-```powershell
-./finetune/run_prepare_manifest.ps1
-```
-
-Tuy chinh tham so:
-
-```powershell
-./finetune/run_prepare_manifest.ps1 `
-  -AudioDir data/raw/audio `
-  -TextDir data/raw/text `
-  -OutDir data/finetune/manifests `
-  -LanguageId vi `
-  -DevRatio 0.05
-```
-
-Lenh Python goc:
+### 3.1 TTS by Speaker ID
 
 ```bash
-uv run python finetune/prepare_manifest.py \
-  --audio_dir data/raw/audio \
-  --text_dir data/raw/text \
-  --out_dir data/finetune/manifests \
-  --language_id vi \
-  --dev_ratio 0.05
+python omnivoice_cli.py speaker-id \
+  --speaker_id my_voice \
+  --text "Xin chao, day la test speaker id." \
+  --output out_speaker_id.wav
 ```
 
-Ket qua:
-- `data/finetune/manifests/train.jsonl`
-- `data/finetune/manifests/dev.jsonl`
-
-### 5.3 Tao token (Stage 1 local)
-
-```powershell
-./finetune/run_extract_tokens.ps1 -NjPerGpu 1 -SkipErrors
-```
-
-Ket qua chinh:
-- `data/finetune/tokens/train/data.lst`
-- `data/finetune/tokens/dev/data.lst`
-- token shards trong `audios/` va `txts/`
-
-### 5.4 Chay fine-tune (Stage 2)
-
-```powershell
-./finetune/run_finetune.ps1 -GpuIds "0" -NumGpus 1
-```
-
-Checkpoint mac dinh:
-- `exp/voice_clone_finetune`
-
-### 5.5 Infer bang checkpoint da fine-tune
+Đầy đủ tham số:
 
 ```bash
-uv run python clone_tts.py \
-  --model exp/voice_clone_finetune/checkpoint-1200 \
-  --text "Xin chao, day la giong sau fine-tune." \
-  --ref_audio path/to/ref.wav \
-  --output out_finetuned.wav \
+python omnivoice_cli.py speaker-id \
+  --speaker_id my_voice \
+  --speakers speakers.json \
+  --text "Xin chao, day la test speaker id." \
+  --output out_speaker_id_full.wav \
+  --model k2-fsa/OmniVoice \
   --language vi \
+  --instruct-item female \
+  --instruct-item low pitch \
+  --num_step 16 \
+  --guidance_scale 2.0 \
+  --speed 1.0 \
+  --duration 8.0 \
+  --denoise true \
+  --preprocess_prompt true \
+  --postprocess_output true \
   --device cuda
 ```
 
-## 6) Dung Colab cho Stage 2 (khuyen nghi)
+### 3.2 Clone by Reference Audio
 
-Neu may local gap loi train tren Windows, ban co the:
-
-1. Tao token local theo muc 5.3.
-2. Zip token:
-
-```powershell
-Compress-Archive -Path data/finetune/tokens/* -DestinationPath tokens.zip -Force
+```bash
+python omnivoice_cli.py ref-audio \
+  --text "Xin chao, day la test ref audio." \
+  --ref_audio assets/voices/ref.wav \
+  --ref_text "xin chao day la mau giong" \
+  --output out_ref.wav
 ```
 
-3. Upload `tokens.zip` len Colab va dung notebook `colab_finetune_one_voice.ipynb`.
+Đầy đủ tham số:
 
-Notebook da duoc chinh de:
-- Nap `tokens.zip`
-- Chuan hoa cau truc `train/dev`
-- Rewrite `data.lst` sang duong dan Linux (`/content/...`)
-- Chay Stage 2 train
+```bash
+python omnivoice_cli.py ref-audio \
+  --text "Xin chao, day la test ref audio." \
+  --ref_audio assets/voices/ref.wav \
+  --ref_text "xin chao day la mau giong" \
+  --output out_ref_full.wav \
+  --model k2-fsa/OmniVoice \
+  --language vi \
+  --instruct-item female \
+  --instruct-item middle-aged \
+  --num_step 16 \
+  --guidance_scale 2.0 \
+  --speed 1.0 \
+  --duration 8.0 \
+  --denoise true \
+  --preprocess_prompt true \
+  --postprocess_output true \
+  --device cuda
+```
 
-## 7) Luu y khi train
+### 3.3 Voice Design
 
-- Can GPU de train hieu qua.
-- Neu OOM, giam `batch_tokens` trong `finetune/train_config_finetune_sdpa.json` (vi du 4096 hoac thap hon).
-- Co the tang `gradient_accumulation_steps` de doi lay bo nho.
-- Khuyen khich dat `HF_TOKEN` tren Colab de download model nhanh hon.
+```bash
+python omnivoice_cli.py voice-design \
+  --text "Xin chao, toi la giong nu trung nien." \
+  --instruct-item female \
+  --instruct-item middle-aged \
+  --output out_voice_design.wav
+```
 
-## 8) Speaker ID rieng khong fine-tune
+Đầy đủ tham số:
 
-Ban co the dung `speaker_id` ao bang cach luu `voice_clone_prompt` (token prompt) tu 1 file wav mau.
+```bash
+python omnivoice_cli.py voice-design \
+  --text "Xin chao, toi la giong nu trung nien." \
+  --output out_voice_design_full.wav \
+  --model k2-fsa/OmniVoice \
+  --language vi \
+  --instruct-item female \
+  --instruct-item middle-aged \
+  --num_step 16 \
+  --guidance_scale 2.0 \
+  --speed 1.0 \
+  --duration 8.0 \
+  --denoise true \
+  --postprocess_output true \
+  --device cuda
+```
 
-### 8.1 Tao prompt tu wav
+Gợi ý:
+- `--instruct-item` có thể truyền nhiều lần để ghép style.
+- Không mix item tiếng Anh và tiếng Trung trong cùng 1 lệnh.
+- Các tham số chung: `--num_step`, `--guidance_scale`, `--speed`, `--duration`, `--denoise`, `--postprocess_output`, `--device`.
 
-Luu full prompt (.pt):
+## 4) Gợi ý chất lượng
+
+- Reference audio nên dài `3-10 giây`, giọng rõ, ít tạp âm.
+- Text ngắn trước để test pipeline, sau đó tăng độ dài.
+- CPU chạy được nhưng chậm hơn GPU đáng kể.
+
+## 5) Speaker ID riêng không fine-tune
+
+Bạn có thể dùng `speaker_id` ảo bằng cách lưu `voice_clone_prompt` (token prompt) từ 1 file wav mẫu.
+
+### 5.1 Tạo prompt từ wav
+
+Lưu full prompt (.pt):
 
 ```bash
 python build_speaker_prompt.py \
@@ -188,7 +183,7 @@ python build_speaker_prompt.py \
   --out assets/speakers/my_voice.pt
 ```
 
-Hoac luu token (.npy + .json metadata):
+Hoặc lưu token (.npy + .json metadata):
 
 ```bash
 python build_speaker_prompt.py \
@@ -197,9 +192,9 @@ python build_speaker_prompt.py \
   --out assets/speakers/my_voice.npy
 ```
 
-### 8.2 Tao registry speaker_id
+### 5.2 Tạo registry speaker_id
 
-Copy `speakers.example.json` thanh `speakers.json`, vi du:
+Copy `speakers.example.json` thành `speakers.json`, ví dụ:
 
 ```json
 {
@@ -210,7 +205,7 @@ Copy `speakers.example.json` thanh `speakers.json`, vi du:
 }
 ```
 
-### 8.3 Infer bang speaker_id
+### 5.3 Infer bằng speaker_id
 
 ```bash
 python clone_tts_with_speaker_id.py \
@@ -220,9 +215,9 @@ python clone_tts_with_speaker_id.py \
   --output out.wav
 ```
 
-## 9) Backup model Hugging Face de tranh bi xoa repo
+## 6) Backup model Hugging Face để tránh bị xóa repo
 
-Tao snapshot local + manifest checksum:
+Tạo snapshot local + manifest checksum:
 
 ```bash
 python backup_model.py \
@@ -231,18 +226,18 @@ python backup_model.py \
   --local-dir models/OmniVoice
 ```
 
-Script se:
-- Pin ve commit hash cu the (khong phu thuoc `main` sau nay)
-- Luu manifest `models/OmniVoice/backup_manifest.json`
-- Ghi SHA256 cho tung file de verify
+Script sẽ:
+- Pin về commit hash cụ thể (không phụ thuộc `main` sau này)
+- Lưu manifest `models/OmniVoice/backup_manifest.json`
+- Ghi SHA256 cho từng file để verify
 
-Kiem tra toan ven sau khi copy/restore:
+Kiểm tra toàn vẹn sau khi copy/restore:
 
 ```bash
 python verify_checksum.py --model-dir models/OmniVoice
 ```
 
-Nen luu trữ them 1 ban archive:
+Nên lưu trữ thêm 1 bản archive:
 
 ```powershell
 Compress-Archive -Path models/OmniVoice/* -DestinationPath model_backup_omnivoice.zip -Force
