@@ -161,6 +161,20 @@ Gợi ý:
 - `--instruct-item` có thể truyền nhiều lần để ghép style.
 - Không mix item tiếng Anh và tiếng Trung trong cùng 1 lệnh.
 - Các tham số chung: `--num_step`, `--guidance_scale`, `--speed`, `--duration`, `--denoise`, `--postprocess_output`, `--device`.
+- Bật dịch trước khi TTS với NLLB: `--translate true --nllb-source-lang eng_Latn --nllb-target-lang vie_Latn`.
+
+Ví dụ dịch Anh -> Việt rồi mới TTS:
+
+```bash
+python omnivoice_cli.py ref-audio \
+  --text "Hello everyone, this is a demo." \
+  --ref_audio assets/voices/ref.wav \
+  --output out_ref_vi.wav \
+  --translate true \
+  --nllb-source-lang eng_Latn \
+  --nllb-target-lang vie_Latn \
+  --nllb-model facebook/nllb-200-distilled-600M
+```
 
 ## 4) Gợi ý chất lượng
 

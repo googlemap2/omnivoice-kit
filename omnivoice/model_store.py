@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 DEFAULT_MODEL_ID = "k2-fsa/OmniVoice"
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MODEL_DIR = PROJECT_ROOT / "models" / "OmniVoice"
 DEFAULT_HF_HOME = PROJECT_ROOT / "models" / ".hf_home"
 DEFAULT_HF_CACHE = DEFAULT_HF_HOME / "hub"
