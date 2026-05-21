@@ -7,7 +7,6 @@ import soundfile as sf
 import torch
 
 from model_store import DEFAULT_MODEL_ID, resolve_model_source
-from nllb.nllb_translate import DEFAULT_NLLB_MODEL_ID, translate_text
 
 
 VALID_INSTRUCTS_EN = [
@@ -147,16 +146,6 @@ def run_speaker_id(args: argparse.Namespace) -> None:
     instruct = build_instruct(args.instruct_item, required=False)
 
     text = args.text.strip()
-    if args.translate:
-        text = translate_text(
-            text=text,
-            source_lang=args.nllb_source_lang,
-            target_lang=args.nllb_target_lang,
-            model_id=args.nllb_model,
-            device=args.nllb_device,
-            max_new_tokens=args.nllb_max_new_tokens,
-        )
-        print(f"[NLLB] translated text: {text}")
 
     model = load_model(args.model, args.device)
     audio = model.generate(
@@ -181,16 +170,6 @@ def run_ref_audio(args: argparse.Namespace) -> None:
     language = args.language if args.language is not None else None
 
     text = args.text.strip()
-    if args.translate:
-        text = translate_text(
-            text=text,
-            source_lang=args.nllb_source_lang,
-            target_lang=args.nllb_target_lang,
-            model_id=args.nllb_model,
-            device=args.nllb_device,
-            max_new_tokens=args.nllb_max_new_tokens,
-        )
-        print(f"[NLLB] translated text: {text}")
 
     model = load_model(args.model, args.device)
     audio = model.generate(
@@ -216,16 +195,6 @@ def run_voice_design(args: argparse.Namespace) -> None:
     language = args.language if args.language is not None else None
 
     text = args.text.strip()
-    if args.translate:
-        text = translate_text(
-            text=text,
-            source_lang=args.nllb_source_lang,
-            target_lang=args.nllb_target_lang,
-            model_id=args.nllb_model,
-            device=args.nllb_device,
-            max_new_tokens=args.nllb_max_new_tokens,
-        )
-        print(f"[NLLB] translated text: {text}")
 
     model = load_model(args.model, args.device)
     audio = model.generate(
@@ -261,20 +230,6 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--denoise", type=str2bool, default=True, help="Enable denoise token")
     parser.add_argument("--postprocess_output", type=str2bool, default=True, help="Trim long output silences")
     parser.add_argument("--device", default=None, help="cuda | mps | cpu")
-    parser.add_argument("--translate", type=str2bool, default=False, help="Translate text with NLLB before TTS")
-    parser.add_argument(
-        "--nllb-source-lang",
-        default="eng_Latn",
-        help="NLLB source language code, e.g. eng_Latn, vie_Latn, zho_Hans",
-    )
-    parser.add_argument(
-        "--nllb-target-lang",
-        default="vie_Latn",
-        help="NLLB target language code, e.g. vie_Latn, eng_Latn, zho_Hans",
-    )
-    parser.add_argument("--nllb-model", default=DEFAULT_NLLB_MODEL_ID, help="NLLB model id")
-    parser.add_argument("--nllb-device", default=None, help="cuda | mps | cpu for NLLB")
-    parser.add_argument("--nllb-max-new-tokens", type=int, default=256, help="NLLB max tokens")
 
 
 def main() -> None:
