@@ -1,8 +1,8 @@
-﻿[project]
+[project]
 name = "omnivoice-voice-clone-kit"
 version = "0.1.0"
 description = "Standalone voice cloning toolkit built on OmniVoice"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.12"
 dependencies = [
   "torch",
   "torchaudio",
@@ -17,4 +17,3 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 py-modules = ["app"]
-

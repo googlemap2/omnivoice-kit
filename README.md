@@ -31,6 +31,10 @@ Model được tải và load local trong project:
 ```bash
 python app.py
 ```
+hoặc
+```bash
+uv run python app.py
+```
 
 Mở trình duyệt: `http://127.0.0.1:7861`
 

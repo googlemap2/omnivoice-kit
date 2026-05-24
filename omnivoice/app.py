@@ -1,4 +1,4 @@
-﻿import json
+import json
 import time
 from pathlib import Path
 
@@ -90,7 +90,6 @@ OMNIVOICE_LANGUAGE_CHOICES = [
     ("Indonesian (id)", "id"),
 ]
 OMNIVOICE_MODEL_CHOICES = [
-    ("KhanhTTS OmniVoice (kjanh/KhanhTTS-OmniVoice)", "kjanh/KhanhTTS-OmniVoice"),
     ("OmniVoice Original (k2-fsa/OmniVoice)", "k2-fsa/OmniVoice"),
 ]
 
