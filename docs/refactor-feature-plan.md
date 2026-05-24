@@ -95,12 +95,12 @@ Use this file to track refactor and feature work. Check each task after it is co
 
 ## Phase 7: Audio DSP Presets
 
-- [ ] Split raw generation and audio post-processing into separate steps.
-- [ ] Add preset `raw`.
-- [ ] Add preset `normalize`.
-- [ ] Add preset `broadcast`.
-- [ ] Add effect preset option to UI.
-- [ ] Add effect preset option to CLI/API.
+- [x] Split raw generation and audio post-processing into separate steps.
+- [x] Add preset `raw`.
+- [x] Add preset `normalize`.
+- [x] Add preset `broadcast`.
+- [x] Add effect preset option to UI.
+- [x] Add effect preset option to CLI/API.
 
 ## Later Features
 
@@ -131,3 +131,4 @@ Use this file to track refactor and feature work. Check each task after it is co
 - [x] Moved UI, CLI, and helper scripts from legacy `omnivoice/` folder into `voicekit/`, then removed the legacy folder.
 - [x] Completed Phase 5 basic model status/install support in `voicekit.model_store`, FastAPI, and Gradio UI.
 - [x] Completed Phase 6 SQLite generation history with core/CLI recording, API listing, and Gradio History tab.
+- [x] Completed Phase 7 audio DSP presets with raw/normalize/broadcast options in core, UI, CLI, and API.

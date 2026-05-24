@@ -6,6 +6,7 @@ import torch
 from omnivoice import OmniVoice
 from omnivoice.models.omnivoice import VoiceClonePrompt
 
+from voicekit.audio import apply_effect_preset, to_wav16
 from voicekit.model_store import DEFAULT_MODEL_ID, resolve_model_source
 from voicekit.profiles import VoiceProfileStore
 from voicekit.history import try_record_generation
@@ -155,16 +156,12 @@ def get_model(model_arg: str | None) -> OmniVoice:
     return model
 
 
-def to_wav16(audio, model: OmniVoice):
-    wav16 = (np.clip(audio, -1.0, 1.0) * 32767.0).astype(np.int16)
-    return model.sampling_rate, wav16
-
-
-def run_generate(model_arg: str | None = None, **kwargs):
+def run_generate(model_arg: str | None = None, effect_preset: str | None = "raw", **kwargs):
     try:
         model = get_model(model_arg)
         audio = model.generate(**kwargs)[0]
-        return to_wav16(audio, model), "Done."
+        processed_audio = apply_effect_preset(audio, effect_preset)
+        return (model.sampling_rate, to_wav16(processed_audio)), "Done."
     except Exception as e:
         return None, f"Error: {type(e).__name__}: {e}"
 
@@ -206,6 +203,7 @@ def generate_clone_with_speaker_id(
     denoise,
     preprocess_prompt,
     postprocess_output,
+    effect_preset="raw",
 ):
     if not text or not text.strip():
         return None, "Please input target text."
@@ -235,7 +233,7 @@ def generate_clone_with_speaker_id(
         preprocess_prompt=bool(preprocess_prompt),
         postprocess_output=bool(postprocess_output),
     )
-    audio, status = run_generate(model_arg=model_id, **kwargs)
+    audio, status = run_generate(model_arg=model_id, effect_preset=effect_preset, **kwargs)
     if audio is not None:
         try_record_generation(
             mode="speaker-id",
@@ -252,6 +250,7 @@ def generate_clone_with_speaker_id(
                 "denoise": bool(denoise),
                 "preprocess_prompt": bool(preprocess_prompt),
                 "postprocess_output": bool(postprocess_output),
+                "effect_preset": effect_preset,
             },
         )
     return audio, status
@@ -271,6 +270,7 @@ def generate_clone_with_ref_audio(
     denoise,
     preprocess_prompt,
     postprocess_output,
+    effect_preset="raw",
 ):
     if not text or not text.strip():
         return None, "Please input target text."
@@ -296,7 +296,7 @@ def generate_clone_with_ref_audio(
         preprocess_prompt=bool(preprocess_prompt),
         postprocess_output=bool(postprocess_output),
     )
-    audio, status = run_generate(model_arg=model_id, **kwargs)
+    audio, status = run_generate(model_arg=model_id, effect_preset=effect_preset, **kwargs)
     if audio is not None:
         try_record_generation(
             mode="ref-audio",
@@ -314,6 +314,7 @@ def generate_clone_with_ref_audio(
                 "denoise": bool(denoise),
                 "preprocess_prompt": bool(preprocess_prompt),
                 "postprocess_output": bool(postprocess_output),
+                "effect_preset": effect_preset,
             },
         )
     return audio, status
@@ -330,6 +331,7 @@ def generate_voice_design(
     duration,
     denoise,
     postprocess_output,
+    effect_preset="raw",
 ):
     if not text or not text.strip():
         return None, "Please input target text."
@@ -352,7 +354,7 @@ def generate_voice_design(
         denoise=bool(denoise),
         postprocess_output=bool(postprocess_output),
     )
-    audio, status = run_generate(model_arg=model_id, **kwargs)
+    audio, status = run_generate(model_arg=model_id, effect_preset=effect_preset, **kwargs)
     if audio is not None:
         try_record_generation(
             mode="voice-design",
@@ -368,6 +370,7 @@ def generate_voice_design(
                 "duration": float(duration) if duration else None,
                 "denoise": bool(denoise),
                 "postprocess_output": bool(postprocess_output),
+                "effect_preset": effect_preset,
             },
         )
     return audio, status

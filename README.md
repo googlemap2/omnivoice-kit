@@ -42,6 +42,7 @@ Web UI đã tách 2 tab riêng:
 - `instruct` (voice design mo rong)
 - `speed`, `duration`
 - `denoise`, `preprocess_prompt`, `postprocess_output`
+- `effect_preset`: `raw`, `normalize`, `broadcast`
 
 ## 3) Chạy CLI clone giọng nhanh
 
@@ -61,6 +62,7 @@ Tùy chọn:
 - `--denoise true|false`
 - `--preprocess_prompt true|false`
 - `--postprocess_output true|false`
+- `--effect-preset raw|normalize|broadcast`
 - `--device cpu|cuda|mps`
 
 CLI tổng hợp theo 3 tab web (không cần mở UI):
@@ -93,6 +95,7 @@ uv run voicekit speaker-id \
   --denoise true \
   --preprocess_prompt true \
   --postprocess_output true \
+  --effect-preset raw \
   --device cuda
 ```
 
@@ -125,6 +128,7 @@ uv run voicekit ref-audio \
   --denoise true \
   --preprocess_prompt true \
   --postprocess_output true \
+  --effect-preset raw \
   --device cuda
 ```
 
@@ -154,6 +158,7 @@ uv run voicekit voice-design \
   --duration 8.0 \
   --denoise true \
   --postprocess_output true \
+  --effect-preset raw \
   --device cuda
 ```
 
@@ -220,6 +225,7 @@ curl -X POST http://127.0.0.1:8000/v1/audio/speech \
     "input": "Xin chao, day la audio tao tu local API.",
     "language": "vi",
     "num_step": 4,
+    "effect_preset": "raw",
     "response_format": "wav"
   }'
 ```

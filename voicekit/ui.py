@@ -12,6 +12,7 @@ from voicekit.core import (
     get_speaker_choices,
     rename_speaker_id,
 )
+from voicekit.audio import EFFECT_PRESETS
 from voicekit.history import list_history
 from voicekit.model_store import DEFAULT_MODEL_ID
 from voicekit.model_store import install_model, list_model_statuses
@@ -77,6 +78,11 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             sid_denoise = gr.Checkbox(value=True, label="Denoise")
                             sid_preprocess_prompt = gr.Checkbox(value=True, label="Preprocess Prompt")
                             sid_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
+                            sid_effect_preset = gr.Dropdown(
+                                choices=EFFECT_PRESETS,
+                                value="raw",
+                                label="Effect Preset",
+                            )
                             sid_run = gr.Button("Generate", variant="primary")
                             sid_refresh = gr.Button("Refresh Speaker IDs")
                         with gr.Column():
@@ -98,6 +104,7 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             sid_denoise,
                             sid_preprocess_prompt,
                             sid_postprocess_output,
+                            sid_effect_preset,
                         ],
                         outputs=[sid_out_audio, sid_status],
                     )
@@ -136,6 +143,11 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             ref_denoise = gr.Checkbox(value=True, label="Denoise")
                             ref_preprocess_prompt = gr.Checkbox(value=True, label="Preprocess Prompt")
                             ref_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
+                            ref_effect_preset = gr.Dropdown(
+                                choices=EFFECT_PRESETS,
+                                value="raw",
+                                label="Effect Preset",
+                            )
                             ref_run = gr.Button("Generate", variant="primary")
                         with gr.Column():
                             ref_out_audio = gr.Audio(type="numpy", label="Output")
@@ -157,6 +169,7 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             ref_denoise,
                             ref_preprocess_prompt,
                             ref_postprocess_output,
+                            ref_effect_preset,
                         ],
                         outputs=[ref_out_audio, ref_status],
                     )
@@ -187,6 +200,11 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             vd_duration = gr.Number(value=None, label="Duration (seconds, optional)")
                             vd_denoise = gr.Checkbox(value=True, label="Denoise")
                             vd_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
+                            vd_effect_preset = gr.Dropdown(
+                                choices=EFFECT_PRESETS,
+                                value="raw",
+                                label="Effect Preset",
+                            )
                             vd_run = gr.Button("Generate", variant="primary")
                         with gr.Column():
                             vd_out_audio = gr.Audio(type="numpy", label="Output")
@@ -205,6 +223,7 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             vd_duration,
                             vd_denoise,
                             vd_postprocess_output,
+                            vd_effect_preset,
                         ],
                         outputs=[vd_out_audio, vd_status],
                     )

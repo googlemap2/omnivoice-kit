@@ -33,6 +33,7 @@ class SpeechRequest(BaseModel):
     denoise: bool = True
     preprocess_prompt: bool = True
     postprocess_output: bool = True
+    effect_preset: Literal["raw", "normalize", "broadcast"] = "raw"
 
 
 class ModelInstallRequest(BaseModel):
@@ -133,6 +134,7 @@ def create_speech(request: SpeechRequest) -> Response:
         denoise=request.denoise,
         preprocess_prompt=request.preprocess_prompt,
         postprocess_output=request.postprocess_output,
+        effect_preset=request.effect_preset,
     )
     if audio is None:
         raise HTTPException(status_code=400, detail=status)

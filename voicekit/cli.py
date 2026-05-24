@@ -3,6 +3,7 @@ from pathlib import Path
 
 import soundfile as sf
 
+from voicekit.audio import EFFECT_PRESETS, apply_effect_preset
 from voicekit.core import (
     build_instruct,
     get_profile_store,
@@ -45,6 +46,7 @@ def run_speaker_id(args: argparse.Namespace) -> None:
         preprocess_prompt=args.preprocess_prompt,
         postprocess_output=args.postprocess_output,
     )[0]
+    audio = apply_effect_preset(audio, args.effect_preset)
     sf.write(args.output, audio, model.sampling_rate)
     try_record_generation(
         mode="speaker-id",
@@ -63,6 +65,7 @@ def run_speaker_id(args: argparse.Namespace) -> None:
             "preprocess_prompt": args.preprocess_prompt,
             "postprocess_output": args.postprocess_output,
             "device": args.device,
+            "effect_preset": args.effect_preset,
         },
     )
     print(f"Saved to: {args.output}")
@@ -87,6 +90,7 @@ def run_ref_audio(args: argparse.Namespace) -> None:
         preprocess_prompt=args.preprocess_prompt,
         postprocess_output=args.postprocess_output,
     )[0]
+    audio = apply_effect_preset(audio, args.effect_preset)
     sf.write(args.output, audio, model.sampling_rate)
     try_record_generation(
         mode="ref-audio",
@@ -106,6 +110,7 @@ def run_ref_audio(args: argparse.Namespace) -> None:
             "preprocess_prompt": args.preprocess_prompt,
             "postprocess_output": args.postprocess_output,
             "device": args.device,
+            "effect_preset": args.effect_preset,
         },
     )
     print(f"Saved to: {args.output}")
@@ -127,6 +132,7 @@ def run_voice_design(args: argparse.Namespace) -> None:
         denoise=args.denoise,
         postprocess_output=args.postprocess_output,
     )[0]
+    audio = apply_effect_preset(audio, args.effect_preset)
     sf.write(args.output, audio, model.sampling_rate)
     try_record_generation(
         mode="voice-design",
@@ -144,6 +150,7 @@ def run_voice_design(args: argparse.Namespace) -> None:
             "denoise": args.denoise,
             "postprocess_output": args.postprocess_output,
             "device": args.device,
+            "effect_preset": args.effect_preset,
         },
     )
     print(f"Saved to: {args.output}")
@@ -166,6 +173,7 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--duration", type=float, default=None, help="Fixed output duration (seconds)")
     parser.add_argument("--denoise", type=str2bool, default=True, help="Enable denoise token")
     parser.add_argument("--postprocess_output", type=str2bool, default=True, help="Trim long output silences")
+    parser.add_argument("--effect-preset", choices=EFFECT_PRESETS, default="raw", help="Audio effect preset")
     parser.add_argument("--device", default=None, help="cuda | mps | cpu")
 
 
