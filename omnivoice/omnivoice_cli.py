@@ -1,66 +1,15 @@
-﻿import argparse
-import json
+import argparse
 from pathlib import Path
 
-import numpy as np
 import soundfile as sf
-import torch
 
-from model_store import DEFAULT_MODEL_ID, resolve_model_source
-
-
-VALID_INSTRUCTS_EN = [
-    "american accent",
-    "australian accent",
-    "british accent",
-    "canadian accent",
-    "child",
-    "chinese accent",
-    "elderly",
-    "female",
-    "high pitch",
-    "indian accent",
-    "japanese accent",
-    "korean accent",
-    "low pitch",
-    "male",
-    "middle-aged",
-    "moderate pitch",
-    "portuguese accent",
-    "russian accent",
-    "teenager",
-    "very high pitch",
-    "very low pitch",
-    "whisper",
-    "young adult",
-]
-VALID_INSTRUCTS_ZH = [
-    "东北话",
-    "中年",
-    "中音调",
-    "云南话",
-    "低音调",
-    "儿童",
-    "四川话",
-    "女",
-    "宁夏话",
-    "少年",
-    "极低音调",
-    "极高音调",
-    "桂林话",
-    "河南话",
-    "济南话",
-    "甘肃话",
-    "男",
-    "石家庄话",
-    "老年",
-    "耳语",
-    "贵州话",
-    "陕西话",
-    "青岛话",
-    "青年",
-    "高音调",
-]
+from model_store import DEFAULT_MODEL_ID
+from omnivoice_core import (
+    build_instruct,
+    load_model,
+    load_speakers,
+    load_voice_clone_prompt,
+)
 
 
 def str2bool(value: str) -> bool:
@@ -72,71 +21,8 @@ def str2bool(value: str) -> bool:
     raise argparse.ArgumentTypeError(f"Invalid boolean value: {value}")
 
 
-def pick_device(device_arg: str | None) -> str:
-    if device_arg:
-        return device_arg
-    if torch.cuda.is_available():
-        return "cuda"
-    if torch.backends.mps.is_available():
-        return "mps"
-    return "cpu"
-
-
-def load_model(model_arg: str, device_arg: str | None):
-    from omnivoice import OmniVoice
-
-    device = pick_device(device_arg)
-    dtype = torch.float16 if device in ("cuda", "mps") else torch.float32
-    model_source = resolve_model_source(model_arg)
-    return OmniVoice.from_pretrained(model_source, device_map=device, dtype=dtype)
-
-
-def build_instruct(instruct_items: list[str] | None, required: bool = False) -> str | None:
-    if not instruct_items:
-        if required:
-            raise ValueError("Please provide at least one --instruct-item.")
-        return None
-
-    en = [x for x in instruct_items if x in VALID_INSTRUCTS_EN]
-    zh = [x for x in instruct_items if x in VALID_INSTRUCTS_ZH]
-    if en and zh:
-        raise ValueError("Please choose only English or only Chinese instruct items.")
-    if not en and not zh:
-        raise ValueError("Invalid instruct items.")
-    if len(en) != len(instruct_items) and len(zh) != len(instruct_items):
-        raise ValueError("Some instruct items are invalid.")
-    if en:
-        return ", ".join(en)
-    return "，".join(zh)
-
-
-def load_voice_clone_prompt(prompt_path: Path):
-    from omnivoice.models.omnivoice import VoiceClonePrompt
-
-    ext = prompt_path.suffix.lower()
-    if ext == ".pt":
-        obj = torch.load(prompt_path, map_location="cpu")
-        return VoiceClonePrompt(
-            ref_audio_tokens=obj["ref_audio_tokens"],
-            ref_text=obj.get("ref_text", ""),
-            ref_rms=float(obj.get("ref_rms", 0.1)),
-        )
-    if ext == ".npy":
-        tokens = torch.from_numpy(np.load(prompt_path))
-        meta_path = prompt_path.with_suffix(".json")
-        meta = {"ref_text": "", "ref_rms": 0.1}
-        if meta_path.exists():
-            meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        return VoiceClonePrompt(
-            ref_audio_tokens=tokens,
-            ref_text=meta.get("ref_text", ""),
-            ref_rms=float(meta.get("ref_rms", 0.1)),
-        )
-    raise ValueError("Prompt file must be .pt or .npy")
-
-
 def run_speaker_id(args: argparse.Namespace) -> None:
-    speakers = json.loads(Path(args.speakers).read_text(encoding="utf-8"))
+    speakers = load_speakers(args.speakers)
     if args.speaker_id not in speakers:
         raise KeyError(f"speaker_id '{args.speaker_id}' not found in {args.speakers}")
 
@@ -145,11 +31,9 @@ def run_speaker_id(args: argparse.Namespace) -> None:
     language = args.language if args.language is not None else cfg.get("language")
     instruct = build_instruct(args.instruct_item, required=False)
 
-    text = args.text.strip()
-
     model = load_model(args.model, args.device)
     audio = model.generate(
-        text=text,
+        text=args.text.strip(),
         language=language,
         voice_clone_prompt=voice_clone_prompt,
         instruct=instruct,
@@ -169,11 +53,9 @@ def run_ref_audio(args: argparse.Namespace) -> None:
     instruct = build_instruct(args.instruct_item, required=False)
     language = args.language if args.language is not None else None
 
-    text = args.text.strip()
-
     model = load_model(args.model, args.device)
     audio = model.generate(
-        text=text,
+        text=args.text.strip(),
         ref_audio=args.ref_audio,
         ref_text=args.ref_text,
         language=language,
@@ -194,11 +76,9 @@ def run_voice_design(args: argparse.Namespace) -> None:
     instruct = build_instruct(args.instruct_item, required=True)
     language = args.language if args.language is not None else None
 
-    text = args.text.strip()
-
     model = load_model(args.model, args.device)
     audio = model.generate(
-        text=text,
+        text=args.text.strip(),
         language=language,
         instruct=instruct,
         num_step=args.num_step,
@@ -233,9 +113,7 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="CLI for OmniVoice modes without Web UI."
-    )
+    parser = argparse.ArgumentParser(description="CLI for OmniVoice modes without Web UI.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     speaker_id = subparsers.add_parser("speaker-id", help="TTS by Speaker ID")
@@ -262,6 +140,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-

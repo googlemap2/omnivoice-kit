@@ -4,29 +4,29 @@ Use this file to track refactor and feature work. Check each task after it is co
 
 ## Phase 1: Extract Backend Core
 
-- [ ] Create a shared backend core module, for example `omnivoice_core.py` or `voicekit_core.py`.
-- [ ] Move model, language, and instruct constants out of `omnivoice/app.py`.
-- [ ] Move device/dtype selection out of `omnivoice/app.py`.
-- [ ] Move model loading and model cache logic out of `omnivoice/app.py`.
-- [ ] Move voice clone prompt loading for `.pt` and `.npy`.
-- [ ] Move `speakers.json` read/write logic.
-- [ ] Move speaker choice listing logic.
-- [ ] Move speaker id creation logic.
-- [ ] Move speaker id rename logic.
-- [ ] Move speaker id delete logic.
-- [ ] Move `generate_clone_with_speaker_id`.
-- [ ] Move `generate_clone_with_ref_audio`.
-- [ ] Move `generate_voice_design`.
-- [ ] Update Gradio UI to import and call backend core instead of holding business logic.
-- [ ] Run syntax checks for changed files.
-- [ ] Run smoke import for the core module without loading the real model.
+- [x] Create a shared backend core module, for example `omnivoice_core.py` or `voicekit_core.py`.
+- [x] Move model, language, and instruct constants out of `omnivoice/app.py`.
+- [x] Move device/dtype selection out of `omnivoice/app.py`.
+- [x] Move model loading and model cache logic out of `omnivoice/app.py`.
+- [x] Move voice clone prompt loading for `.pt` and `.npy`.
+- [x] Move `speakers.json` read/write logic.
+- [x] Move speaker choice listing logic.
+- [x] Move speaker id creation logic.
+- [x] Move speaker id rename logic.
+- [x] Move speaker id delete logic.
+- [x] Move `generate_clone_with_speaker_id`.
+- [x] Move `generate_clone_with_ref_audio`.
+- [x] Move `generate_voice_design`.
+- [x] Update Gradio UI to import and call backend core instead of holding business logic.
+- [x] Run syntax checks for changed files.
+- [x] Run smoke import for the core module without loading the real model.
 
 ## Phase 2: Refactor CLI to Use Core
 
-- [ ] Update `omnivoice/omnivoice_cli.py` to use backend core.
-- [ ] Remove duplicated `VALID_INSTRUCTS_EN/ZH` from CLI.
-- [ ] Remove duplicated `pick_device` from CLI if core owns it.
-- [ ] Remove duplicated `load_voice_clone_prompt` from CLI if core owns it.
+- [x] Update `omnivoice/omnivoice_cli.py` to use backend core.
+- [x] Remove duplicated `VALID_INSTRUCTS_EN/ZH` from CLI.
+- [x] Remove duplicated `pick_device` from CLI if core owns it.
+- [x] Remove duplicated `load_voice_clone_prompt` from CLI if core owns it.
 - [ ] Verify `speaker-id` command still works.
 - [ ] Verify `ref-audio` command still works.
 - [ ] Verify `voice-design` command still works.
@@ -109,3 +109,5 @@ Use this file to track refactor and feature work. Check each task after it is co
 ## Done Log
 
 - [x] Created initial refactor and feature tracking plan.
+- [x] Completed Phase 1 backend core extraction: `omnivoice_core.py` owns generation, model, prompt, and speaker registry logic; `omnivoice/app.py` now only builds the Gradio UI.
+- [x] Refactored CLI to use `omnivoice_core.py` for model loading, instruct parsing, speaker registry loading, and prompt loading. CLI help was smoke tested for all subcommands.
