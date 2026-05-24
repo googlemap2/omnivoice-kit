@@ -1,0 +1,168 @@
+import json
+import sqlite3
+import uuid
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+
+DEFAULT_HISTORY_DB_PATH = Path("data") / "generation_history.sqlite3"
+
+
+def utc_now_iso() -> str:
+    return datetime.now(UTC).replace(microsecond=0).isoformat()
+
+
+@dataclass(frozen=True)
+class GenerationHistoryEntry:
+    id: str
+    created_at: str
+    mode: str
+    model: str | None
+    text: str
+    voice: str | None = None
+    language: str | None = None
+    output_path: str | None = None
+    params: dict[str, Any] | None = None
+    status: str = "completed"
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+class GenerationHistoryStore:
+    def __init__(self, db_path: str | Path = DEFAULT_HISTORY_DB_PATH):
+        self.db_path = Path(db_path)
+
+    def _connect(self) -> sqlite3.Connection:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS generation_history (
+                id TEXT PRIMARY KEY,
+                created_at TEXT NOT NULL,
+                mode TEXT NOT NULL,
+                model TEXT,
+                text TEXT NOT NULL,
+                voice TEXT,
+                language TEXT,
+                output_path TEXT,
+                params_json TEXT NOT NULL,
+                status TEXT NOT NULL
+            )
+            """
+        )
+        return conn
+
+    def record_generation(
+        self,
+        mode: str,
+        text: str,
+        model: str | None = None,
+        voice: str | None = None,
+        language: str | None = None,
+        output_path: str | None = None,
+        params: dict[str, Any] | None = None,
+        status: str = "completed",
+    ) -> GenerationHistoryEntry:
+        entry = GenerationHistoryEntry(
+            id=str(uuid.uuid4()),
+            created_at=utc_now_iso(),
+            mode=mode,
+            model=model,
+            text=text,
+            voice=voice,
+            language=language,
+            output_path=output_path,
+            params=params or {},
+            status=status,
+        )
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO generation_history (
+                    id, created_at, mode, model, text, voice, language, output_path, params_json, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    entry.id,
+                    entry.created_at,
+                    entry.mode,
+                    entry.model,
+                    entry.text,
+                    entry.voice,
+                    entry.language,
+                    entry.output_path,
+                    json.dumps(entry.params, ensure_ascii=True),
+                    entry.status,
+                ),
+            )
+        return entry
+
+    def list_history(self, limit: int = 50) -> list[GenerationHistoryEntry]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, created_at, mode, model, text, voice, language, output_path, params_json, status
+                FROM generation_history
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (max(1, int(limit)),),
+            ).fetchall()
+        return [self._row_to_entry(row) for row in rows]
+
+    def get_history_entry(self, entry_id: str) -> GenerationHistoryEntry | None:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT id, created_at, mode, model, text, voice, language, output_path, params_json, status
+                FROM generation_history
+                WHERE id = ?
+                """,
+                (entry_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return self._row_to_entry(row)
+
+    @staticmethod
+    def _row_to_entry(row: sqlite3.Row) -> GenerationHistoryEntry:
+        try:
+            params = json.loads(row["params_json"])
+        except Exception:
+            params = {}
+        return GenerationHistoryEntry(
+            id=row["id"],
+            created_at=row["created_at"],
+            mode=row["mode"],
+            model=row["model"],
+            text=row["text"],
+            voice=row["voice"],
+            language=row["language"],
+            output_path=row["output_path"],
+            params=params,
+            status=row["status"],
+        )
+
+
+def get_history_store() -> GenerationHistoryStore:
+    return GenerationHistoryStore()
+
+
+def record_generation(**kwargs) -> GenerationHistoryEntry:
+    return get_history_store().record_generation(**kwargs)
+
+
+def try_record_generation(**kwargs) -> GenerationHistoryEntry | None:
+    try:
+        return record_generation(**kwargs)
+    except Exception:
+        return None
+
+
+def list_history(limit: int = 50) -> list[dict[str, Any]]:
+    return [entry.to_dict() for entry in get_history_store().list_history(limit=limit)]

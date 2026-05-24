@@ -9,6 +9,7 @@ from voicekit.core import (
     load_model,
     load_voice_clone_prompt,
 )
+from voicekit.history import try_record_generation
 from voicekit.model_store import DEFAULT_MODEL_ID
 
 
@@ -45,6 +46,25 @@ def run_speaker_id(args: argparse.Namespace) -> None:
         postprocess_output=args.postprocess_output,
     )[0]
     sf.write(args.output, audio, model.sampling_rate)
+    try_record_generation(
+        mode="speaker-id",
+        model=args.model,
+        text=args.text.strip(),
+        voice=args.speaker_id,
+        language=language,
+        output_path=args.output,
+        params={
+            "instruct_items": args.instruct_item,
+            "num_step": args.num_step,
+            "guidance_scale": args.guidance_scale,
+            "speed": args.speed,
+            "duration": args.duration,
+            "denoise": args.denoise,
+            "preprocess_prompt": args.preprocess_prompt,
+            "postprocess_output": args.postprocess_output,
+            "device": args.device,
+        },
+    )
     print(f"Saved to: {args.output}")
 
 
@@ -68,6 +88,26 @@ def run_ref_audio(args: argparse.Namespace) -> None:
         postprocess_output=args.postprocess_output,
     )[0]
     sf.write(args.output, audio, model.sampling_rate)
+    try_record_generation(
+        mode="ref-audio",
+        model=args.model,
+        text=args.text.strip(),
+        voice=args.ref_audio,
+        language=language,
+        output_path=args.output,
+        params={
+            "ref_text": args.ref_text,
+            "instruct_items": args.instruct_item,
+            "num_step": args.num_step,
+            "guidance_scale": args.guidance_scale,
+            "speed": args.speed,
+            "duration": args.duration,
+            "denoise": args.denoise,
+            "preprocess_prompt": args.preprocess_prompt,
+            "postprocess_output": args.postprocess_output,
+            "device": args.device,
+        },
+    )
     print(f"Saved to: {args.output}")
 
 
@@ -88,6 +128,24 @@ def run_voice_design(args: argparse.Namespace) -> None:
         postprocess_output=args.postprocess_output,
     )[0]
     sf.write(args.output, audio, model.sampling_rate)
+    try_record_generation(
+        mode="voice-design",
+        model=args.model,
+        text=args.text.strip(),
+        voice=None,
+        language=language,
+        output_path=args.output,
+        params={
+            "instruct_items": args.instruct_item,
+            "num_step": args.num_step,
+            "guidance_scale": args.guidance_scale,
+            "speed": args.speed,
+            "duration": args.duration,
+            "denoise": args.denoise,
+            "postprocess_output": args.postprocess_output,
+            "device": args.device,
+        },
+    )
     print(f"Saved to: {args.output}")
 
 

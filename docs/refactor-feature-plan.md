@@ -84,14 +84,14 @@ Use this file to track refactor and feature work. Check each task after it is co
 
 ## Phase 6: Generation History
 
-- [ ] Choose initial storage: SQLite or JSONL.
-- [ ] Save metadata for each generation.
-- [ ] Save mode: `speaker-id`, `ref-audio`, `voice-design`.
-- [ ] Save model id/source.
-- [ ] Save generation params.
-- [ ] Save output path.
-- [ ] Add history listing helper/API.
-- [ ] Add basic history UI.
+- [x] Choose initial storage: SQLite or JSONL.
+- [x] Save metadata for each generation.
+- [x] Save mode: `speaker-id`, `ref-audio`, `voice-design`.
+- [x] Save model id/source.
+- [x] Save generation params.
+- [x] Save output path.
+- [x] Add history listing helper/API.
+- [x] Add basic history UI.
 
 ## Phase 7: Audio DSP Presets
 
@@ -130,3 +130,4 @@ Use this file to track refactor and feature work. Check each task after it is co
 - [x] Reorganized backend code into `voicekit/` package and removed unnecessary root shims.
 - [x] Moved UI, CLI, and helper scripts from legacy `omnivoice/` folder into `voicekit/`, then removed the legacy folder.
 - [x] Completed Phase 5 basic model status/install support in `voicekit.model_store`, FastAPI, and Gradio UI.
+- [x] Completed Phase 6 SQLite generation history with core/CLI recording, API listing, and Gradio History tab.

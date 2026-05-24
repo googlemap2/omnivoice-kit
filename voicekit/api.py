@@ -12,6 +12,7 @@ from voicekit.core import (
     generate_clone_with_speaker_id,
     get_profile_store,
 )
+from voicekit.history import list_history
 from voicekit.model_store import DEFAULT_MODEL_ID, install_model, list_model_statuses
 
 
@@ -102,6 +103,18 @@ def list_languages() -> dict:
     return {
         "object": "list",
         "data": [{"label": label, "id": language_id} for label, language_id in OMNIVOICE_LANGUAGE_CHOICES],
+    }
+
+
+@app.get("/v1/generation-history")
+def list_generation_history(limit: int = 50) -> dict:
+    try:
+        data = list_history(limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+    return {
+        "object": "list",
+        "data": data,
     }
 
 

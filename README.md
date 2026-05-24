@@ -194,6 +194,12 @@ Kiểm tra trạng thái model local:
 curl http://127.0.0.1:8000/v1/model-status
 ```
 
+Xem lịch sử generation:
+
+```bash
+curl http://127.0.0.1:8000/v1/generation-history
+```
+
 Cài model mặc định nếu còn thiếu:
 
 ```bash

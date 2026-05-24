@@ -26,6 +26,7 @@ Thumbs.db
 # Local runtime files
 .app_pid
 *.log
+data/
 
 # Generated audio outputs
 *.wav

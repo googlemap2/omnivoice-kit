@@ -8,6 +8,7 @@ from omnivoice.models.omnivoice import VoiceClonePrompt
 
 from voicekit.model_store import DEFAULT_MODEL_ID, resolve_model_source
 from voicekit.profiles import VoiceProfileStore
+from voicekit.history import try_record_generation
 
 
 SPEAKERS_PATH = Path("speakers.json")
@@ -234,7 +235,26 @@ def generate_clone_with_speaker_id(
         preprocess_prompt=bool(preprocess_prompt),
         postprocess_output=bool(postprocess_output),
     )
-    return run_generate(model_arg=model_id, **kwargs)
+    audio, status = run_generate(model_arg=model_id, **kwargs)
+    if audio is not None:
+        try_record_generation(
+            mode="speaker-id",
+            model=model_id,
+            text=kwargs["text"],
+            voice=speaker_id,
+            language=chosen_language,
+            params={
+                "instruct_items": instruct_items or [],
+                "num_step": int(num_step),
+                "guidance_scale": float(guidance_scale),
+                "speed": float(speed) if speed is not None else 1.0,
+                "duration": float(duration) if duration else None,
+                "denoise": bool(denoise),
+                "preprocess_prompt": bool(preprocess_prompt),
+                "postprocess_output": bool(postprocess_output),
+            },
+        )
+    return audio, status
 
 
 def generate_clone_with_ref_audio(
@@ -276,7 +296,27 @@ def generate_clone_with_ref_audio(
         preprocess_prompt=bool(preprocess_prompt),
         postprocess_output=bool(postprocess_output),
     )
-    return run_generate(model_arg=model_id, **kwargs)
+    audio, status = run_generate(model_arg=model_id, **kwargs)
+    if audio is not None:
+        try_record_generation(
+            mode="ref-audio",
+            model=model_id,
+            text=kwargs["text"],
+            voice=ref_audio,
+            language=chosen_language,
+            params={
+                "ref_text": ref_text.strip() if ref_text else None,
+                "instruct_items": instruct_items or [],
+                "num_step": int(num_step),
+                "guidance_scale": float(guidance_scale),
+                "speed": float(speed) if speed is not None else 1.0,
+                "duration": float(duration) if duration else None,
+                "denoise": bool(denoise),
+                "preprocess_prompt": bool(preprocess_prompt),
+                "postprocess_output": bool(postprocess_output),
+            },
+        )
+    return audio, status
 
 
 def generate_voice_design(
@@ -312,7 +352,25 @@ def generate_voice_design(
         denoise=bool(denoise),
         postprocess_output=bool(postprocess_output),
     )
-    return run_generate(model_arg=model_id, **kwargs)
+    audio, status = run_generate(model_arg=model_id, **kwargs)
+    if audio is not None:
+        try_record_generation(
+            mode="voice-design",
+            model=model_id,
+            text=kwargs["text"],
+            voice=None,
+            language=chosen_language,
+            params={
+                "instruct_items": instruct_items or [],
+                "num_step": int(num_step),
+                "guidance_scale": float(guidance_scale),
+                "speed": float(speed) if speed is not None else 1.0,
+                "duration": float(duration) if duration else None,
+                "denoise": bool(denoise),
+                "postprocess_output": bool(postprocess_output),
+            },
+        )
+    return audio, status
 
 
 def get_speaker_choices():

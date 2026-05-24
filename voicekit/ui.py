@@ -12,6 +12,7 @@ from voicekit.core import (
     get_speaker_choices,
     rename_speaker_id,
 )
+from voicekit.history import list_history
 from voicekit.model_store import DEFAULT_MODEL_ID
 from voicekit.model_store import install_model, list_model_statuses
 
@@ -27,6 +28,13 @@ def install_default_model():
         return f"Error: {type(e).__name__}: {e}", get_model_status_rows()
     message = "Model is installed." if status.installed else "Model install finished but files are incomplete."
     return message, get_model_status_rows()
+
+
+def get_history_rows(limit=50):
+    try:
+        return list_history(limit=int(limit or 50))
+    except Exception as e:
+        return [{"error": f"{type(e).__name__}: {e}"}]
 
 
 with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
@@ -299,6 +307,20 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                         fn=install_default_model,
                         inputs=[],
                         outputs=[model_message, model_status],
+                    )
+
+                with gr.Tab("History"):
+                    with gr.Row():
+                        with gr.Column():
+                            history_limit = gr.Number(value=50, label="Limit", precision=0)
+                            history_refresh = gr.Button("Refresh History")
+                        with gr.Column():
+                            history_rows = gr.JSON(value=get_history_rows(), label="Generation History")
+
+                    history_refresh.click(
+                        fn=get_history_rows,
+                        inputs=[history_limit],
+                        outputs=[history_rows],
                     )
 
 def main() -> None:
