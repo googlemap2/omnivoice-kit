@@ -5,9 +5,9 @@ Use this file to track refactor and feature work. Check each task after it is co
 ## Phase 1: Extract Backend Core
 
 - [x] Create shared backend core module `voicekit/core.py`.
-- [x] Move model, language, and instruct constants out of `omnivoice/app.py`.
-- [x] Move device/dtype selection out of `omnivoice/app.py`.
-- [x] Move model loading and model cache logic out of `omnivoice/app.py`.
+- [x] Move model, language, and instruct constants out of the Gradio UI.
+- [x] Move device/dtype selection out of the Gradio UI.
+- [x] Move model loading and model cache logic out of the Gradio UI.
 - [x] Move voice clone prompt loading for `.pt` and `.npy`.
 - [x] Move `speakers.json` read/write logic.
 - [x] Move speaker choice listing logic.
@@ -23,7 +23,7 @@ Use this file to track refactor and feature work. Check each task after it is co
 
 ## Phase 2: Refactor CLI to Use Core
 
-- [x] Update `omnivoice/omnivoice_cli.py` to use backend core.
+- [x] Update CLI implementation to use backend core.
 - [x] Remove duplicated `VALID_INSTRUCTS_EN/ZH` from CLI.
 - [x] Remove duplicated `pick_device` from CLI if core owns it.
 - [x] Remove duplicated `load_voice_clone_prompt` from CLI if core owns it.
@@ -121,10 +121,11 @@ Use this file to track refactor and feature work. Check each task after it is co
 ## Done Log
 
 - [x] Created initial refactor and feature tracking plan.
-- [x] Completed Phase 1 backend core extraction: `voicekit/core.py` owns generation, model, prompt, and speaker registry logic; `omnivoice/app.py` now only builds the Gradio UI.
+- [x] Completed Phase 1 backend core extraction: `voicekit/core.py` owns generation, model, prompt, and speaker registry logic; `voicekit/ui.py` now only builds the Gradio UI.
 - [x] Refactored CLI to use `voicekit/core.py` for model loading, instruct parsing, speaker registry loading, and prompt loading. CLI help was smoke tested for all subcommands.
 - [x] Verified all three CLI inference modes: `speaker-id`, `ref-audio`, and `voice-design`.
 - [x] Completed Voice Profiles v1 with `VoiceProfileStore`, legacy `speakers.json` compatibility, normalized profile metadata, and UI/CLI integration.
 - [x] Added FastAPI speech API with `/health`, `/v1/models`, `/v1/voices`, `/v1/languages`, and `/v1/audio/speech`; smoke tested non-generating endpoints and missing-voice error path.
 - [x] Verified `/v1/audio/speech` real generation path and wrote `api_speech.wav`.
 - [x] Reorganized backend code into `voicekit/` package and removed unnecessary root shims.
+- [x] Moved UI, CLI, and helper scripts from legacy `omnivoice/` folder into `voicekit/`, then removed the legacy folder.

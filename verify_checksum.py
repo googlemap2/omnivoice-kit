@@ -1,5 +1,4 @@
 import runpy
-from pathlib import Path
 
 if __name__ == "__main__":
-    runpy.run_path(str(Path(__file__).parent / "omnivoice" / "verify_checksum.py"), run_name="__main__")
+    runpy.run_module("voicekit.scripts.verify_checksum", run_name="__main__")

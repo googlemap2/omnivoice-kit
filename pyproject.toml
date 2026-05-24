@@ -18,8 +18,12 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["voicekit"]
+packages = ["voicekit", "voicekit.scripts"]
 py-modules = [
-  "app",
-  "omnivoice_cli",
+  "backup_model",
+  "verify_checksum",
 ]
+
+[project.scripts]
+voicekit = "voicekit.cli:main"
+voicekit-ui = "voicekit.ui:main"

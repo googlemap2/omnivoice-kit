@@ -29,11 +29,7 @@ Model được tải và load local trong project:
 ## 2) Chạy Web UI
 
 ```bash
-python app.py
-```
-hoặc
-```bash
-uv run python app.py
+uv run voicekit-ui
 ```
 
 Mở trình duyệt: `http://127.0.0.1:7861`
@@ -50,7 +46,7 @@ Web UI đã tách 2 tab riêng:
 ## 3) Chạy CLI clone giọng nhanh
 
 ```bash
-python clone_tts.py \
+python -m voicekit.scripts.clone_tts \
   --text "Xin chao, day la ban clone giong." \
   --ref_audio path/to/ref.wav \
   --output out.wav \
@@ -72,7 +68,7 @@ CLI tổng hợp theo 3 tab web (không cần mở UI):
 ### 3.1 TTS by Speaker ID
 
 ```bash
-python omnivoice_cli.py speaker-id \
+uv run voicekit speaker-id \
   --speaker_id my_voice \
   --text "Xin chao, day la test speaker id." \
   --output out_speaker_id.wav
@@ -81,7 +77,7 @@ python omnivoice_cli.py speaker-id \
 Đầy đủ tham số:
 
 ```bash
-python omnivoice_cli.py speaker-id \
+uv run voicekit speaker-id \
   --speaker_id my_voice \
   --speakers speakers.json \
   --text "Xin chao, day la test speaker id." \
@@ -103,7 +99,7 @@ python omnivoice_cli.py speaker-id \
 ### 3.2 Clone by Reference Audio
 
 ```bash
-python omnivoice_cli.py ref-audio \
+uv run voicekit ref-audio \
   --text "Xin chao, day la test ref audio." \
   --ref_audio assets/voices/ref.wav \
   --ref_text "xin chao day la mau giong" \
@@ -113,7 +109,7 @@ python omnivoice_cli.py ref-audio \
 Đầy đủ tham số:
 
 ```bash
-python omnivoice_cli.py ref-audio \
+uv run voicekit ref-audio \
   --text "Xin chao, day la test ref audio." \
   --ref_audio assets/voices/ref.wav \
   --ref_text "xin chao day la mau giong" \
@@ -135,7 +131,7 @@ python omnivoice_cli.py ref-audio \
 ### 3.3 Voice Design
 
 ```bash
-python omnivoice_cli.py voice-design \
+uv run voicekit voice-design \
   --text "Xin chao, toi la giong nu trung nien." \
   --instruct-item female \
   --instruct-item middle-aged \
@@ -145,7 +141,7 @@ python omnivoice_cli.py voice-design \
 Đầy đủ tham số:
 
 ```bash
-python omnivoice_cli.py voice-design \
+uv run voicekit voice-design \
   --text "Xin chao, toi la giong nu trung nien." \
   --output out_voice_design_full.wav \
   --model k2-fsa/OmniVoice \
@@ -219,7 +215,7 @@ Bạn có thể dùng `speaker_id` ảo bằng cách lưu `voice_clone_prompt` (
 Lưu full prompt (.pt):
 
 ```bash
-python build_speaker_prompt.py \
+python -m voicekit.scripts.build_speaker_prompt \
   --ref_audio assets/voices/my_voice.wav \
   --ref_text "xin chao day la mau giong cua toi" \
   --out assets/speakers/my_voice.pt
@@ -228,7 +224,7 @@ python build_speaker_prompt.py \
 Hoặc lưu token (.npy + .json metadata):
 
 ```bash
-python build_speaker_prompt.py \
+python -m voicekit.scripts.build_speaker_prompt \
   --ref_audio assets/voices/my_voice.wav \
   --ref_text "xin chao day la mau giong cua toi" \
   --out assets/speakers/my_voice.npy
@@ -250,7 +246,7 @@ Copy `speakers.example.json` thành `speakers.json`, ví dụ:
 ### 6.3 Infer bằng speaker_id
 
 ```bash
-python clone_tts_with_speaker_id.py \
+python -m voicekit.scripts.clone_tts_with_speaker_id \
   --speaker_id my_voice \
   --text "Xin chao, day la speaker id ao khong can fine tune." \
   --speakers speakers.json \
