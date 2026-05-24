@@ -22,8 +22,11 @@ uv export --format requirements-txt --no-hashes -o requirements.txt
 ```
 
 Model được tải và load local trong project:
-- Thư mục mặc định: `models/OmniVoice`
-- Lần chạy đầu sẽ auto download từ Hugging Face vào thư mục này.
+- Thư mục model: `models/`
+- Hugging Face cache: `models/.hf_home`
+- OmniVoice mặc định: `models/models--k2-fsa--OmniVoice`
+- ASR/faster-whisper: `models/models--Systran--faster-whisper-*`
+- Lần chạy đầu sẽ auto download từ Hugging Face vào thư mục `models/`.
 - Nếu truyền `--model` là đường dẫn local thì sẽ ưu tiên load từ đường dẫn đó.
 
 ## 2) Chạy Web UI

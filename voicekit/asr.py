@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from voicekit.core import pick_device
+from voicekit.model_store import ensure_local_model
 
 
 DEFAULT_ASR_MODEL_ID = "Systran/faster-whisper-large-v3"
@@ -73,7 +74,10 @@ def _load_faster_whisper_model(model_id: str, device: str | None, compute_type: 
 
     selected_device = pick_device(device)
     selected_compute_type = compute_type or ("float16" if selected_device in {"cuda", "mps"} else "int8")
-    return WhisperModel(model_id, device=selected_device, compute_type=selected_compute_type)
+    model_source = model_id
+    if "/" in model_id and not Path(model_id).exists():
+        model_source = ensure_local_model(model_id)
+    return WhisperModel(model_source, device=selected_device, compute_type=selected_compute_type)
 
 
 def transcribe_file(

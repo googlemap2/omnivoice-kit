@@ -9,7 +9,15 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MODEL_BASE_DIR = PROJECT_ROOT / "models"
 DEFAULT_HF_HOME = PROJECT_ROOT / "models" / ".hf_home"
 DEFAULT_HF_CACHE = DEFAULT_HF_HOME / "hub"
-KNOWN_MODEL_IDS = [DEFAULT_MODEL_ID]
+KNOWN_MODEL_IDS = [
+    DEFAULT_MODEL_ID,
+    "Systran/faster-whisper-large-v3",
+    "Systran/faster-whisper-large-v3-turbo",
+    "Systran/faster-distil-whisper-large-v3",
+    "Systran/faster-whisper-medium",
+    "Systran/faster-whisper-small",
+    "Systran/faster-whisper-base",
+]
 
 
 @dataclass(frozen=True)
@@ -35,6 +43,7 @@ def configure_hf_local_cache() -> None:
 
 def has_model_weights(local_dir: Path) -> bool:
     candidates = [
+        local_dir / "model.bin",
         local_dir / "model.safetensors",
         local_dir / "pytorch_model.bin",
         local_dir / "model.safetensors.index.json",
@@ -53,12 +62,12 @@ def resolve_model_source(model_arg: str | None) -> str:
     return ensure_local_model(model_name)
 
 
-def _repo_cache_dir(repo_id: str) -> Path:
+def get_local_model_dir(repo_id: str) -> Path:
     return DEFAULT_MODEL_BASE_DIR / f"models--{repo_id.replace('/', '--')}"
 
 
 def get_model_status(repo_id: str = DEFAULT_MODEL_ID, local_dir: Path | None = None) -> ModelStatus:
-    target_dir = local_dir or _repo_cache_dir(repo_id)
+    target_dir = local_dir or get_local_model_dir(repo_id)
     config_exists = (target_dir / "config.json").exists()
     weights_exist = has_model_weights(target_dir)
     return ModelStatus(
@@ -82,7 +91,7 @@ def install_model(repo_id: str = DEFAULT_MODEL_ID, local_dir: Path | None = None
 
 def ensure_local_model(repo_id: str, local_dir: Path | None = None) -> str:
     configure_hf_local_cache()
-    local_dir = local_dir or _repo_cache_dir(repo_id)
+    local_dir = local_dir or get_local_model_dir(repo_id)
     local_dir.mkdir(parents=True, exist_ok=True)
     config_file = local_dir / "config.json"
     if config_file.exists() and has_model_weights(local_dir):

@@ -22,6 +22,7 @@ from voicekit.settings import AppSettings, load_settings, save_settings
 
 DEVICE_CHOICES = ["", "cpu", "cuda", "mps"]
 COMPUTE_TYPE_CHOICES = ["", "int8", "float16", "float32"]
+ASR_LANGUAGE_CHOICES = [("Auto Detect", "")] + OMNIVOICE_LANGUAGE_CHOICES
 
 
 def get_model_status_rows():
@@ -362,7 +363,12 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                                 label="ASR Model",
                                 allow_custom_value=True,
                             )
-                            asr_language = gr.Textbox(value="", label="Language")
+                            asr_language = gr.Dropdown(
+                                choices=ASR_LANGUAGE_CHOICES,
+                                value="",
+                                label="Language",
+                                allow_custom_value=True,
+                            )
                             asr_device = gr.Dropdown(
                                 choices=DEVICE_CHOICES,
                                 value=APP_SETTINGS.default_device or "",
