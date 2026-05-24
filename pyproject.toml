@@ -1,4 +1,4 @@
-[project]
+﻿[project]
 name = "omnivoice-voice-clone-kit"
 version = "0.1.0"
 description = "Standalone voice cloning toolkit built on OmniVoice"
@@ -16,4 +16,5 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-py-modules = ["app", "clone_tts"]
+py-modules = ["app"]
+

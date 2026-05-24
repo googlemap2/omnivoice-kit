@@ -3,7 +3,7 @@
 import soundfile as sf
 import torch
 from omnivoice import OmniVoice
-from model_store import resolve_model_source
+from model_store import DEFAULT_MODEL_ID, resolve_model_source
 
 
 def str2bool(value: str) -> bool:
@@ -22,7 +22,7 @@ def main():
     parser.add_argument("--output", type=str, default="clone_out.wav", help="Output wav path")
     parser.add_argument("--ref_text", type=str, default=None, help="Optional transcript of reference audio")
     parser.add_argument("--instruct", type=str, default=None, help="Optional voice design instruction")
-    parser.add_argument("--model", type=str, default="k2-fsa/OmniVoice", help="HF model id or local model path")
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL_ID, help="HF model id or local model path")
     parser.add_argument("--language", type=str, default=None, help="Language id/name, e.g. vi or Vietnamese")
     parser.add_argument("--num_step", type=int, default=32, help="Decoding steps")
     parser.add_argument("--guidance_scale", type=float, default=2.0, help="CFG scale")

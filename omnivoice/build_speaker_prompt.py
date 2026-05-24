@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from omnivoice import OmniVoice
-from model_store import resolve_model_source
+from model_store import DEFAULT_MODEL_ID, resolve_model_source
 
 
 def pick_device(device_arg: str | None) -> str:
@@ -35,7 +35,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--model",
-        default="k2-fsa/OmniVoice",
+        default=DEFAULT_MODEL_ID,
         help="HF model id or local model path",
     )
     parser.add_argument("--device", default=None, help="cuda | mps | cpu")

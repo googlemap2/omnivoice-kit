@@ -4,7 +4,7 @@ from pathlib import Path
 
 DEFAULT_MODEL_ID = "k2-fsa/OmniVoice"
 PROJECT_ROOT = Path(__file__).resolve().parent
-DEFAULT_MODEL_DIR = PROJECT_ROOT / "models" / "OmniVoice"
+DEFAULT_MODEL_BASE_DIR = PROJECT_ROOT / "models"
 DEFAULT_HF_HOME = PROJECT_ROOT / "models" / ".hf_home"
 DEFAULT_HF_CACHE = DEFAULT_HF_HOME / "hub"
 
@@ -37,8 +37,13 @@ def resolve_model_source(model_arg: str | None) -> str:
     return ensure_local_model(model_name)
 
 
-def ensure_local_model(repo_id: str, local_dir: Path = DEFAULT_MODEL_DIR) -> str:
+def _repo_cache_dir(repo_id: str) -> Path:
+    return DEFAULT_MODEL_BASE_DIR / f"models--{repo_id.replace('/', '--')}"
+
+
+def ensure_local_model(repo_id: str, local_dir: Path | None = None) -> str:
     configure_hf_local_cache()
+    local_dir = local_dir or _repo_cache_dir(repo_id)
     local_dir.mkdir(parents=True, exist_ok=True)
     config_file = local_dir / "config.json"
     if config_file.exists() and has_model_weights(local_dir):
@@ -49,7 +54,6 @@ def ensure_local_model(repo_id: str, local_dir: Path = DEFAULT_MODEL_DIR) -> str
     snapshot_download(
         repo_id=repo_id,
         local_dir=str(local_dir),
-        local_dir_use_symlinks=False,
         cache_dir=str(DEFAULT_HF_CACHE),
     )
     return str(local_dir)

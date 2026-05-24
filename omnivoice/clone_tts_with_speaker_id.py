@@ -6,7 +6,7 @@ import soundfile as sf
 import torch
 from omnivoice import OmniVoice
 from omnivoice.models.omnivoice import VoiceClonePrompt
-from model_store import resolve_model_source
+from model_store import DEFAULT_MODEL_ID, resolve_model_source
 
 
 def str2bool(value: str) -> bool:
@@ -65,7 +65,7 @@ def main() -> None:
         help="Path to speakers registry json",
     )
     parser.add_argument("--output", default="clone_out.wav", help="Output wav path")
-    parser.add_argument("--model", default="k2-fsa/OmniVoice", help="Model path or HF id")
+    parser.add_argument("--model", default=DEFAULT_MODEL_ID, help="Model path or HF id")
     parser.add_argument("--language", default=None, help="Language id/name, e.g. vi or en")
     parser.add_argument("--instruct", default=None, help="Optional voice design instruction")
     parser.add_argument("--num_step", type=int, default=32, help="Decoding steps")
