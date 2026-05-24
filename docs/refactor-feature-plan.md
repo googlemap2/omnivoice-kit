@@ -27,9 +27,9 @@ Use this file to track refactor and feature work. Check each task after it is co
 - [x] Remove duplicated `VALID_INSTRUCTS_EN/ZH` from CLI.
 - [x] Remove duplicated `pick_device` from CLI if core owns it.
 - [x] Remove duplicated `load_voice_clone_prompt` from CLI if core owns it.
-- [ ] Verify `speaker-id` command still works.
-- [ ] Verify `ref-audio` command still works.
-- [ ] Verify `voice-design` command still works.
+- [x] Verify `speaker-id` command still works.
+- [x] Verify `ref-audio` command still works.
+- [x] Verify `voice-design` command still works.
 - [ ] Update README if command usage or behavior changes.
 
 ## Phase 3: Voice Profiles v1
@@ -111,3 +111,4 @@ Use this file to track refactor and feature work. Check each task after it is co
 - [x] Created initial refactor and feature tracking plan.
 - [x] Completed Phase 1 backend core extraction: `omnivoice_core.py` owns generation, model, prompt, and speaker registry logic; `omnivoice/app.py` now only builds the Gradio UI.
 - [x] Refactored CLI to use `omnivoice_core.py` for model loading, instruct parsing, speaker registry loading, and prompt loading. CLI help was smoke tested for all subcommands.
+- [x] Verified all three CLI inference modes: `speaker-id`, `ref-audio`, and `voice-design`.
