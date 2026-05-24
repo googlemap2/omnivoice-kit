@@ -6,13 +6,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-from model_store import DEFAULT_MODEL_ID
-from omnivoice_core import (
+from voicekit.core import (
     OMNIVOICE_LANGUAGE_CHOICES,
     OMNIVOICE_MODEL_CHOICES,
     generate_clone_with_speaker_id,
     get_profile_store,
 )
+from voicekit.model_store import DEFAULT_MODEL_ID
 
 
 app = FastAPI(title="OmniVoice Kit API", version="0.1.0")

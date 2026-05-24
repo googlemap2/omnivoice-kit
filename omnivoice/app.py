@@ -1,7 +1,6 @@
 import gradio as gr
 
-from model_store import DEFAULT_MODEL_ID
-from omnivoice_core import (
+from voicekit.core import (
     OMNIVOICE_LANGUAGE_CHOICES,
     OMNIVOICE_MODEL_CHOICES,
     VALID_INSTRUCTS,
@@ -13,6 +12,7 @@ from omnivoice_core import (
     get_speaker_choices,
     rename_speaker_id,
 )
+from voicekit.model_store import DEFAULT_MODEL_ID
 
 
 with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:

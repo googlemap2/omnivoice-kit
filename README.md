@@ -177,7 +177,7 @@ Gợi ý:
 Chạy local API server:
 
 ```bash
-uv run uvicorn api_server:app --host 127.0.0.1 --port 8000
+uv run uvicorn voicekit.api:app --host 127.0.0.1 --port 8000
 ```
 
 Health check:

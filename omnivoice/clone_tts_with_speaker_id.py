@@ -1,4 +1,4 @@
-﻿import argparse
+import argparse
 import json
 from pathlib import Path
 
@@ -6,7 +6,7 @@ import soundfile as sf
 import torch
 from omnivoice import OmniVoice
 from omnivoice.models.omnivoice import VoiceClonePrompt
-from model_store import DEFAULT_MODEL_ID, resolve_model_source
+from voicekit.model_store import DEFAULT_MODEL_ID, resolve_model_source
 
 
 def str2bool(value: str) -> bool:

@@ -3,13 +3,13 @@ from pathlib import Path
 
 import soundfile as sf
 
-from model_store import DEFAULT_MODEL_ID
-from omnivoice_core import (
+from voicekit.core import (
     build_instruct,
     get_profile_store,
     load_model,
     load_voice_clone_prompt,
 )
+from voicekit.model_store import DEFAULT_MODEL_ID
 
 
 def str2bool(value: str) -> bool:

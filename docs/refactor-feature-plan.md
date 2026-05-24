@@ -4,7 +4,7 @@ Use this file to track refactor and feature work. Check each task after it is co
 
 ## Phase 1: Extract Backend Core
 
-- [x] Create a shared backend core module, for example `omnivoice_core.py` or `voicekit_core.py`.
+- [x] Create shared backend core module `voicekit/core.py`.
 - [x] Move model, language, and instruct constants out of `omnivoice/app.py`.
 - [x] Move device/dtype selection out of `omnivoice/app.py`.
 - [x] Move model loading and model cache logic out of `omnivoice/app.py`.
@@ -49,7 +49,7 @@ Use this file to track refactor and feature work. Check each task after it is co
 ## Phase 4: OpenAI-Compatible Speech API
 
 - [x] Add FastAPI/uvicorn dependencies if missing.
-- [x] Create a separate FastAPI app, for example `api_server.py`.
+- [x] Create a separate FastAPI app in `voicekit/api.py`.
 - [x] Add `/health`.
 - [x] Add `/v1/models`.
 - [x] Add `/v1/voices`.
@@ -69,6 +69,18 @@ Use this file to track refactor and feature work. Check each task after it is co
 - [ ] Add model status to UI or API.
 - [ ] Add install/download action for missing model.
 - [ ] Add minimal progress/log output for download.
+
+## Backend Structure Cleanup
+
+- [x] Create `voicekit/` backend package.
+- [x] Move backend core implementation to `voicekit/core.py`.
+- [x] Move voice profile implementation to `voicekit/profiles.py`.
+- [x] Move model store implementation to `voicekit/model_store.py`.
+- [x] Move FastAPI implementation to `voicekit/api.py`.
+- [x] Remove root compatibility shims after moving internal imports to `voicekit.*`.
+- [x] Update UI and CLI implementation imports to use `voicekit.*`.
+- [x] Update package metadata to install `voicekit`.
+- [x] Verify `uv sync` builds the package.
 
 ## Phase 6: Generation History
 
@@ -109,9 +121,10 @@ Use this file to track refactor and feature work. Check each task after it is co
 ## Done Log
 
 - [x] Created initial refactor and feature tracking plan.
-- [x] Completed Phase 1 backend core extraction: `omnivoice_core.py` owns generation, model, prompt, and speaker registry logic; `omnivoice/app.py` now only builds the Gradio UI.
-- [x] Refactored CLI to use `omnivoice_core.py` for model loading, instruct parsing, speaker registry loading, and prompt loading. CLI help was smoke tested for all subcommands.
+- [x] Completed Phase 1 backend core extraction: `voicekit/core.py` owns generation, model, prompt, and speaker registry logic; `omnivoice/app.py` now only builds the Gradio UI.
+- [x] Refactored CLI to use `voicekit/core.py` for model loading, instruct parsing, speaker registry loading, and prompt loading. CLI help was smoke tested for all subcommands.
 - [x] Verified all three CLI inference modes: `speaker-id`, `ref-audio`, and `voice-design`.
 - [x] Completed Voice Profiles v1 with `VoiceProfileStore`, legacy `speakers.json` compatibility, normalized profile metadata, and UI/CLI integration.
 - [x] Added FastAPI speech API with `/health`, `/v1/models`, `/v1/voices`, `/v1/languages`, and `/v1/audio/speech`; smoke tested non-generating endpoints and missing-voice error path.
 - [x] Verified `/v1/audio/speech` real generation path and wrote `api_speech.wav`.
+- [x] Reorganized backend code into `voicekit/` package and removed unnecessary root shims.

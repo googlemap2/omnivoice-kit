@@ -1,4 +1,4 @@
-﻿import argparse
+import argparse
 import hashlib
 import json
 from datetime import UTC, datetime
@@ -6,7 +6,7 @@ from pathlib import Path
 
 from huggingface_hub import HfApi, snapshot_download
 
-from model_store import DEFAULT_HF_CACHE, configure_hf_local_cache
+from voicekit.model_store import DEFAULT_HF_CACHE, configure_hf_local_cache
 
 
 def sha256_file(path: Path) -> str:

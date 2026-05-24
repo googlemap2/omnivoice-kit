@@ -1,11 +1,11 @@
-﻿import argparse
+import argparse
 import json
 from pathlib import Path
 
 import numpy as np
 import torch
 from omnivoice import OmniVoice
-from model_store import DEFAULT_MODEL_ID, resolve_model_source
+from voicekit.model_store import DEFAULT_MODEL_ID, resolve_model_source
 
 
 def pick_device(device_arg: str | None) -> str:
