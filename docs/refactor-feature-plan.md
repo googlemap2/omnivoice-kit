@@ -34,30 +34,30 @@ Use this file to track refactor and feature work. Check each task after it is co
 
 ## Phase 3: Voice Profiles v1
 
-- [ ] Create `VoiceProfileStore` abstraction.
-- [ ] Keep backward compatibility with `speakers.json`.
-- [ ] Standardize profile fields: `id`, `name`, `type`, `prompt_path`, `language`.
-- [ ] Add metadata fields: `ref_text`, `created_at`, `updated_at`.
-- [ ] Add `list_profiles()`.
-- [ ] Add `get_profile(id)`.
-- [ ] Add `create_profile(...)`.
-- [ ] Add `rename_profile(...)`.
-- [ ] Add `delete_profile(...)`.
-- [ ] Update UI speaker dropdown to use profile store.
-- [ ] Update CLI speaker-id mode to use profile store.
+- [x] Create `VoiceProfileStore` abstraction.
+- [x] Keep backward compatibility with `speakers.json`.
+- [x] Standardize profile fields: `id`, `name`, `type`, `prompt_path`, `language`.
+- [x] Add metadata fields: `ref_text`, `created_at`, `updated_at`.
+- [x] Add `list_profiles()`.
+- [x] Add `get_profile(id)`.
+- [x] Add `create_profile(...)`.
+- [x] Add `rename_profile(...)`.
+- [x] Add `delete_profile(...)`.
+- [x] Update UI speaker dropdown to use profile store.
+- [x] Update CLI speaker-id mode to use profile store.
 
 ## Phase 4: OpenAI-Compatible Speech API
 
-- [ ] Add FastAPI/uvicorn dependencies if missing.
-- [ ] Create a separate FastAPI app, for example `api_server.py`.
-- [ ] Add `/health`.
-- [ ] Add `/v1/models`.
-- [ ] Add `/v1/voices`.
-- [ ] Add `/v1/audio/speech`.
-- [ ] Map OpenAI-style requests into backend core generation requests.
-- [ ] Return WAV or another initially supported audio format.
-- [ ] Add README section for running the API server.
-- [ ] Smoke test `/health`.
+- [x] Add FastAPI/uvicorn dependencies if missing.
+- [x] Create a separate FastAPI app, for example `api_server.py`.
+- [x] Add `/health`.
+- [x] Add `/v1/models`.
+- [x] Add `/v1/voices`.
+- [x] Add `/v1/audio/speech`.
+- [x] Map OpenAI-style requests into backend core generation requests.
+- [x] Return WAV or another initially supported audio format.
+- [x] Add README section for running the API server.
+- [x] Smoke test `/health`.
 
 ## Phase 5: Basic Model Status and Install UI
 
@@ -112,3 +112,6 @@ Use this file to track refactor and feature work. Check each task after it is co
 - [x] Completed Phase 1 backend core extraction: `omnivoice_core.py` owns generation, model, prompt, and speaker registry logic; `omnivoice/app.py` now only builds the Gradio UI.
 - [x] Refactored CLI to use `omnivoice_core.py` for model loading, instruct parsing, speaker registry loading, and prompt loading. CLI help was smoke tested for all subcommands.
 - [x] Verified all three CLI inference modes: `speaker-id`, `ref-audio`, and `voice-design`.
+- [x] Completed Voice Profiles v1 with `VoiceProfileStore`, legacy `speakers.json` compatibility, normalized profile metadata, and UI/CLI integration.
+- [x] Added FastAPI speech API with `/health`, `/v1/models`, `/v1/voices`, `/v1/languages`, and `/v1/audio/speech`; smoke tested non-generating endpoints and missing-voice error path.
+- [x] Verified `/v1/audio/speech` real generation path and wrote `api_speech.wav`.

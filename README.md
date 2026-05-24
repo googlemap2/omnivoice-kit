@@ -172,11 +172,49 @@ Gợi ý:
 - Text ngắn trước để test pipeline, sau đó tăng độ dài.
 - CPU chạy được nhưng chậm hơn GPU đáng kể.
 
-## 5) Speaker ID riêng không fine-tune
+## 5) Chạy OpenAI-compatible Speech API
+
+Chạy local API server:
+
+```bash
+uv run uvicorn api_server:app --host 127.0.0.1 --port 8000
+```
+
+Health check:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+Liệt kê voice profile:
+
+```bash
+curl http://127.0.0.1:8000/v1/voices
+```
+
+Generate WAV qua endpoint kiểu OpenAI:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -o api_speech.wav \
+  -d '{
+    "model": "k2-fsa/OmniVoice",
+    "voice": "yen",
+    "input": "Xin chao, day la audio tao tu local API.",
+    "language": "vi",
+    "num_step": 4,
+    "response_format": "wav"
+  }'
+```
+
+Hiện endpoint speech hỗ trợ `wav` trước. Các format khác sẽ thêm sau khi có audio export layer.
+
+## 6) Speaker ID riêng không fine-tune
 
 Bạn có thể dùng `speaker_id` ảo bằng cách lưu `voice_clone_prompt` (token prompt) từ 1 file wav mẫu.
 
-### 5.1 Tạo prompt từ wav
+### 6.1 Tạo prompt từ wav
 
 Lưu full prompt (.pt):
 
@@ -196,7 +234,7 @@ python build_speaker_prompt.py \
   --out assets/speakers/my_voice.npy
 ```
 
-### 5.2 Tạo registry speaker_id
+### 6.2 Tạo registry speaker_id
 
 Copy `speakers.example.json` thành `speakers.json`, ví dụ:
 
@@ -209,7 +247,7 @@ Copy `speakers.example.json` thành `speakers.json`, ví dụ:
 }
 ```
 
-### 5.3 Infer bằng speaker_id
+### 6.3 Infer bằng speaker_id
 
 ```bash
 python clone_tts_with_speaker_id.py \
@@ -219,7 +257,7 @@ python clone_tts_with_speaker_id.py \
   --output out.wav
 ```
 
-## 6) Backup model Hugging Face để tránh bị xóa repo
+## 7) Backup model Hugging Face để tránh bị xóa repo
 
 Tạo snapshot local + manifest checksum:
 

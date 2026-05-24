@@ -6,8 +6,8 @@ import soundfile as sf
 from model_store import DEFAULT_MODEL_ID
 from omnivoice_core import (
     build_instruct,
+    get_profile_store,
     load_model,
-    load_speakers,
     load_voice_clone_prompt,
 )
 
@@ -22,13 +22,12 @@ def str2bool(value: str) -> bool:
 
 
 def run_speaker_id(args: argparse.Namespace) -> None:
-    speakers = load_speakers(args.speakers)
-    if args.speaker_id not in speakers:
+    profile = get_profile_store(args.speakers).get_profile(args.speaker_id)
+    if profile is None:
         raise KeyError(f"speaker_id '{args.speaker_id}' not found in {args.speakers}")
 
-    cfg = speakers[args.speaker_id]
-    voice_clone_prompt = load_voice_clone_prompt(Path(cfg["prompt_path"]))
-    language = args.language if args.language is not None else cfg.get("language")
+    voice_clone_prompt = load_voice_clone_prompt(Path(profile.prompt_path))
+    language = args.language if args.language is not None else profile.language
     instruct = build_instruct(args.instruct_item, required=False)
 
     model = load_model(args.model, args.device)

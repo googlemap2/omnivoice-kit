@@ -7,6 +7,7 @@ from omnivoice import OmniVoice
 from omnivoice.models.omnivoice import VoiceClonePrompt
 
 from model_store import DEFAULT_MODEL_ID, resolve_model_source
+from voice_profiles import VoiceProfileStore
 
 
 SPEAKERS_PATH = Path("speakers.json")
@@ -124,18 +125,16 @@ def load_voice_clone_prompt(prompt_path: str | Path) -> VoiceClonePrompt:
 
 
 def load_speakers(speakers_path: str | Path | None = None) -> dict:
-    path = Path(speakers_path) if speakers_path else SPEAKERS_PATH
-    if not path.exists():
-        return {}
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
+    return VoiceProfileStore(speakers_path or SPEAKERS_PATH).to_legacy_speakers()
 
 
 def save_speakers(speakers: dict, speakers_path: str | Path | None = None) -> None:
     path = Path(speakers_path) if speakers_path else SPEAKERS_PATH
     path.write_text(json.dumps(speakers, ensure_ascii=True, indent=2), encoding="utf-8")
+
+
+def get_profile_store(speakers_path: str | Path | None = None) -> VoiceProfileStore:
+    return VoiceProfileStore(speakers_path or SPEAKERS_PATH)
 
 
 def load_model(model_arg: str | None, device_arg: str | None = None) -> OmniVoice:
@@ -212,13 +211,12 @@ def generate_clone_with_speaker_id(
     if not speaker_id:
         return None, "Please choose a speaker_id."
 
-    speakers = load_speakers()
-    if speaker_id not in speakers:
+    profile = get_profile_store().get_profile(speaker_id)
+    if profile is None:
         return None, f"speaker_id '{speaker_id}' not found in speakers.json."
 
-    cfg = speakers[speaker_id]
-    voice_clone_prompt = load_voice_clone_prompt(cfg["prompt_path"])
-    chosen_language = language.strip() if language else cfg.get("language")
+    voice_clone_prompt = load_voice_clone_prompt(profile.prompt_path)
+    chosen_language = language.strip() if language else profile.language
     instruct, instruct_error = build_instruct_from_items(instruct_items)
     if instruct_error:
         return None, instruct_error
@@ -318,8 +316,7 @@ def generate_voice_design(
 
 
 def get_speaker_choices():
-    speakers = load_speakers()
-    return [""] + sorted(speakers.keys())
+    return [""] + [profile.id for profile in get_profile_store().list_profiles()]
 
 
 def create_speaker_id(speaker_id, ref_audio, ref_text, language, save_format):
@@ -358,12 +355,12 @@ def create_speaker_id(speaker_id, ref_audio, ref_text, language, save_format):
             meta = {"ref_text": prompt.ref_text, "ref_rms": float(prompt.ref_rms)}
             meta_path.write_text(json.dumps(meta, ensure_ascii=True, indent=2), encoding="utf-8")
 
-        speakers = load_speakers()
-        speakers[speaker_key] = {
-            "prompt_path": str(out_path).replace("\\", "/"),
-            "language": language.strip() if language else None,
-        }
-        save_speakers(speakers)
+        get_profile_store().create_profile(
+            profile_id=speaker_key,
+            prompt_path=str(out_path).replace("\\", "/"),
+            language=language.strip() if language else None,
+            ref_text=prompt.ref_text,
+        )
     except Exception as e:
         return f"Error: {type(e).__name__}: {e}"
 
@@ -374,12 +371,12 @@ def delete_speaker_id(speaker_id):
     if not speaker_id:
         return "Please choose a speaker_id to delete."
 
-    speakers = load_speakers()
-    if speaker_id not in speakers:
+    store = get_profile_store()
+    profile = store.get_profile(speaker_id)
+    if profile is None:
         return f"speaker_id '{speaker_id}' not found."
 
-    cfg = speakers[speaker_id]
-    prompt_path = Path(cfg.get("prompt_path", ""))
+    prompt_path = Path(profile.prompt_path)
     deleted_files = []
     try:
         if prompt_path.exists():
@@ -393,8 +390,7 @@ def delete_speaker_id(speaker_id):
     except Exception as e:
         return f"Error while deleting files: {type(e).__name__}: {e}"
 
-    del speakers[speaker_id]
-    save_speakers(speakers)
+    store.delete_profile(speaker_id)
     if deleted_files:
         return f"Deleted speaker_id '{speaker_id}' and files: {', '.join(deleted_files)}"
     return f"Deleted speaker_id '{speaker_id}' from speakers.json."
@@ -407,16 +403,16 @@ def rename_speaker_id(old_speaker_id, new_speaker_id):
         return "Please input new speaker_id."
 
     new_key = new_speaker_id.strip()
-    speakers = load_speakers()
-    if old_speaker_id not in speakers:
+    store = get_profile_store()
+    profile = store.get_profile(old_speaker_id)
+    if profile is None:
         return f"speaker_id '{old_speaker_id}' not found."
-    if new_key in speakers and new_key != old_speaker_id:
+    if store.get_profile(new_key) is not None and new_key != old_speaker_id:
         return f"speaker_id '{new_key}' already exists."
     if new_key == old_speaker_id:
         return "New speaker_id is the same as current speaker_id."
 
-    cfg = speakers[old_speaker_id]
-    old_prompt_path = Path(cfg.get("prompt_path", ""))
+    old_prompt_path = Path(profile.prompt_path)
     new_prompt_path = old_prompt_path
 
     try:
@@ -431,8 +427,5 @@ def rename_speaker_id(old_speaker_id, new_speaker_id):
     except Exception as e:
         return f"Error while renaming files: {type(e).__name__}: {e}"
 
-    speakers[new_key] = dict(cfg)
-    speakers[new_key]["prompt_path"] = str(new_prompt_path).replace("\\", "/")
-    del speakers[old_speaker_id]
-    save_speakers(speakers)
+    store.rename_profile(old_speaker_id, new_key, str(new_prompt_path).replace("\\", "/"))
     return f"Renamed speaker_id '{old_speaker_id}' to '{new_key}'."
