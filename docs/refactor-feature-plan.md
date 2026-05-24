@@ -102,10 +102,36 @@ Use this file to track refactor and feature work. Check each task after it is co
 - [x] Add effect preset option to UI.
 - [x] Add effect preset option to CLI/API.
 
+## Phase 8: Settings
+
+- [x] Add local settings storage.
+- [x] Save default model.
+- [x] Save default device.
+- [x] Save default effect preset.
+- [x] Save output directory.
+- [x] Add settings API.
+- [x] Add basic settings UI.
+- [x] Use settings defaults in CLI and UI.
+
+## Phase 9: ASR Transcription
+
+- [x] Add ASR backend module.
+- [x] Use `faster-whisper` as the first ASR backend.
+- [x] Support audio/video file transcription through ffmpeg-backed decoding.
+- [x] Return full text and timestamped segments.
+- [x] Support output formats: JSON, plain text, verbose JSON, SRT, VTT.
+- [x] Add ASR CLI command.
+- [x] Add basic ASR UI.
+
+## Phase 10: OpenAI-Compatible Transcription Endpoint
+
+- [x] Add `/v1/audio/transcriptions`.
+- [x] Accept multipart file upload.
+- [x] Accept OpenAI-style fields: `model`, `language`, `response_format`.
+- [x] Return text, JSON, verbose JSON, SRT, or VTT.
+
 ## Later Features
 
-- [ ] ASR transcription.
-- [ ] OpenAI-compatible transcription endpoint.
 - [ ] Translation provider registry.
 - [ ] Subtitle import/export.
 - [ ] Video dubbing.
@@ -132,3 +158,6 @@ Use this file to track refactor and feature work. Check each task after it is co
 - [x] Completed Phase 5 basic model status/install support in `voicekit.model_store`, FastAPI, and Gradio UI.
 - [x] Completed Phase 6 SQLite generation history with core/CLI recording, API listing, and Gradio History tab.
 - [x] Completed Phase 7 audio DSP presets with raw/normalize/broadcast options in core, UI, CLI, and API.
+- [x] Completed Phase 8 local settings with JSON storage, API endpoints, UI tab, and CLI/UI defaults.
+- [x] Completed Phase 9 ASR transcription with lazy `faster-whisper` backend, CLI command, and Gradio Transcription tab.
+- [x] Completed Phase 10 OpenAI-compatible transcription endpoint at `/v1/audio/transcriptions`.

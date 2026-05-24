@@ -1,9 +1,11 @@
 from io import BytesIO
+from pathlib import Path
 from typing import Literal
+from uuid import uuid4
 
 import soundfile as sf
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import Response
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from pydantic import BaseModel, Field
 
 from voicekit.core import (
@@ -12,8 +14,10 @@ from voicekit.core import (
     generate_clone_with_speaker_id,
     get_profile_store,
 )
+from voicekit.asr import DEFAULT_ASR_MODEL_ID, TRANSCRIPTION_FORMATS, format_transcription, transcribe_file
 from voicekit.history import list_history
 from voicekit.model_store import DEFAULT_MODEL_ID, install_model, list_model_statuses
+from voicekit.settings import AppSettings, load_settings, save_settings
 
 
 app = FastAPI(title="OmniVoice Kit API", version="0.1.0")
@@ -38,6 +42,13 @@ class SpeechRequest(BaseModel):
 
 class ModelInstallRequest(BaseModel):
     repo_id: str = DEFAULT_MODEL_ID
+
+
+class SettingsRequest(BaseModel):
+    default_model: str = DEFAULT_MODEL_ID
+    default_device: Literal["", "cpu", "cuda", "mps"] | None = None
+    default_effect_preset: Literal["raw", "normalize", "broadcast"] = "raw"
+    output_dir: str = "outputs"
 
 
 @app.get("/health")
@@ -66,6 +77,29 @@ def list_model_status() -> dict:
     return {
         "object": "list",
         "data": [status.to_dict() for status in list_model_statuses()],
+    }
+
+
+@app.get("/v1/settings")
+def get_settings() -> dict:
+    return {
+        "object": "settings",
+        "data": load_settings().to_dict(),
+    }
+
+
+@app.put("/v1/settings")
+def update_settings(request: SettingsRequest) -> dict:
+    settings = AppSettings(
+        default_model=request.default_model,
+        default_device=request.default_device or None,
+        default_effect_preset=request.default_effect_preset,
+        output_dir=request.output_dir,
+    )
+    saved = save_settings(settings)
+    return {
+        "object": "settings",
+        "data": saved.to_dict(),
     }
 
 
@@ -147,3 +181,51 @@ def create_speech(request: SpeechRequest) -> Response:
         media_type="audio/wav",
         headers={"Content-Disposition": 'attachment; filename="speech.wav"'},
     )
+
+
+@app.post("/v1/audio/transcriptions")
+async def create_transcription(
+    file: UploadFile = File(...),
+    model: str = Form(DEFAULT_ASR_MODEL_ID),
+    language: str | None = Form(None),
+    response_format: Literal["json", "text", "verbose_json", "srt", "vtt"] = Form("json"),
+    device: str | None = Form(None),
+    compute_type: str | None = Form(None),
+    word_timestamps: bool = Form(False),
+    beam_size: int = Form(5),
+):
+    if response_format not in TRANSCRIPTION_FORMATS:
+        raise HTTPException(status_code=400, detail=f"Unsupported response_format: {response_format}")
+
+    upload_dir = Path("data") / "uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    suffix = Path(file.filename or "audio").suffix or ".wav"
+    upload_path = upload_dir / f"transcription_input_{uuid4().hex}{suffix}"
+    try:
+        upload_path.write_bytes(await file.read())
+        result = transcribe_file(
+            audio_path=upload_path,
+            model_id=model,
+            language=language,
+            device=device,
+            compute_type=compute_type,
+            word_timestamps=word_timestamps,
+            beam_size=beam_size,
+        )
+        formatted = format_transcription(result, response_format)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+    finally:
+        try:
+            upload_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+    if isinstance(formatted, dict):
+        return JSONResponse(formatted)
+    media_type = "text/plain"
+    if response_format == "srt":
+        media_type = "application/x-subrip"
+    elif response_format == "vtt":
+        media_type = "text/vtt"
+    return PlainTextResponse(formatted, media_type=media_type)

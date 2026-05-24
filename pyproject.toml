@@ -11,6 +11,8 @@ dependencies = [
   "gradio",
   "soundfile",
   "uvicorn",
+  "python-multipart",
+  "faster-whisper",
 ]
 
 [build-system]

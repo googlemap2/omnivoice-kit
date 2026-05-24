@@ -44,6 +44,9 @@ Web UI đã tách 2 tab riêng:
 - `denoise`, `preprocess_prompt`, `postprocess_output`
 - `effect_preset`: `raw`, `normalize`, `broadcast`
 
+Tab `Transcription` dùng `faster-whisper` để chuyển audio/video thành text,
+JSON, SRT hoặc VTT. Với input không phải WAV, cần cài `ffmpeg` và để trong PATH.
+
 ## 3) Chạy CLI clone giọng nhanh
 
 ```bash
@@ -167,6 +170,25 @@ Gợi ý:
 - Không mix item tiếng Anh và tiếng Trung trong cùng 1 lệnh.
 - Các tham số chung: `--num_step`, `--guidance_scale`, `--speed`, `--duration`, `--denoise`, `--postprocess_output`, `--device`.
 
+### 3.4 Transcribe audio/video
+
+```bash
+uv run voicekit transcribe \
+  --input path/to/audio.wav \
+  --language vi \
+  --format text
+```
+
+Xuất SRT:
+
+```bash
+uv run voicekit transcribe \
+  --input path/to/audio.wav \
+  --language vi \
+  --format srt \
+  --output transcript.srt
+```
+
 ## 4) Gợi ý chất lượng
 
 - Reference audio nên dài `3-10 giây`, giọng rõ, ít tạp âm.
@@ -205,6 +227,23 @@ Xem lịch sử generation:
 curl http://127.0.0.1:8000/v1/generation-history
 ```
 
+Xem/cập nhật settings:
+
+```bash
+curl http://127.0.0.1:8000/v1/settings
+```
+
+```bash
+curl -X PUT http://127.0.0.1:8000/v1/settings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "default_model": "k2-fsa/OmniVoice",
+    "default_device": "",
+    "default_effect_preset": "raw",
+    "output_dir": "outputs"
+  }'
+```
+
 Cài model mặc định nếu còn thiếu:
 
 ```bash
@@ -231,6 +270,18 @@ curl -X POST http://127.0.0.1:8000/v1/audio/speech \
 ```
 
 Hiện endpoint speech hỗ trợ `wav` trước. Các format khác sẽ thêm sau khi có audio export layer.
+
+Transcribe audio qua endpoint kiểu OpenAI:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/audio/transcriptions \
+  -F "file=@path/to/audio.wav" \
+  -F "model=Systran/faster-whisper-large-v3" \
+  -F "language=vi" \
+  -F "response_format=verbose_json"
+```
+
+Các `response_format` đang hỗ trợ: `json`, `text`, `verbose_json`, `srt`, `vtt`.
 
 ## 6) Speaker ID riêng không fine-tune
 

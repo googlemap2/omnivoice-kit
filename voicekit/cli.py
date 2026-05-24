@@ -4,6 +4,12 @@ from pathlib import Path
 import soundfile as sf
 
 from voicekit.audio import EFFECT_PRESETS, apply_effect_preset
+from voicekit.asr import (
+    DEFAULT_ASR_MODEL_ID,
+    TRANSCRIPTION_FORMATS,
+    format_transcription,
+    transcribe_file,
+)
 from voicekit.core import (
     build_instruct,
     get_profile_store,
@@ -12,6 +18,7 @@ from voicekit.core import (
 )
 from voicekit.history import try_record_generation
 from voicekit.model_store import DEFAULT_MODEL_ID
+from voicekit.settings import load_settings
 
 
 def str2bool(value: str) -> bool:
@@ -156,10 +163,36 @@ def run_voice_design(args: argparse.Namespace) -> None:
     print(f"Saved to: {args.output}")
 
 
+def run_transcribe(args: argparse.Namespace) -> None:
+    result = transcribe_file(
+        audio_path=args.input,
+        model_id=args.model,
+        language=args.language,
+        device=args.device,
+        compute_type=args.compute_type,
+        word_timestamps=args.word_timestamps,
+        beam_size=args.beam_size,
+    )
+    formatted = format_transcription(result, args.format)
+    if isinstance(formatted, dict):
+        import json
+
+        output = json.dumps(formatted, ensure_ascii=False, indent=2)
+    else:
+        output = formatted
+
+    if args.output:
+        Path(args.output).write_text(output, encoding="utf-8")
+        print(f"Saved to: {args.output}")
+    else:
+        print(output)
+
+
 def add_common_args(parser: argparse.ArgumentParser) -> None:
+    settings = load_settings()
     parser.add_argument("--text", required=True, help="Target text")
     parser.add_argument("--output", default="out.wav", help="Output wav path")
-    parser.add_argument("--model", default=DEFAULT_MODEL_ID, help="HF model id or local model path")
+    parser.add_argument("--model", default=settings.default_model, help="HF model id or local model path")
     parser.add_argument("--language", default=None, help="Language id/name, e.g. vi or en")
     parser.add_argument(
         "--instruct-item",
@@ -173,8 +206,13 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--duration", type=float, default=None, help="Fixed output duration (seconds)")
     parser.add_argument("--denoise", type=str2bool, default=True, help="Enable denoise token")
     parser.add_argument("--postprocess_output", type=str2bool, default=True, help="Trim long output silences")
-    parser.add_argument("--effect-preset", choices=EFFECT_PRESETS, default="raw", help="Audio effect preset")
-    parser.add_argument("--device", default=None, help="cuda | mps | cpu")
+    parser.add_argument(
+        "--effect-preset",
+        choices=EFFECT_PRESETS,
+        default=settings.default_effect_preset,
+        help="Audio effect preset",
+    )
+    parser.add_argument("--device", default=settings.default_device, help="cuda | mps | cpu")
 
 
 def main() -> None:
@@ -198,6 +236,18 @@ def main() -> None:
     voice_design = subparsers.add_parser("voice-design", help="Voice Design")
     add_common_args(voice_design)
     voice_design.set_defaults(func=run_voice_design)
+
+    transcribe = subparsers.add_parser("transcribe", help="Transcribe audio with faster-whisper")
+    transcribe.add_argument("--input", required=True, help="Input audio/video path")
+    transcribe.add_argument("--output", default=None, help="Optional output text/json/srt/vtt path")
+    transcribe.add_argument("--model", default=DEFAULT_ASR_MODEL_ID, help="ASR model id or local model path")
+    transcribe.add_argument("--language", default=None, help="Optional source language, e.g. vi or en")
+    transcribe.add_argument("--device", default=None, help="cuda | mps | cpu")
+    transcribe.add_argument("--compute-type", default=None, help="faster-whisper compute type, e.g. int8 or float16")
+    transcribe.add_argument("--word-timestamps", type=str2bool, default=False, help="Return word timestamps")
+    transcribe.add_argument("--beam-size", type=int, default=5, help="Beam size")
+    transcribe.add_argument("--format", choices=TRANSCRIPTION_FORMATS, default="text", help="Output format")
+    transcribe.set_defaults(func=run_transcribe)
 
     args = parser.parse_args()
     args.func(args)

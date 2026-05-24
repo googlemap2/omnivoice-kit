@@ -13,9 +13,15 @@ from voicekit.core import (
     rename_speaker_id,
 )
 from voicekit.audio import EFFECT_PRESETS
+from voicekit.asr import ASR_MODEL_CHOICES, DEFAULT_ASR_MODEL_ID, TRANSCRIPTION_FORMATS, transcribe_for_ui
 from voicekit.history import list_history
 from voicekit.model_store import DEFAULT_MODEL_ID
 from voicekit.model_store import install_model, list_model_statuses
+from voicekit.settings import AppSettings, load_settings, save_settings
+
+
+DEVICE_CHOICES = ["", "cpu", "cuda", "mps"]
+COMPUTE_TYPE_CHOICES = ["", "int8", "float16", "float32"]
 
 
 def get_model_status_rows():
@@ -38,6 +44,24 @@ def get_history_rows(limit=50):
         return [{"error": f"{type(e).__name__}: {e}"}]
 
 
+def get_settings_dict():
+    return load_settings().to_dict()
+
+
+def save_settings_from_ui(default_model, default_device, default_effect_preset, output_dir):
+    settings = AppSettings(
+        default_model=default_model,
+        default_device=default_device or None,
+        default_effect_preset=default_effect_preset,
+        output_dir=output_dir,
+    )
+    saved = save_settings(settings)
+    return "Settings saved.", saved.to_dict()
+
+
+APP_SETTINGS = load_settings()
+
+
 with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
     gr.Markdown("# OmniVoice Voice Clone Kit")
     gr.Markdown("Choose one mode: clone from `speaker_id` or clone from uploaded reference audio.")
@@ -51,7 +75,7 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             sid_text = gr.Textbox(label="Target Text", lines=4)
                             sid_model = gr.Dropdown(
                                 choices=OMNIVOICE_MODEL_CHOICES,
-                                value=DEFAULT_MODEL_ID,
+                                value=APP_SETTINGS.default_model,
                                 label="Model",
                                 allow_custom_value=True,
                             )
@@ -80,7 +104,7 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             sid_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
                             sid_effect_preset = gr.Dropdown(
                                 choices=EFFECT_PRESETS,
-                                value="raw",
+                                value=APP_SETTINGS.default_effect_preset,
                                 label="Effect Preset",
                             )
                             sid_run = gr.Button("Generate", variant="primary")
@@ -120,7 +144,7 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             ref_text_target = gr.Textbox(label="Target Text", lines=4)
                             ref_model = gr.Dropdown(
                                 choices=OMNIVOICE_MODEL_CHOICES,
-                                value=DEFAULT_MODEL_ID,
+                                value=APP_SETTINGS.default_model,
                                 label="Model",
                                 allow_custom_value=True,
                             )
@@ -145,7 +169,7 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             ref_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
                             ref_effect_preset = gr.Dropdown(
                                 choices=EFFECT_PRESETS,
-                                value="raw",
+                                value=APP_SETTINGS.default_effect_preset,
                                 label="Effect Preset",
                             )
                             ref_run = gr.Button("Generate", variant="primary")
@@ -180,7 +204,7 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             vd_text = gr.Textbox(label="Target Text", lines=4)
                             vd_model = gr.Dropdown(
                                 choices=OMNIVOICE_MODEL_CHOICES,
-                                value=DEFAULT_MODEL_ID,
+                                value=APP_SETTINGS.default_model,
                                 label="Model",
                                 allow_custom_value=True,
                             )
@@ -202,7 +226,7 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                             vd_postprocess_output = gr.Checkbox(value=True, label="Postprocess Output")
                             vd_effect_preset = gr.Dropdown(
                                 choices=EFFECT_PRESETS,
-                                value="raw",
+                                value=APP_SETTINGS.default_effect_preset,
                                 label="Effect Preset",
                             )
                             vd_run = gr.Button("Generate", variant="primary")
@@ -328,6 +352,55 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                         outputs=[model_message, model_status],
                     )
 
+                with gr.Tab("Transcription"):
+                    with gr.Row():
+                        with gr.Column():
+                            asr_audio = gr.Audio(type="filepath", label="Audio")
+                            asr_model = gr.Dropdown(
+                                choices=ASR_MODEL_CHOICES,
+                                value=DEFAULT_ASR_MODEL_ID,
+                                label="ASR Model",
+                                allow_custom_value=True,
+                            )
+                            asr_language = gr.Textbox(value="", label="Language")
+                            asr_device = gr.Dropdown(
+                                choices=DEVICE_CHOICES,
+                                value=APP_SETTINGS.default_device or "",
+                                label="Device",
+                            )
+                            asr_compute_type = gr.Dropdown(
+                                choices=COMPUTE_TYPE_CHOICES,
+                                value="",
+                                label="Compute Type",
+                            )
+                            asr_word_timestamps = gr.Checkbox(value=False, label="Word Timestamps")
+                            asr_beam_size = gr.Slider(1, 10, value=5, step=1, label="Beam Size")
+                            asr_format = gr.Dropdown(
+                                choices=TRANSCRIPTION_FORMATS,
+                                value="verbose_json",
+                                label="Response Format",
+                            )
+                            asr_run = gr.Button("Transcribe", variant="primary")
+                        with gr.Column():
+                            asr_text = gr.Textbox(label="Transcript", lines=12)
+                            asr_status = gr.Textbox(label="Status", lines=2)
+                            asr_json = gr.JSON(label="Verbose Result")
+
+                    asr_run.click(
+                        fn=transcribe_for_ui,
+                        inputs=[
+                            asr_audio,
+                            asr_model,
+                            asr_language,
+                            asr_device,
+                            asr_compute_type,
+                            asr_word_timestamps,
+                            asr_beam_size,
+                            asr_format,
+                        ],
+                        outputs=[asr_text, asr_status, asr_json],
+                    )
+
                 with gr.Tab("History"):
                     with gr.Row():
                         with gr.Column():
@@ -340,6 +413,47 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                         fn=get_history_rows,
                         inputs=[history_limit],
                         outputs=[history_rows],
+                    )
+
+                with gr.Tab("Settings"):
+                    with gr.Row():
+                        with gr.Column():
+                            settings_model = gr.Dropdown(
+                                choices=OMNIVOICE_MODEL_CHOICES,
+                                value=APP_SETTINGS.default_model,
+                                label="Default Model",
+                                allow_custom_value=True,
+                            )
+                            settings_device = gr.Dropdown(
+                                choices=DEVICE_CHOICES,
+                                value=APP_SETTINGS.default_device or "",
+                                label="Default Device",
+                                allow_custom_value=False,
+                            )
+                            settings_effect = gr.Dropdown(
+                                choices=EFFECT_PRESETS,
+                                value=APP_SETTINGS.default_effect_preset,
+                                label="Default Effect Preset",
+                            )
+                            settings_output_dir = gr.Textbox(
+                                value=APP_SETTINGS.output_dir,
+                                label="Output Directory",
+                            )
+                            settings_save = gr.Button("Save Settings", variant="primary")
+                            settings_refresh = gr.Button("Refresh Settings")
+                        with gr.Column():
+                            settings_message = gr.Textbox(label="Status", lines=2)
+                            settings_json = gr.JSON(value=get_settings_dict(), label="Current Settings")
+
+                    settings_save.click(
+                        fn=save_settings_from_ui,
+                        inputs=[settings_model, settings_device, settings_effect, settings_output_dir],
+                        outputs=[settings_message, settings_json],
+                    )
+                    settings_refresh.click(
+                        fn=get_settings_dict,
+                        inputs=[],
+                        outputs=[settings_json],
                     )
 
 def main() -> None:
