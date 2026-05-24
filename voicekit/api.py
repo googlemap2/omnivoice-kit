@@ -12,7 +12,7 @@ from voicekit.core import (
     generate_clone_with_speaker_id,
     get_profile_store,
 )
-from voicekit.model_store import DEFAULT_MODEL_ID
+from voicekit.model_store import DEFAULT_MODEL_ID, install_model, list_model_statuses
 
 
 app = FastAPI(title="OmniVoice Kit API", version="0.1.0")
@@ -34,6 +34,10 @@ class SpeechRequest(BaseModel):
     postprocess_output: bool = True
 
 
+class ModelInstallRequest(BaseModel):
+    repo_id: str = DEFAULT_MODEL_ID
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
@@ -52,6 +56,27 @@ def list_models() -> dict:
             }
             for label, model_id in OMNIVOICE_MODEL_CHOICES
         ],
+    }
+
+
+@app.get("/v1/model-status")
+def list_model_status() -> dict:
+    return {
+        "object": "list",
+        "data": [status.to_dict() for status in list_model_statuses()],
+    }
+
+
+@app.post("/v1/model-status/install")
+def install_model_endpoint(request: ModelInstallRequest) -> dict:
+    try:
+        status = install_model(request.repo_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+    return {
+        "object": "model_status",
+        "data": status.to_dict(),
+        "message": "Model is installed." if status.installed else "Model install finished but files are incomplete.",
     }
 
 

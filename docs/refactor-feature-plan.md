@@ -61,14 +61,14 @@ Use this file to track refactor and feature work. Check each task after it is co
 
 ## Phase 5: Basic Model Status and Install UI
 
-- [ ] Extract model status helpers from `model_store.py`.
-- [ ] Report model status: installed or missing.
-- [ ] Check `config.json`.
-- [ ] Check weight files.
-- [ ] Show local model path.
-- [ ] Add model status to UI or API.
-- [ ] Add install/download action for missing model.
-- [ ] Add minimal progress/log output for download.
+- [x] Extract model status helpers from `model_store.py`.
+- [x] Report model status: installed or missing.
+- [x] Check `config.json`.
+- [x] Check weight files.
+- [x] Show local model path.
+- [x] Add model status to UI or API.
+- [x] Add install/download action for missing model.
+- [x] Add minimal progress/log output for download.
 
 ## Backend Structure Cleanup
 
@@ -129,3 +129,4 @@ Use this file to track refactor and feature work. Check each task after it is co
 - [x] Verified `/v1/audio/speech` real generation path and wrote `api_speech.wav`.
 - [x] Reorganized backend code into `voicekit/` package and removed unnecessary root shims.
 - [x] Moved UI, CLI, and helper scripts from legacy `omnivoice/` folder into `voicekit/`, then removed the legacy folder.
+- [x] Completed Phase 5 basic model status/install support in `voicekit.model_store`, FastAPI, and Gradio UI.

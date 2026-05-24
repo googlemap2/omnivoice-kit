@@ -13,6 +13,20 @@ from voicekit.core import (
     rename_speaker_id,
 )
 from voicekit.model_store import DEFAULT_MODEL_ID
+from voicekit.model_store import install_model, list_model_statuses
+
+
+def get_model_status_rows():
+    return [status.to_dict() for status in list_model_statuses()]
+
+
+def install_default_model():
+    try:
+        status = install_model(DEFAULT_MODEL_ID)
+    except Exception as e:
+        return f"Error: {type(e).__name__}: {e}", get_model_status_rows()
+    message = "Model is installed." if status.installed else "Model install finished but files are incomplete."
+    return message, get_model_status_rows()
 
 
 with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
@@ -266,6 +280,26 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                                 inputs=[cd_selected],
                                 outputs=[cd_status],
                             )
+
+                with gr.Tab("Models"):
+                    with gr.Row():
+                        with gr.Column():
+                            model_refresh = gr.Button("Refresh Model Status")
+                            model_install = gr.Button("Install Default Model", variant="primary")
+                        with gr.Column():
+                            model_status = gr.JSON(value=get_model_status_rows(), label="Model Status")
+                            model_message = gr.Textbox(label="Install Status", lines=3)
+
+                    model_refresh.click(
+                        fn=get_model_status_rows,
+                        inputs=[],
+                        outputs=[model_status],
+                    )
+                    model_install.click(
+                        fn=install_default_model,
+                        inputs=[],
+                        outputs=[model_message, model_status],
+                    )
 
 def main() -> None:
     demo.queue().launch(server_name="0.0.0.0", server_port=7861)

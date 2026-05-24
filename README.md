@@ -188,6 +188,20 @@ Liệt kê voice profile:
 curl http://127.0.0.1:8000/v1/voices
 ```
 
+Kiểm tra trạng thái model local:
+
+```bash
+curl http://127.0.0.1:8000/v1/model-status
+```
+
+Cài model mặc định nếu còn thiếu:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/model-status/install \
+  -H "Content-Type: application/json" \
+  -d '{"repo_id": "k2-fsa/OmniVoice"}'
+```
+
 Generate WAV qua endpoint kiểu OpenAI:
 
 ```bash
