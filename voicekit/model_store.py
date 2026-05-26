@@ -33,15 +33,34 @@ class ModelStatus:
         return asdict(self)
 
 
+def get_models_dir() -> Path:
+    """Project-local folder for downloaded model snapshots."""
+    return DEFAULT_MODEL_BASE_DIR
+
+
 def configure_hf_local_cache() -> None:
+    """Pin Hugging Face / transformers caches under ``models/.hf_home``."""
+    DEFAULT_MODEL_BASE_DIR.mkdir(parents=True, exist_ok=True)
+    DEFAULT_HF_HOME.mkdir(parents=True, exist_ok=True)
     DEFAULT_HF_CACHE.mkdir(parents=True, exist_ok=True)
-    os.environ["HF_HOME"] = str(DEFAULT_HF_HOME.resolve())
-    os.environ["HF_HUB_CACHE"] = str(DEFAULT_HF_CACHE.resolve())
-    os.environ["HUGGINGFACE_HUB_CACHE"] = str(DEFAULT_HF_CACHE.resolve())
-    os.environ["TRANSFORMERS_CACHE"] = str(DEFAULT_HF_CACHE.resolve())
+    hf_home = str(DEFAULT_HF_HOME.resolve())
+    hf_cache = str(DEFAULT_HF_CACHE.resolve())
+    models_dir = str(DEFAULT_MODEL_BASE_DIR.resolve())
+    os.environ["HF_HOME"] = hf_home
+    os.environ["HF_HUB_CACHE"] = hf_cache
+    os.environ["HUGGINGFACE_HUB_CACHE"] = hf_cache
+    os.environ["TRANSFORMERS_CACHE"] = hf_cache
+    os.environ["HF_DATASETS_CACHE"] = hf_cache
+    # Keep all hub artifacts inside the project ``models/`` tree.
+    os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+    os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+    # Used by some libraries when resolving cache locations.
+    os.environ.setdefault("VOICEKIT_MODELS_DIR", models_dir)
 
 
 def has_model_weights(local_dir: Path) -> bool:
+    if not local_dir.is_dir():
+        return False
     candidates = [
         local_dir / "model.bin",
         local_dir / "model.safetensors",
@@ -49,7 +68,13 @@ def has_model_weights(local_dir: Path) -> bool:
         local_dir / "model.safetensors.index.json",
         local_dir / "pytorch_model.bin.index.json",
     ]
-    return any(p.exists() for p in candidates)
+    if any(p.exists() for p in candidates):
+        return True
+    weight_globs = ("*.safetensors", "*.bin", "pytorch_model*.bin")
+    for pattern in weight_globs:
+        if any(local_dir.glob(pattern)) or any(local_dir.rglob(pattern)):
+            return True
+    return False
 
 
 def resolve_model_source(model_arg: str | None) -> str:
@@ -93,15 +118,27 @@ def ensure_local_model(repo_id: str, local_dir: Path | None = None) -> str:
     configure_hf_local_cache()
     local_dir = local_dir or get_local_model_dir(repo_id)
     local_dir.mkdir(parents=True, exist_ok=True)
-    config_file = local_dir / "config.json"
-    if config_file.exists() and has_model_weights(local_dir):
-        return str(local_dir)
+    if has_model_weights(local_dir):
+        return str(local_dir.resolve())
 
     from huggingface_hub import snapshot_download
 
-    snapshot_download(
-        repo_id=repo_id,
-        local_dir=str(local_dir),
-        cache_dir=str(DEFAULT_HF_CACHE),
-    )
-    return str(local_dir)
+    download_kwargs: dict[str, Any] = {
+        "repo_id": repo_id,
+        "local_dir": str(local_dir),
+    }
+    try:
+        snapshot_download(**download_kwargs, local_dir_only=True)
+    except TypeError:
+        # Older huggingface_hub: fall back to explicit project cache under models/.
+        snapshot_download(
+            repo_id=repo_id,
+            local_dir=str(local_dir),
+            cache_dir=str(DEFAULT_HF_CACHE),
+            local_dir_use_symlinks=False,
+        )
+    return str(local_dir.resolve())
+
+
+# Configure cache as soon as this module is imported (before any HF download).
+configure_hf_local_cache()

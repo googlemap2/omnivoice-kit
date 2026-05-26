@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Studio - Explorer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&amp;family=JetBrains+Mono:wght@100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error-container": "#ffdad6",
+                    "surface-variant": "#2d3449",
+                    "secondary-container": "#39485a",
+                    "surface-tint": "#adc6ff",
+                    "primary": "#adc6ff",
+                    "on-secondary": "#233143",
+                    "primary-fixed-dim": "#adc6ff",
+                    "on-primary": "#002e6a",
+                    "surface-container-high": "#222a3d",
+                    "outline-variant": "#424754",
+                    "on-surface": "#dae2fd",
+                    "surface-container-low": "#131b2e",
+                    "on-primary-fixed-variant": "#004395",
+                    "primary-fixed": "#d8e2ff",
+                    "on-primary-fixed": "#001a42",
+                    "surface-container-highest": "#2d3449",
+                    "tertiary-fixed-dim": "#ffb786",
+                    "tertiary-container": "#df7412",
+                    "on-tertiary-fixed-variant": "#723600",
+                    "on-tertiary-container": "#461f00",
+                    "surface": "#0b1326",
+                    "surface-container": "#171f33",
+                    "on-secondary-fixed": "#0d1c2d",
+                    "primary-container": "#4d8eff",
+                    "background": "#0b1326",
+                    "on-tertiary": "#502400",
+                    "on-secondary-fixed-variant": "#39485a",
+                    "inverse-on-surface": "#283044",
+                    "surface-container-lowest": "#060e20",
+                    "inverse-surface": "#dae2fd",
+                    "on-tertiary-fixed": "#311400",
+                    "error-container": "#93000a",
+                    "tertiary": "#ffb786",
+                    "surface-dim": "#0b1326",
+                    "error": "#ffb4ab",
+                    "secondary": "#b9c8de",
+                    "inverse-primary": "#005ac2",
+                    "on-primary-container": "#00285d",
+                    "on-error": "#690005",
+                    "secondary-fixed-dim": "#b9c8de",
+                    "on-background": "#dae2fd",
+                    "on-secondary-container": "#a7b6cc",
+                    "tertiary-fixed": "#ffdcc6",
+                    "outline": "#8c909f",
+                    "on-surface-variant": "#c2c6d6",
+                    "secondary-fixed": "#d4e4fa"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "1px",
+                    "sidebar-width": "260px",
+                    "unit": "4px",
+                    "panel-padding": "12px",
+                    "toolbar-height": "40px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Sora"],
+                    "body-md": ["Sora"],
+                    "label-mono": ["JetBrains Mono"],
+                    "body-sm": ["Sora"],
+                    "headline-md": ["Sora"],
+                    "label-caps": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-mono": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                    "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "headline-md": ["18px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-caps": ["10px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { background-color: #0b1326; color: #dae2fd; overflow: hidden; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #424754; border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #8c909f; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .node-active { border-left: 2px solid #adc6ff; background: #31394d; color: #adc6ff; }
+        .tool-card:hover { border-color: #3b82f6; }
+    </style>
+</head>
+<body class="h-screen flex flex-col font-body-md text-body-md select-none">
+<!-- Top AppBar -->
+<header class="flex items-center justify-between px-panel-padding h-toolbar-height bg-surface-container-low dark:bg-surface-container-low text-primary dark:text-primary font-label-mono text-label-mono w-full border-b border-outline-variant">
+<div class="flex items-center gap-6">
+<span class="font-headline-md text-headline-md text-on-surface">AI Studio</span>
+<nav class="hidden md:flex gap-4">
+<a class="text-primary font-bold hover:text-on-surface hover:bg-surface-variant transition-all duration-150 px-2 py-1" href="#">File</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all duration-150 px-2 py-1" href="#">Edit</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all duration-150 px-2 py-1" href="#">Selection</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all duration-150 px-2 py-1" href="#">View</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="bg-surface-container-highest px-3 py-1 flex items-center gap-2 border border-outline-variant rounded">
+<span class="material-symbols-outlined text-sm" style="font-size: 16px;">search</span>
+<input class="bg-transparent border-none focus:ring-0 p-0 text-label-mono w-48" placeholder="Search tool library..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-on-surface">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-on-surface">help_outline</button>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Activity Bar -->
+<aside class="w-12 flex flex-col items-center py-4 bg-surface-container border-r border-outline-variant">
+<div class="flex flex-col gap-6 items-center">
+<button class="text-primary border-l-2 border-primary bg-surface-bright p-2 w-full flex justify-center">
+<span class="material-symbols-outlined" data-icon="folder_open">folder_open</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-variant p-2 w-full flex justify-center transition-colors">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-variant p-2 w-full flex justify-center transition-colors">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-variant p-2 w-full flex justify-center transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+<div class="mt-auto flex flex-col gap-4 items-center mb-4">
+<button class="text-on-surface-variant hover:bg-surface-variant p-2 transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</aside>
+<!-- Sidebar: Navigation -->
+<aside class="w-sidebar-width bg-surface-container border-r border-outline-variant flex flex-col">
+<div class="p-3 border-b border-outline-variant flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">EXPLORER</span>
+<span class="material-symbols-outlined text-sm cursor-pointer hover:text-primary" style="font-size: 14px;">more_horiz</span>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<!-- Recently Used Section -->
+<div class="p-1">
+<button class="flex items-center gap-1 w-full px-2 py-1 text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="font-label-caps text-[10px]">RECENTLY USED</span>
+</button>
+</div>
+<!-- Studio Section (Expanded) -->
+<div class="p-1">
+<button class="flex items-center gap-1 w-full px-2 py-1 text-on-surface hover:text-on-surface">
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+<span class="font-label-caps text-[10px]">STUDIO TOOLS</span>
+</button>
+<div class="space-y-px mt-1">
+<!-- TTS by Speaker ID -->
+<div class="flex items-center gap-3 px-6 py-1.5 hover:bg-surface-variant cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-primary" style="font-size: 18px;">record_voice_over</span>
+<span class="font-body-sm text-on-surface-variant group-hover:text-on-surface truncate">TTS by Speaker ID</span>
+</div>
+<!-- Clone by Reference Audio -->
+<div class="flex items-center gap-3 px-6 py-1.5 hover:bg-surface-variant cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-tertiary" style="font-size: 18px;">content_copy</span>
+<span class="font-body-sm text-on-surface-variant group-hover:text-on-surface truncate">Clone by Reference</span>
+</div>
+<!-- Voice Design -->
+<div class="flex items-center gap-3 px-6 py-1.5 hover:bg-surface-variant cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-secondary" style="font-size: 18px;">graphic_eq</span>
+<span class="font-body-sm text-on-surface-variant group-hover:text-on-surface truncate">Voice Design</span>
+</div>
+<!-- Create Speaker ID -->
+<div class="flex items-center gap-3 px-6 py-1.5 hover:bg-surface-variant cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 18px;">person_add</span>
+<span class="font-body-sm text-on-surface-variant group-hover:text-on-surface truncate">Create Speaker ID</span>
+</div>
+<!-- Models -->
+<div class="flex items-center gap-3 px-6 py-1.5 hover:bg-surface-variant cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-primary" style="font-size: 18px;">deployed_code</span>
+<span class="font-body-sm text-on-surface-variant group-hover:text-on-surface truncate">Models</span>
+</div>
+<!-- Transcription -->
+<div class="flex items-center gap-3 px-6 py-1.5 hover:bg-surface-variant cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-secondary" style="font-size: 18px;">description</span>
+<span class="font-body-sm text-on-surface-variant group-hover:text-on-surface truncate">Transcription</span>
+</div>
+<!-- Translation -->
+<div class="flex items-center gap-3 px-6 py-1.5 hover:bg-surface-variant cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-tertiary" style="font-size: 18px;">translate</span>
+<span class="font-body-sm text-on-surface-variant group-hover:text-on-surface truncate">Translation</span>
+</div>
+<!-- History -->
+<div class="flex items-center gap-3 px-6 py-1.5 hover:bg-surface-variant cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 18px;">history</span>
+<span class="font-body-sm text-on-surface-variant group-hover:text-on-surface truncate">History</span>
+</div>
+<!-- Settings -->
+<div class="flex items-center gap-3 px-6 py-1.5 hover:bg-surface-variant cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 18px;">settings</span>
+<span class="font-body-sm text-on-surface-variant group-hover:text-on-surface truncate">Settings</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-3 bg-surface-container-low border-t border-outline-variant">
+<div class="flex items-center justify-between font-label-mono text-[10px] text-on-surface-variant mb-2">
+<span>MEMORY USAGE</span>
+<span>42%</span>
+</div>
+<div class="h-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[42%]"></div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 bg-surface overflow-y-auto custom-scrollbar flex flex-col">
+<div class="p-panel-padding flex items-center justify-between border-b border-outline-variant bg-surface-container-lowest sticky top-0 z-10">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">apps</span>
+<h1 class="font-headline-lg text-headline-lg">Explore AI Tools</h1>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 bg-surface-variant text-on-surface-variant text-label-mono flex items-center gap-2 hover:bg-outline-variant transition-colors border border-outline-variant">
+<span class="material-symbols-outlined text-sm" style="font-size: 16px;">filter_list</span>
+                        Category
+                    </button>
+<button class="px-3 py-1.5 bg-surface-variant text-on-surface-variant text-label-mono flex items-center gap-2 hover:bg-outline-variant transition-colors border border-outline-variant">
+<span class="material-symbols-outlined text-sm" style="font-size: 16px;">sort</span>
+                        Trending
+                    </button>
+</div>
+</div>
+<div class="p-panel-padding grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+<!-- Tool Cards -->
+<div class="tool-card group p-3 bg-surface-container-low border border-outline-variant hover:bg-surface-container transition-all cursor-pointer flex flex-col gap-3 relative" onmouseenter="showDetails('Refactorer', 'An advanced LLM designed specifically for massive codebase refactoring and modernization. High token context support.', '98.2%', '64k', 'Code Modernization, Technical Debt Reduction')">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 bg-primary-container rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">terminal</span>
+</div>
+<span class="font-label-mono text-[10px] text-primary px-1.5 py-0.5 border border-primary/30 rounded bg-primary/10">STABLE</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Node.js Refactorer</h3>
+<p class="text-on-surface-variant text-body-sm line-clamp-2 mt-1">Specialized logic for converting legacy Express apps into modern NestJS/Microservices architectures.</p>
+</div>
+<div class="flex items-center gap-4 mt-auto pt-3 border-t border-outline-variant/50">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" style="font-size: 14px;">speed</span>
+<span class="font-label-mono text-[10px]">Fast</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" style="font-size: 14px;">savings</span>
+<span class="font-label-mono text-[10px]">$0.02/req</span>
+</div>
+</div>
+</div>
+<div class="tool-card group p-3 bg-surface-container-low border border-outline-variant hover:bg-surface-container transition-all cursor-pointer flex flex-col gap-3" onmouseenter="showDetails('Pixel Upscaler', 'Neural network optimized for 8x image upscaling while preserving texture and artistic intent. Ideal for HD remasters.', '94.5%', 'Unlimited', 'Super-resolution, Texture Synthesis')">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 bg-tertiary-container rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-tertiary-container">image</span>
+</div>
+<span class="font-label-mono text-[10px] text-tertiary px-1.5 py-0.5 border border-tertiary/30 rounded bg-tertiary/10">PREMIUM</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Pixel Upscaler Pro</h3>
+<p class="text-on-surface-variant text-body-sm line-clamp-2 mt-1">Studio-grade upscaling for low-res assets. Preserves grain and fine-detail edge sharpness.</p>
+</div>
+<div class="flex items-center gap-4 mt-auto pt-3 border-t border-outline-variant/50">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" style="font-size: 14px;">star</span>
+<span class="font-label-mono text-[10px]">4.9/5</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" style="font-size: 14px;">timer</span>
+<span class="font-label-mono text-[10px]">2.4s Avg</span>
+</div>
+</div>
+</div>
+<div class="tool-card group p-3 bg-surface-container-low border border-outline-variant hover:bg-surface-container transition-all cursor-pointer flex flex-col gap-3" onmouseenter="showDetails('Security Scanner', 'Static and dynamic analysis agent that identifies vulnerabilities in smart contracts and cloud configurations.', '99.9%', '128k', 'Vulnerability detection, Compliance, Pentesting')">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 bg-secondary-container rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-container">security</span>
+</div>
+<span class="font-label-mono text-[10px] text-outline px-1.5 py-0.5 border border-outline-variant rounded">BETA</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Vulnerability Scanner</h3>
+<p class="text-on-surface-variant text-body-sm line-clamp-2 mt-1">Proactive threat detection for Kubernetes clusters and CI/CD pipelines. Zero false-positives.</p>
+</div>
+<div class="flex items-center gap-4 mt-auto pt-3 border-t border-outline-variant/50">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" style="font-size: 14px;">verified_user</span>
+<span class="font-label-mono text-[10px]">SOC2</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" style="font-size: 14px;">bolt</span>
+<span class="font-label-mono text-[10px]">RT Scan</span>
+</div>
+</div>
+</div>
+<div class="tool-card group p-3 bg-surface-container-low border border-outline-variant hover:bg-surface-container transition-all cursor-pointer flex flex-col gap-3" onmouseenter="showDetails('Audio Scribe', 'Multi-speaker identification and high-fidelity transcription for conference calls and media production.', '97.1%', '8h Audio', 'Transcription, Speaker Diarization')">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 bg-surface-variant rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface">mic</span>
+</div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Audio Scribe AI</h3>
+<p class="text-on-surface-variant text-body-sm line-clamp-2 mt-1">Convert raw voice recordings into structured markdown documents with clear speaker labels.</p>
+</div>
+<div class="flex items-center gap-4 mt-auto pt-3 border-t border-outline-variant/50">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" style="font-size: 14px;">translate</span>
+<span class="font-label-mono text-[10px]">104 Langs</span>
+</div>
+</div>
+</div>
+<div class="tool-card group p-3 bg-surface-container-low border border-outline-variant hover:bg-surface-container transition-all cursor-pointer flex flex-col gap-3" onmouseenter="showDetails('SEO Strategist', 'Predictive search intent modeling and content gap analysis for enterprise-scale marketing teams.', '92.4%', 'Global', 'Rank Tracking, Keyword Research')">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 bg-primary-container rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">trending_up</span>
+</div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">SEO Strategist</h3>
+<p class="text-on-surface-variant text-body-sm line-clamp-2 mt-1">Autonomous content strategy generation based on real-time SERP volatility and competitor moves.</p>
+</div>
+<div class="flex items-center gap-4 mt-auto pt-3 border-t border-outline-variant/50">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" style="font-size: 14px;">public</span>
+<span class="font-label-mono text-[10px]">Global</span>
+</div>
+</div>
+</div>
+<div class="tool-card group p-3 bg-surface-container-low border border-outline-variant hover:bg-surface-container transition-all cursor-pointer flex flex-col gap-3" onmouseenter="showDetails('SVG Animator', 'Transform static vector paths into high-performance CSS/SMIL animations for modern web interfaces.', '100%', 'No Limit', 'Motion Graphics, SVG Export')">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 bg-tertiary-container rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-tertiary-container">auto_fix_high</span>
+</div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">SVG Animator</h3>
+<p class="text-on-surface-variant text-body-sm line-clamp-2 mt-1">Smart keyframe interpolation for complex vector transitions. Export directly to React components.</p>
+</div>
+<div class="flex items-center gap-4 mt-auto pt-3 border-t border-outline-variant/50">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" style="font-size: 14px;">code</span>
+<span class="font-label-mono text-[10px]">Lottie/JSON</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bento Preview Section -->
+<div class="p-panel-padding mt-6">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-4">STUDIO HIGHLIGHTS</div>
+<div class="grid grid-cols-12 gap-3 h-[240px]">
+<div class="col-span-8 bg-surface-container-high border border-outline-variant relative overflow-hidden group">
+<img class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-700" data-alt="A sophisticated dark-themed architectural design workspace showing a futuristic user interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1Y-JdQRMD9tEzv07hNk7ZJjGZhQjhhodT9s1dGWfg1lapw_hPiPG5PB7gJFxx-5S3Et_8WG_28FsCwxqDBrN1DvvfKH7Son4PLDuY1fcjD3TjshuXlSsd7nNzcbec4i1R7QjbbKZTpbox92NRWJmMQ6Qg9SerK6-5FPuytNJQ9UlTcwv9CsNi8fMq1Jn3xkzzIBrsiwmJcKX4KPVwmFsm91YFcn2R3cCYwJckgmmCi420aTypdvlCNES-XhhSol1rlc7D74bDRVtL"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent p-4 flex flex-col justify-end">
+<span class="font-label-caps text-[9px] text-primary mb-1">NEW WORKSPACE</span>
+<h2 class="font-headline-lg text-headline-lg text-white">Visual Debugging Suite</h2>
+<p class="text-on-surface-variant text-body-sm max-w-lg">Directly manipulate AI nodes with a real-time visual canvas. Debug logic flows as you build.</p>
+</div>
+</div>
+<div class="col-span-4 bg-primary p-4 flex flex-col justify-center items-center text-center">
+<span class="material-symbols-outlined text-on-primary" style="font-size: 48px;">bolt</span>
+<h3 class="font-headline-md text-on-primary mt-2">Turbo Inference</h3>
+<p class="text-on-primary/80 text-body-sm mt-1">3x faster generation on all premium agents.</p>
+<button class="mt-4 px-4 py-2 bg-on-primary text-primary font-label-mono text-xs rounded hover:opacity-90 transition-opacity">UPGRADE PLAN</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Right Panel: Tool Details -->
+<aside class="w-[320px] bg-surface-container border-l border-outline-variant flex flex-col overflow-hidden">
+<div class="p-3 border-b border-outline-variant bg-surface-container-high">
+<span class="font-label-caps text-label-caps text-on-surface-variant">TOOL SPECIFICATIONS</span>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6" id="details-pane">
+<div class="text-center py-12 text-on-surface-variant opacity-40">
+<span class="material-symbols-outlined" style="font-size: 48px;">info</span>
+<p class="font-label-mono mt-2 text-xs">Hover over a tool to view detailed analytics</p>
+</div>
+</div>
+<div class="p-4 border-t border-outline-variant">
+<button class="w-full py-2 bg-primary text-on-primary font-bold rounded flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" style="font-size: 18px;">play_arrow</span>
+                    Launch Tool
+                </button>
+</div>
+</aside>
+</div>
+<!-- Bottom Status Bar -->
+<footer class="fixed bottom-0 w-full h-6 border-t border-outline-variant bg-surface-container-lowest dark:bg-surface-container-lowest text-secondary dark:text-secondary font-label-mono text-label-mono flex items-center justify-between px-4 z-50">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
+<span class="text-on-surface-variant">System Status: Stable</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant/60">
+<span class="hover:text-primary cursor-pointer transition-colors">Python 3.11</span>
+<span class="hover:text-primary cursor-pointer transition-colors">UTF-8</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-primary font-bold">Tokens: 1,024</span>
+<span class="text-tertiary">v1.2.4-stable</span>
+</div>
+</footer>
+<script>
+        function showDetails(name, desc, acc, ctx, caps) {
+            const pane = document.getElementById('details-pane');
+            pane.innerHTML = `
+                <div class="animate-in fade-in slide-in-from-right-2 duration-300">
+                    <h2 class="font-headline-lg text-on-surface mb-2">${name}</h2>
+                    <p class="text-on-surface-variant text-body-sm leading-relaxed mb-6">${desc}</p>
+                    
+                    <div class="space-y-4">
+                        <div class="p-3 bg-surface-container-low border border-outline-variant rounded">
+                            <span class="font-label-caps text-[10px] text-outline block mb-1">ACCURACY METRIC</span>
+                            <div class="flex justify-between items-end">
+                                <span class="text-headline-lg text-primary">${acc}</span>
+                                <span class="material-symbols-outlined text-primary">analytics</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-surface-container-low border border-outline-variant rounded">
+                            <span class="font-label-caps text-[10px] text-outline block mb-1">MAX CONTEXT</span>
+                            <div class="flex justify-between items-end">
+                                <span class="text-headline-lg text-secondary">${ctx}</span>
+                                <span class="material-symbols-outlined text-secondary">database</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="font-label-caps text-[10px] text-outline block mb-2">CAPABILITIES</span>
+                            <div class="flex flex-wrap gap-2">
+                                ${caps.split(',').map(tag => `
+                                    <span class="px-2 py-0.5 bg-surface-variant text-on-surface-variant text-[10px] font-label-mono border border-outline-variant rounded">
+                                        ${tag.trim()}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="pt-4">
+                            <span class="font-label-caps text-[10px] text-outline block mb-2">RECENT ACTIVITY</span>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between text-[11px] font-label-mono">
+                                    <span class="text-on-surface-variant">Last Call</span>
+                                    <span class="text-outline">2m ago</span>
+                                </div>
+                                <div class="flex items-center justify-between text-[11px] font-label-mono">
+                                    <span class="text-on-surface-variant">Tokens Consumed</span>
+                                    <span class="text-outline">4.2k</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body></html>

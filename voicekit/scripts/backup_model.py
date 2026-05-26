@@ -6,7 +6,7 @@ from pathlib import Path
 
 from huggingface_hub import HfApi, snapshot_download
 
-from voicekit.model_store import DEFAULT_HF_CACHE, configure_hf_local_cache
+from voicekit.model_store import configure_hf_local_cache, get_local_model_dir
 
 
 def sha256_file(path: Path) -> str:
@@ -73,21 +73,22 @@ def main() -> None:
     args = parse_args()
     configure_hf_local_cache()
 
-    repo_name = args.repo_id.split("/")[-1]
-    local_dir = Path(args.local_dir) if args.local_dir else Path("models") / repo_name
+    local_dir = Path(args.local_dir) if args.local_dir else get_local_model_dir(args.repo_id)
     local_dir.mkdir(parents=True, exist_ok=True)
 
     api = HfApi()
     repo_info = api.model_info(repo_id=args.repo_id, revision=args.revision)
     commit_hash = repo_info.sha
 
-    snapshot_download(
-        repo_id=args.repo_id,
-        revision=commit_hash,
-        local_dir=str(local_dir),
-        local_dir_use_symlinks=False,
-        cache_dir=str(DEFAULT_HF_CACHE),
-    )
+    download_kwargs = {
+        "repo_id": args.repo_id,
+        "revision": commit_hash,
+        "local_dir": str(local_dir),
+    }
+    try:
+        snapshot_download(**download_kwargs, local_dir_only=True)
+    except TypeError:
+        snapshot_download(**download_kwargs, local_dir_use_symlinks=False)
 
     manifest = build_manifest(local_dir=local_dir, repo_id=args.repo_id, commit_hash=commit_hash)
     manifest_path = local_dir / args.manifest_name

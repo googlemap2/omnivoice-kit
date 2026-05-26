@@ -13,6 +13,7 @@ dependencies = [
   "uvicorn",
   "python-multipart",
   "faster-whisper",
+  "deep-translator",
 ]
 
 [build-system]

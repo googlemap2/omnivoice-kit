@@ -28,6 +28,11 @@ Thumbs.db
 *.log
 data/
 
+# Next.js frontend
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+
 # Generated audio outputs
 *.wav
 *.mp3

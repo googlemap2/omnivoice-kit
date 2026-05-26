@@ -17,7 +17,15 @@ from voicekit.asr import ASR_MODEL_CHOICES, DEFAULT_ASR_MODEL_ID, TRANSCRIPTION_
 from voicekit.history import list_history
 from voicekit.model_store import DEFAULT_MODEL_ID
 from voicekit.model_store import install_model, list_model_statuses
-from voicekit.settings import AppSettings, load_settings, save_settings
+from voicekit.settings import (
+    DEFAULT_NLLB_MODEL_ID,
+    AppSettings,
+    get_translation_provider_field,
+    load_settings,
+    merge_translation_provider_config,
+    save_settings,
+)
+from voicekit.translation import TRANSLATION_LANGUAGE_CHOICES, list_providers, translate_for_ui
 
 
 DEVICE_CHOICES = ["", "cpu", "cuda", "mps"]
@@ -49,18 +57,76 @@ def get_settings_dict():
     return load_settings().to_dict()
 
 
-def save_settings_from_ui(default_model, default_device, default_effect_preset, output_dir):
+def get_translation_provider_choices():
+    return [(provider.name, provider.id) for provider in list_providers()]
+
+
+def _translation_settings_defaults():
+    settings = load_settings()
+    return (
+        str(get_translation_provider_field(settings, "google", "api_key", "")),
+        bool(get_translation_provider_field(settings, "google", "disabled", False)),
+        str(get_translation_provider_field(settings, "deepl", "api_key", "")),
+        str(get_translation_provider_field(settings, "microsoft", "api_key", "")),
+        str(get_translation_provider_field(settings, "microsoft", "region", "global")),
+        str(get_translation_provider_field(settings, "mymemory", "api_key", "")),
+        str(get_translation_provider_field(settings, "nllb", "model_id", DEFAULT_NLLB_MODEL_ID)),
+    )
+
+
+def save_settings_from_ui(
+    default_model,
+    default_device,
+    default_effect_preset,
+    output_dir,
+    default_translation_provider,
+    google_api_key,
+    google_disabled,
+    deepl_api_key,
+    microsoft_api_key,
+    microsoft_region,
+    mymemory_api_key,
+    nllb_model_id,
+):
+    current = load_settings()
+    provider_config = merge_translation_provider_config(
+        current.translation_provider_config,
+        google_api_key=google_api_key,
+        google_disabled=google_disabled,
+        deepl_api_key=deepl_api_key,
+        microsoft_api_key=microsoft_api_key,
+        microsoft_region=microsoft_region,
+        mymemory_api_key=mymemory_api_key,
+        nllb_model_id=nllb_model_id,
+    )
     settings = AppSettings(
         default_model=default_model,
         default_device=default_device or None,
         default_effect_preset=default_effect_preset,
         output_dir=output_dir,
+        default_translation_provider=default_translation_provider or current.default_translation_provider,
+        translation_provider_config=provider_config,
     )
     saved = save_settings(settings)
     return "Settings saved.", saved.to_dict()
 
 
+def refresh_settings_ui():
+    settings = load_settings()
+    translation_defaults = _translation_settings_defaults()
+    return (
+        settings.default_model,
+        settings.default_device or "",
+        settings.default_effect_preset,
+        settings.output_dir,
+        settings.default_translation_provider,
+        *translation_defaults,
+        settings.to_dict(),
+    )
+
+
 APP_SETTINGS = load_settings()
+_TRANSLATION_UI_DEFAULTS = _translation_settings_defaults()
 
 
 with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
@@ -407,6 +473,49 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                         outputs=[asr_text, asr_status, asr_json],
                     )
 
+                with gr.Tab("Translation"):
+                    with gr.Row():
+                        with gr.Column():
+                            tr_text = gr.Textbox(label="Text", lines=6)
+                            tr_segments = gr.JSON(
+                                label="Optional Segments JSON",
+                                value={"segments": []},
+                            )
+                            tr_provider = gr.Dropdown(
+                                choices=get_translation_provider_choices(),
+                                value=APP_SETTINGS.default_translation_provider,
+                                label="Provider",
+                            )
+                            tr_source = gr.Dropdown(
+                                choices=TRANSLATION_LANGUAGE_CHOICES,
+                                value="vi",
+                                label="Source Language",
+                                allow_custom_value=True,
+                            )
+                            tr_target = gr.Dropdown(
+                                choices=TRANSLATION_LANGUAGE_CHOICES,
+                                value="en",
+                                label="Target Language",
+                                allow_custom_value=True,
+                            )
+                            tr_refresh_providers = gr.Button("Refresh Providers")
+                            tr_run = gr.Button("Translate", variant="primary")
+                        with gr.Column():
+                            tr_output = gr.Textbox(label="Translated Text", lines=12)
+                            tr_status = gr.Textbox(label="Status", lines=2)
+                            tr_json = gr.JSON(label="Result")
+
+                    tr_refresh_providers.click(
+                        fn=lambda: gr.Dropdown(choices=get_translation_provider_choices()),
+                        inputs=[],
+                        outputs=[tr_provider],
+                    )
+                    tr_run.click(
+                        fn=translate_for_ui,
+                        inputs=[tr_text, tr_source, tr_target, tr_provider, tr_segments],
+                        outputs=[tr_output, tr_status, tr_json],
+                    )
+
                 with gr.Tab("History"):
                     with gr.Row():
                         with gr.Column():
@@ -445,21 +554,95 @@ with gr.Blocks(title="OmniVoice Voice Clone Kit") as demo:
                                 value=APP_SETTINGS.output_dir,
                                 label="Output Directory",
                             )
+                            settings_translation_provider = gr.Dropdown(
+                                choices=get_translation_provider_choices(),
+                                value=APP_SETTINGS.default_translation_provider,
+                                label="Default Translation Provider",
+                            )
+                            with gr.Accordion("Translation provider API keys", open=True):
+                                gr.Markdown(
+                                    "Keys are saved locally in `data/settings.json`. "
+                                    "Google works without a key via `deep-translator`."
+                                )
+                                settings_google_api_key = gr.Textbox(
+                                    label="Google API Key (optional)",
+                                    value=_TRANSLATION_UI_DEFAULTS[0],
+                                    type="password",
+                                    placeholder="Leave empty to use deep-translator",
+                                )
+                                settings_google_disabled = gr.Checkbox(
+                                    label="Disable Google provider",
+                                    value=_TRANSLATION_UI_DEFAULTS[1],
+                                )
+                                settings_deepl_api_key = gr.Textbox(
+                                    label="DeepL API Key",
+                                    value=_TRANSLATION_UI_DEFAULTS[2],
+                                    type="password",
+                                )
+                                settings_microsoft_api_key = gr.Textbox(
+                                    label="Microsoft Translator API Key",
+                                    value=_TRANSLATION_UI_DEFAULTS[3],
+                                    type="password",
+                                )
+                                settings_microsoft_region = gr.Textbox(
+                                    label="Microsoft Translator Region",
+                                    value=_TRANSLATION_UI_DEFAULTS[4],
+                                    placeholder="global",
+                                )
+                                settings_mymemory_api_key = gr.Textbox(
+                                    label="MyMemory API Key (optional)",
+                                    value=_TRANSLATION_UI_DEFAULTS[5],
+                                    type="password",
+                                )
+                                settings_nllb_model_id = gr.Textbox(
+                                    label="NLLB Hugging Face Model ID",
+                                    value=_TRANSLATION_UI_DEFAULTS[6],
+                                    placeholder=DEFAULT_NLLB_MODEL_ID,
+                                )
                             settings_save = gr.Button("Save Settings", variant="primary")
                             settings_refresh = gr.Button("Refresh Settings")
                         with gr.Column():
                             settings_message = gr.Textbox(label="Status", lines=2)
                             settings_json = gr.JSON(value=get_settings_dict(), label="Current Settings")
 
+                    _settings_outputs = [
+                        settings_model,
+                        settings_device,
+                        settings_effect,
+                        settings_output_dir,
+                        settings_translation_provider,
+                        settings_google_api_key,
+                        settings_google_disabled,
+                        settings_deepl_api_key,
+                        settings_microsoft_api_key,
+                        settings_microsoft_region,
+                        settings_mymemory_api_key,
+                        settings_nllb_model_id,
+                        settings_json,
+                    ]
+
                     settings_save.click(
                         fn=save_settings_from_ui,
-                        inputs=[settings_model, settings_device, settings_effect, settings_output_dir],
+                        inputs=[
+                            settings_model,
+                            settings_device,
+                            settings_effect,
+                            settings_output_dir,
+                            settings_translation_provider,
+                            settings_google_api_key,
+                            settings_google_disabled,
+                            settings_deepl_api_key,
+                            settings_microsoft_api_key,
+                            settings_microsoft_region,
+                            settings_mymemory_api_key,
+                            settings_nllb_model_id,
+                        ],
                         outputs=[settings_message, settings_json],
                     )
                     settings_refresh.click(
-                        fn=get_settings_dict,
+                        fn=refresh_settings_ui,
                         inputs=[],
-                        outputs=[settings_json],
+                        outputs=_settings_outputs,
                     )
 
 def main() -> None:

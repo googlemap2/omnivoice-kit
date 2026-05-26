@@ -19,6 +19,7 @@ from voicekit.core import (
 from voicekit.history import try_record_generation
 from voicekit.model_store import DEFAULT_MODEL_ID
 from voicekit.settings import load_settings
+from voicekit.translation import list_providers, translate_segments, translate_text
 
 
 def str2bool(value: str) -> bool:
@@ -163,6 +164,40 @@ def run_voice_design(args: argparse.Namespace) -> None:
     print(f"Saved to: {args.output}")
 
 
+def run_translate(args: argparse.Namespace) -> None:
+    import json
+
+    if args.segments_json:
+        segments_path = Path(args.segments_json)
+        raw = json.loads(segments_path.read_text(encoding="utf-8"))
+        if isinstance(raw, dict):
+            segments_payload = raw.get("segments", raw)
+        else:
+            segments_payload = raw
+        result = translate_segments(
+            segments=segments_payload,
+            source_language=args.source_language,
+            target_language=args.target_language,
+            provider_id=args.provider,
+        )
+    else:
+        if not args.text or not args.text.strip():
+            raise ValueError("Provide --text or --segments-json.")
+        result = translate_text(
+            text=args.text,
+            source_language=args.source_language,
+            target_language=args.target_language,
+            provider_id=args.provider,
+        )
+
+    output = json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
+    if args.output:
+        Path(args.output).write_text(output, encoding="utf-8")
+        print(f"Saved to: {args.output}")
+    else:
+        print(output)
+
+
 def run_transcribe(args: argparse.Namespace) -> None:
     result = transcribe_file(
         audio_path=args.input,
@@ -248,6 +283,26 @@ def main() -> None:
     transcribe.add_argument("--beam-size", type=int, default=5, help="Beam size")
     transcribe.add_argument("--format", choices=TRANSCRIPTION_FORMATS, default="text", help="Output format")
     transcribe.set_defaults(func=run_transcribe)
+
+    translate = subparsers.add_parser("translate", help="Translate text or subtitle segments")
+    settings = load_settings()
+    provider_choices = [provider.id for provider in list_providers(settings)]
+    translate.add_argument("--text", default=None, help="Text to translate")
+    translate.add_argument(
+        "--segments-json",
+        default=None,
+        help="JSON file with segments array or {segments: [...]}",
+    )
+    translate.add_argument("--source-language", default=None, help="Source language code, e.g. vi or en")
+    translate.add_argument("--target-language", default=None, help="Target language code, e.g. en or vi")
+    translate.add_argument(
+        "--provider",
+        default=settings.default_translation_provider,
+        choices=provider_choices,
+        help="Translation provider id",
+    )
+    translate.add_argument("--output", default=None, help="Optional output JSON path")
+    translate.set_defaults(func=run_translate)
 
     args = parser.parse_args()
     args.func(args)

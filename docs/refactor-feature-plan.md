@@ -30,7 +30,7 @@ Use this file to track refactor and feature work. Check each task after it is co
 - [x] Verify `speaker-id` command still works.
 - [x] Verify `ref-audio` command still works.
 - [x] Verify `voice-design` command still works.
-- [ ] Update README if command usage or behavior changes.
+- [x] Update README if command usage or behavior changes.
 
 ## Phase 3: Voice Profiles v1
 
@@ -146,7 +146,7 @@ Use this overview to see which feature group is done, in progress, or still pend
 | Settings | Phase 8 | Done |
 | ASR transcription | Phase 9 | Done |
 | OpenAI transcription API | Phase 10 | Done |
-| Translation provider registry | Phase 11 | Pending |
+| Translation provider registry | Phase 11 | Done |
 | Subtitle import/export | Phase 12 | Pending |
 | Video dubbing | Phase 13 | Pending |
 | Speaker diarization | Phase 14 | Pending |
@@ -163,18 +163,18 @@ Use this overview to see which feature group is done, in progress, or still pend
 
 Related feature: Translation.
 
-- [ ] Create `voicekit/translation.py`.
-- [ ] Define provider interface: `list_languages()`, `translate_text()`, `translate_segments()`.
-- [ ] Add offline stub provider for no-op/source text passthrough.
-- [ ] Add NLLB provider adapter if local NLLB code is kept in this repo.
-- [ ] Add optional online provider config placeholders: Google, DeepL, Microsoft, MyMemory.
-- [ ] Store provider settings/API keys through settings layer.
-- [ ] Add `/v1/translation/providers`.
-- [ ] Add `/v1/translation/translate`.
-- [ ] Add CLI command `voicekit translate`.
-- [ ] Add basic Translation tab in UI.
-- [ ] Add smoke tests with no-op provider.
-- [ ] Update README.
+- [x] Create `voicekit/translation.py`.
+- [x] Define provider interface: `list_languages()`, `translate_text()`, `translate_segments()`.
+- [x] Add offline stub provider for no-op/source text passthrough.
+- [x] Add NLLB provider adapter if local NLLB code is kept in this repo.
+- [x] Add optional online provider config placeholders: Google, DeepL, Microsoft, MyMemory.
+- [x] Store provider settings/API keys through settings layer.
+- [x] Add `/v1/translation/providers`.
+- [x] Add `/v1/translation/translate`.
+- [x] Add CLI command `voicekit translate`.
+- [x] Add basic Translation tab in UI.
+- [x] Add smoke tests with no-op provider.
+- [x] Update README.
 
 ## Phase 12: Subtitle Import, Edit, and Export
 
@@ -371,3 +371,4 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Completed Phase 8 local settings with JSON storage, API endpoints, UI tab, and CLI/UI defaults.
 - [x] Completed Phase 9 ASR transcription with lazy `faster-whisper` backend, CLI command, and Gradio Transcription tab.
 - [x] Completed Phase 10 OpenAI-compatible transcription endpoint at `/v1/audio/transcriptions`.
+- [x] Completed Phase 11 translation provider registry with `voicekit/translation.py`, passthrough/NLLB/online placeholders, settings fields, API/CLI/UI, and unittest smoke tests.

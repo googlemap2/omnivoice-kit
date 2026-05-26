@@ -21,15 +21,48 @@ pip install -r requirements.txt
 uv export --format requirements-txt --no-hashes -o requirements.txt
 ```
 
-Model được tải và load local trong project:
-- Thư mục model: `models/`
-- Hugging Face cache: `models/.hf_home`
-- OmniVoice mặc định: `models/models--k2-fsa--OmniVoice`
-- ASR/faster-whisper: `models/models--Systran--faster-whisper-*`
-- Lần chạy đầu sẽ auto download từ Hugging Face vào thư mục `models/`.
-- Nếu truyền `--model` là đường dẫn local thì sẽ ưu tiên load từ đường dẫn đó.
+Model được tải và load **trong thư mục `models/` của project** (không dùng `~/.cache/huggingface` mặc định):
+
+- Snapshot model (weights + config): `models/models--<org>--<name>/`
+  - OmniVoice: `models/models--k2-fsa--OmniVoice/`
+  - ASR: `models/models--Systran--faster-whisper-large-v3/` (và các biến thể khác)
+- Cache phụ của Hugging Face Hub (nếu cần): `models/.hf_home/hub/`
+
+Lần chạy đầu (UI **Install Default Model**, API `/v1/model-status/install`, hoặc infer lần đầu) sẽ tự `snapshot_download` vào `models/models--...`.
+
+Cài thủ công trước khi chạy:
+
+```bash
+uv run python -c "from voicekit.model_store import install_model; install_model('k2-fsa/OmniVoice')"
+uv run python -c "from voicekit.model_store import install_model; install_model('Systran/faster-whisper-large-v3')"
+```
+
+Nếu truyền `--model` là đường dẫn local (ví dụ `models/OmniVoice`) thì sẽ ưu tiên load từ đường dẫn đó.
 
 ## 2) Chạy Web UI
+
+### Next.js (khuyến nghị)
+
+Terminal 1 — API backend:
+
+```bash
+uv run uvicorn voicekit.api:app --host 127.0.0.1 --port 8000
+```
+
+Terminal 2 — frontend:
+
+```bash
+cd frontend
+cp .env.local.example .env.local
+npm install
+npm run dev
+```
+
+Mở trình duyệt: `http://localhost:3000`
+
+Chi tiết: [frontend/README.md](frontend/README.md)
+
+### Gradio (legacy)
 
 ```bash
 uv run voicekit-ui
@@ -49,6 +82,9 @@ Web UI đã tách 2 tab riêng:
 
 Tab `Transcription` dùng `faster-whisper` để chuyển audio/video thành text,
 JSON, SRT hoặc VTT. Với input không phải WAV, cần cài `ffmpeg` và để trong PATH.
+
+Tab `Translation` dùng translation provider registry (mặc định `passthrough` giữ nguyên text).
+Có thể dịch plain text hoặc mảng segments JSON (phục vụ dubbing sau này).
 
 ## 3) Chạy CLI clone giọng nhanh
 
@@ -192,6 +228,48 @@ uv run voicekit transcribe \
   --output transcript.srt
 ```
 
+### 3.5 Translate text hoặc segments
+
+Dịch plain text (provider mặc định `passthrough` trả nguyên văn để test pipeline):
+
+```bash
+uv run voicekit translate \
+  --text "Xin chao, day la ban test dich." \
+  --source-language vi \
+  --target-language en \
+  --provider passthrough
+```
+
+Dịch segments từ JSON (ví dụ output verbose JSON của transcribe):
+
+```bash
+uv run voicekit translate \
+  --segments-json transcript_segments.json \
+  --source-language vi \
+  --target-language en \
+  --provider passthrough \
+  --output translated.json
+```
+
+Provider có sẵn: `passthrough`, `google` (qua `deep-translator`, không cần API key), `nllb`
+(cần `transformers` + model trong `models/`), `deepl`, `microsoft`, `mymemory` (ba provider cuối
+cần API key trong settings, chưa implement đầy đủ).
+
+Cấu hình provider trong tab **Settings** → **Translation provider API keys** (lưu vào `data/settings.json`), hoặc chỉnh file trực tiếp:
+
+```json
+{
+  "default_translation_provider": "passthrough",
+  "translation_provider_config": {
+    "deepl": {"api_key": "YOUR_KEY"},
+    "google": {"api_key": "", "disabled": false},
+    "microsoft": {"api_key": "YOUR_KEY", "region": "global"},
+    "mymemory": {"api_key": ""},
+    "nllb": {"model_id": "facebook/nllb-200-distilled-600M"}
+  }
+}
+```
+
 ## 4) Gợi ý chất lượng
 
 - Reference audio nên dài `3-10 giây`, giọng rõ, ít tạp âm.
@@ -286,6 +364,41 @@ curl -X POST http://127.0.0.1:8000/v1/audio/transcriptions \
 
 Các `response_format` đang hỗ trợ: `json`, `text`, `verbose_json`, `srt`, `vtt`.
 
+Liệt kê translation providers:
+
+```bash
+curl http://127.0.0.1:8000/v1/translation/providers
+```
+
+Dịch text:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/translation/translate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Xin chao, day la ban test dich.",
+    "source_language": "vi",
+    "target_language": "en",
+    "provider": "passthrough"
+  }'
+```
+
+Dịch segments:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/translation/translate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "segments": [
+      {"id": 0, "start": 0.0, "end": 1.5, "text": "Xin chao"},
+      {"id": 1, "start": 1.5, "end": 3.0, "text": "the gioi"}
+    ],
+    "source_language": "vi",
+    "target_language": "en",
+    "provider": "passthrough"
+  }'
+```
+
 ## 6) Speaker ID riêng không fine-tune
 
 Bạn có thể dùng `speaker_id` ảo bằng cách lưu `voice_clone_prompt` (token prompt) từ 1 file wav mẫu.
@@ -341,22 +454,22 @@ Tạo snapshot local + manifest checksum:
 python backup_model.py \
   --repo-id k2-fsa/OmniVoice \
   --revision main \
-  --local-dir models/OmniVoice
+  --local-dir models/models--k2-fsa--OmniVoice
 ```
 
 Script sẽ:
 - Pin về commit hash cụ thể (không phụ thuộc `main` sau này)
-- Lưu manifest `models/OmniVoice/backup_manifest.json`
+- Lưu manifest `models/models--k2-fsa--OmniVoice/backup_manifest.json` (mặc định nếu không truyền `--local-dir`)
 - Ghi SHA256 cho từng file để verify
 
 Kiểm tra toàn vẹn sau khi copy/restore:
 
 ```bash
-python verify_checksum.py --model-dir models/OmniVoice
+python verify_checksum.py --model-dir models/models--k2-fsa--OmniVoice
 ```
 
 Nên lưu trữ thêm 1 bản archive:
 
 ```powershell
-Compress-Archive -Path models/OmniVoice/* -DestinationPath model_backup_omnivoice.zip -Force
+Compress-Archive -Path models/models--k2-fsa--OmniVoice/* -DestinationPath model_backup_omnivoice.zip -Force
 ```
