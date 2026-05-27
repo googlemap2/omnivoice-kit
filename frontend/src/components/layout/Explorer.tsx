@@ -26,29 +26,33 @@ export function Explorer({
           {workspaceLabel(workspace)}
         </Typography>
       </Box>
-      <Divider />
-      <SectionTitle title="Voices" />
-      <List dense disablePadding>
-        {voices.map((voice) => (
-          <ListItemButton
-            key={voice.id}
-            selected={selectedVoice === voice.id}
-            onClick={() => setSelectedVoice(voice.id)}
-          >
-            <ListItemText
-              primary={voice.name || voice.id}
-              secondary={`${voice.language || "auto"} - ${voice.type}`}
-              primaryTypographyProps={{ fontSize: 13 }}
-              secondaryTypographyProps={{ fontSize: 11 }}
-            />
-          </ListItemButton>
-        ))}
-        {voices.length === 0 && (
-          <Typography sx={{ px: 2, py: 1, fontSize: 12, color: "text.secondary" }}>
-            No voice profiles found.
-          </Typography>
-        )}
-      </List>
+      {workspace === "tts" && (
+        <>
+          <Divider />
+          <SectionTitle title="Voices" />
+          <List dense disablePadding>
+            {voices.map((voice) => (
+              <ListItemButton
+                key={voice.id}
+                selected={selectedVoice === voice.id}
+                onClick={() => setSelectedVoice(voice.id)}
+              >
+                <ListItemText
+                  primary={voice.name || voice.id}
+                  secondary={`${voice.language || "auto"} - ${voice.type}`}
+                  primaryTypographyProps={{ fontSize: 13 }}
+                  secondaryTypographyProps={{ fontSize: 11 }}
+                />
+              </ListItemButton>
+            ))}
+            {voices.length === 0 && (
+              <Typography sx={{ px: 2, py: 1, fontSize: 12, color: "text.secondary" }}>
+                No voice profiles found.
+              </Typography>
+            )}
+          </List>
+        </>
+      )}
     </Box>
   );
 }
