@@ -41,6 +41,12 @@ Nếu truyền `--model` là đường dẫn local (ví dụ `models/OmniVoice`)
 
 ## 2) Chạy Web UI
 
+### Google Colab backend + ngrok
+
+Mở notebook [`colab_backend_ngrok.ipynb`](colab_backend_ngrok.ipynb) trên Google Colab để clone/pull source,
+cài dependencies, chạy FastAPI backend và expose URL bằng ngrok. Model sẽ tự tải vào thư mục `models/`
+của runtime Colab khi cần.
+
 ### Next.js (khuyến nghị)
 
 Terminal 1 — API backend:

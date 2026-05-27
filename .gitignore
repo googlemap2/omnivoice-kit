@@ -25,6 +25,7 @@ Thumbs.db
 
 # Local runtime files
 .app_pid
+.colab_api_pid
 *.log
 data/
 

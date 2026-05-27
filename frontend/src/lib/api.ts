@@ -9,15 +9,21 @@ export type {
 } from "../types/api";
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://127.0.0.1:8000";
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
+
+function apiHeaders(initHeaders?: HeadersInit, json = false): Headers {
+  const headers = new Headers(initHeaders);
+  headers.set("ngrok-skip-browser-warning", "true");
+  if (json && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  return headers;
+}
 
 export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers || {}),
-    },
+    headers: apiHeaders(init?.headers, true),
   });
   if (!response.ok) {
     throw new Error(await errorMessage(response));
@@ -30,6 +36,7 @@ export async function apiForm<T>(path: string, form: FormData, init?: RequestIni
     ...init,
     method: init?.method || "POST",
     body: form,
+    headers: apiHeaders(init?.headers),
   });
   if (!response.ok) {
     throw new Error(await errorMessage(response));
@@ -38,7 +45,10 @@ export async function apiForm<T>(path: string, form: FormData, init?: RequestIni
 }
 
 export async function apiAudio(path: string, init?: RequestInit): Promise<Blob> {
-  const response = await fetch(`${API_BASE_URL}${path}`, init);
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: apiHeaders(init?.headers),
+  });
   if (!response.ok) {
     throw new Error(await errorMessage(response));
   }
