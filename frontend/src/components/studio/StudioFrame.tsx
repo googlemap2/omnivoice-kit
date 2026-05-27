@@ -3,10 +3,10 @@
 import { Box } from "@mui/material";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { ActivityBar } from "../../components/layout/ActivityBar";
-import { Editor } from "../../components/layout/Editor";
-import { Explorer } from "../../components/layout/Explorer";
-import { TitleBar } from "../../components/layout/TitleBar";
+import { ActivityBar } from "../layout/ActivityBar";
+import { Editor } from "../layout/Editor";
+import { Explorer } from "../layout/Explorer";
+import { TitleBar } from "../layout/TitleBar";
 import type { Workspace } from "../../types/studio";
 import { useStudio } from "./StudioContext";
 

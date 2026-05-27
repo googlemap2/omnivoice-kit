@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   API_BASE_URL,
   type AppSettings,
@@ -64,6 +64,8 @@ type StudioContextValue = {
   generateSpeech: () => Promise<void>;
   transcribeFile: File | null;
   setTranscribeFile: (file: File | null) => void;
+  asrModel: string;
+  setAsrModel: (model: string) => void;
   transcribeFormat: string;
   setTranscribeFormat: (format: string) => void;
   transcription: string;
@@ -120,6 +122,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [refText, setRefText] = useState("");
 
   const [transcribeFile, setTranscribeFile] = useState<File | null>(null);
+  const [asrModel, setAsrModel] = useState("");
   const [transcribeFormat, setTranscribeFormat] = useState("verbose_json");
   const [transcription, setTranscription] = useState("");
 
@@ -134,20 +137,10 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [newVoiceText, setNewVoiceText] = useState("");
 
   const activeModel = settings?.default_model || meta.omnivoice_models[0]?.id || "k2-fsa/OmniVoice";
-  const activeAsrModel = meta.asr_models[0]?.id || "Systran/faster-whisper-large-v3";
+  const activeAsrModel = asrModel || meta.asr_models[0]?.id || "Systran/faster-whisper-large-v3";
   const installedCount = useMemo(() => statuses.filter((status) => status.installed).length, [statuses]);
 
-  useEffect(() => {
-    void refreshAll();
-  }, []);
-
-  useEffect(() => {
-    if (!selectedVoice && voices.length > 0) {
-      setSelectedVoice(voices[0].id);
-    }
-  }, [selectedVoice, voices]);
-
-  async function refreshAll() {
+  const refreshAll = useCallback(async () => {
     setBusy(true);
     setError(null);
     try {
@@ -159,7 +152,11 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         apiJson<{ data: AppSettings }>("/v1/settings"),
         apiJson<{ data: HistoryEntry[] }>("/v1/generation-history?limit=20"),
       ]);
-      setMeta("data" in metaData && metaData.data ? metaData.data : (metaData as Meta));
+      const nextMeta = "data" in metaData && metaData.data ? metaData.data : (metaData as Meta);
+      setMeta(nextMeta);
+      if (!asrModel && nextMeta.asr_models[0]?.id) {
+        setAsrModel(nextMeta.asr_models[0].id);
+      }
       setVoices(voiceData.data);
       setStatuses(statusData.data);
       setProviders(providerData.data);
@@ -173,7 +170,17 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     } finally {
       setBusy(false);
     }
-  }
+  }, [asrModel]);
+
+  useEffect(() => {
+    void refreshAll();
+  }, [refreshAll]);
+
+  useEffect(() => {
+    if (!selectedVoice && voices.length > 0) {
+      setSelectedVoice(voices[0].id);
+    }
+  }, [selectedVoice, voices]);
 
   async function generateSpeech() {
     setBusy(true);
@@ -393,6 +400,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         generateSpeech,
         transcribeFile,
         setTranscribeFile,
+        asrModel,
+        setAsrModel,
         transcribeFormat,
         setTranscribeFormat,
         transcription,

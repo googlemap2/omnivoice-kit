@@ -48,14 +48,8 @@ src/
       settings/         /settings
   components/
     layout/             Studio shell pieces: title bar, activity bar, explorer, bottom panel
-    ui/                 Reusable MUI form controls
-  features/
-    settings/           Settings workspace
-    speech/             TTS and voice clone workspace
     studio/             Shared studio provider/frame and API orchestration
-    transcription/      ASR workspace
-    translation/        Translation workspace
-    voices/             Voice profile workspace
+    ui/                 Reusable MUI form controls
   lib/                  API client helpers
   types/                Shared API and studio types
 ```
