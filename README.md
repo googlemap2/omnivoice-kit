@@ -54,8 +54,8 @@ Terminal 2 — frontend:
 ```bash
 cd frontend
 cp .env.local.example .env.local
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 Mở trình duyệt: `http://localhost:3000`

@@ -1,0 +1,32 @@
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { Box, Chip, IconButton, LinearProgress, Tooltip, Typography } from "@mui/material";
+
+type TitleBarProps = {
+  busy: boolean;
+  onRefresh: () => void;
+};
+
+export function TitleBar({ busy, onRefresh }: TitleBarProps) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        px: 1,
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        bgcolor: "#2d2d30",
+      }}
+    >
+      <Typography sx={{ fontSize: 13, fontWeight: 600, mr: 2 }}>OmniVoice Studio</Typography>
+      <Chip size="small" label="FastAPI 127.0.0.1:8000" sx={{ height: 22 }} />
+      <Box sx={{ flex: 1 }} />
+      {busy && <LinearProgress sx={{ width: 160, mr: 1 }} />}
+      <Tooltip title="Refresh workspace data">
+        <IconButton size="small" onClick={onRefresh}>
+          <RefreshIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  );
+}
