@@ -23,11 +23,8 @@ export function StudioFrame({ children }: { children: ReactNode }) {
         <Explorer
           workspace={workspace}
           voices={studio.voices}
-          statuses={studio.statuses}
-          providers={studio.providers}
           selectedVoice={studio.selectedVoice}
           setSelectedVoice={studio.setSelectedVoice}
-          installedCount={studio.installedCount}
         />
         <Editor>{children}</Editor>
       </Box>

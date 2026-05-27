@@ -60,22 +60,64 @@ export default function SettingsPage() {
             onChange={(event) => studio.setSettings({ ...studio.settings!, output_dir: event.target.value })}
           />
         </Stack>
-        <Stack spacing={1}>
-          {studio.statuses.map((status) => (
-            <Paper key={status.repo_id} variant="outlined" sx={{ p: 1.5, bgcolor: "#252526" }}>
-              <Typography sx={{ fontWeight: 600 }}>{status.repo_id}</Typography>
-              <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{status.local_path}</Typography>
-              <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+        <Stack spacing={2}>
+          <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#252526" }}>
+            <Typography sx={{ mb: 1, fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}>
+              Models
+            </Typography>
+            <Stack spacing={0.75}>
+              <Chip size="small" label={`${studio.installedCount}/${studio.statuses.length || 0} installed`} />
+              {studio.statuses.map((status) => (
                 <Chip
+                  key={status.repo_id}
                   size="small"
                   color={status.installed ? "success" : "warning"}
-                  label={status.installed ? "installed" : "missing"}
+                  variant="outlined"
+                  label={status.repo_id}
                 />
-                <Chip size="small" variant="outlined" label={status.has_config ? "config" : "no config"} />
-                <Chip size="small" variant="outlined" label={status.has_weights ? "weights" : "no weights"} />
-              </Stack>
-            </Paper>
-          ))}
+              ))}
+            </Stack>
+          </Paper>
+
+          <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#252526" }}>
+            <Typography sx={{ mb: 1, fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}>
+              Translation Providers
+            </Typography>
+            <Stack spacing={0.75}>
+              {studio.providers.map((provider) => (
+                <Chip
+                  key={provider.id}
+                  size="small"
+                  color={provider.available ? "success" : "default"}
+                  variant="outlined"
+                  label={provider.id}
+                />
+              ))}
+            </Stack>
+          </Paper>
+
+          <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#252526" }}>
+            <Typography sx={{ mb: 1, fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}>
+              Model Details
+            </Typography>
+            <Stack spacing={1}>
+              {studio.statuses.map((status) => (
+                <Box key={status.repo_id}>
+                  <Typography sx={{ fontWeight: 600 }}>{status.repo_id}</Typography>
+                  <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{status.local_path}</Typography>
+                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                    <Chip
+                      size="small"
+                      color={status.installed ? "success" : "warning"}
+                      label={status.installed ? "installed" : "missing"}
+                    />
+                    <Chip size="small" variant="outlined" label={status.has_config ? "config" : "no config"} />
+                    <Chip size="small" variant="outlined" label={status.has_weights ? "weights" : "no weights"} />
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+          </Paper>
         </Stack>
       </Box>
     </WorkspaceShell>
