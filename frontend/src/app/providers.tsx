@@ -55,6 +55,7 @@ const theme = createTheme({
     MuiTextField: {
       defaultProps: {
         size: "small",
+        fullWidth: true,
       },
     },
     MuiSelect: {
@@ -66,6 +67,15 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: "#1f1f1f",
+          minHeight: 48,
+        },
+        input: {
+          paddingTop: 13,
+          paddingBottom: 13,
+        },
+        inputSizeSmall: {
+          paddingTop: 13,
+          paddingBottom: 13,
         },
       },
     },
@@ -75,6 +85,12 @@ const theme = createTheme({
           backgroundColor: "#1f1f1f",
           paddingLeft: 4,
           paddingRight: 4,
+        },
+        sizeSmall: {
+          transform: "translate(14px, 14px) scale(1)",
+          "&.MuiInputLabel-shrink": {
+            transform: "translate(14px, -9px) scale(0.75)",
+          },
         },
       },
     },

@@ -177,6 +177,7 @@ export function TtsPanel(props: TtsPanelProps) {
           <SliderField label="Speed" value={props.speed} min={0.5} max={2} step={0.05} onChange={props.setSpeed} />
           <TextField
             label="Duration seconds"
+            type="number"
             value={props.duration}
             onChange={(event) => props.setDuration(event.target.value)}
           />
