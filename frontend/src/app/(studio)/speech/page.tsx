@@ -29,6 +29,61 @@ import { SliderField } from "../../../components/ui/SliderField";
 import { useStudio } from "../../../components/studio/StudioContext";
 import { downloadBlob } from "../../../lib/api";
 
+const instructLabelsVi: Record<string, string> = {
+  "american accent": "Giọng Mỹ",
+  "australian accent": "Giọng Úc",
+  "british accent": "Giọng Anh",
+  "canadian accent": "Giọng Canada",
+  child: "Trẻ em",
+  "chinese accent": "Giọng Trung Quốc",
+  elderly: "Người cao tuổi",
+  female: "Nữ",
+  "high pitch": "Cao độ cao",
+  "indian accent": "Giọng Ấn Độ",
+  "japanese accent": "Giọng Nhật",
+  "korean accent": "Giọng Hàn",
+  "low pitch": "Cao độ thấp",
+  male: "Nam",
+  "middle-aged": "Trung niên",
+  "moderate pitch": "Cao độ vừa",
+  "portuguese accent": "Giọng Bồ Đào Nha",
+  "russian accent": "Giọng Nga",
+  teenager: "Thiếu niên",
+  "very high pitch": "Cao độ rất cao",
+  "very low pitch": "Cao độ rất thấp",
+  whisper: "Thì thầm",
+  "young adult": "Thanh niên",
+  东北话: "Tiếng Đông Bắc",
+  中年: "Trung niên",
+  中音调: "Cao độ trung bình",
+  云南话: "Tiếng Vân Nam",
+  低音调: "Cao độ thấp",
+  儿童: "Trẻ em",
+  四川话: "Tiếng Tứ Xuyên",
+  女: "Nữ",
+  宁夏话: "Tiếng Ninh Hạ",
+  少年: "Thiếu niên",
+  极低音调: "Cao độ rất thấp",
+  极高音调: "Cao độ rất cao",
+  桂林话: "Tiếng Quế Lâm",
+  河南话: "Tiếng Hà Nam",
+  济南话: "Tiếng Tế Nam",
+  甘肃话: "Tiếng Cam Túc",
+  男: "Nam",
+  石家庄话: "Tiếng Thạch Gia Trang",
+  老年: "Người cao tuổi",
+  耳语: "Thì thầm",
+  贵州话: "Tiếng Quý Châu",
+  陕西话: "Tiếng Thiểm Tây",
+  青岛话: "Tiếng Thanh Đảo",
+  青年: "Thanh niên",
+  高音调: "Cao độ cao",
+};
+
+function instructLabel(item: string) {
+  return instructLabelsVi[item] || item;
+}
+
 export default function SpeechPage() {
   const studio = useStudio();
 
@@ -126,7 +181,7 @@ export default function SpeechPage() {
             >
               {studio.meta.instructs.map((item) => (
                 <MenuItem key={item} value={item}>
-                  {item}
+                  {instructLabel(item)}
                 </MenuItem>
               ))}
             </Select>
