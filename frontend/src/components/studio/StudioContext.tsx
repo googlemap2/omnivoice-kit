@@ -365,11 +365,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       dictationStreamRef.current = stream;
       dictationRecorderRef.current = recorder;
       dictationSocketRef.current = socket;
+      setDictationActive(true);
+      setMessage("Connecting dictation WebSocket...");
 
       socket.onopen = () => {
         socket.send(JSON.stringify({ type: "start", mime_type: recorder.mimeType }));
         recorder.start(1000);
-        setDictationActive(true);
         setMessage("Dictation recording.");
       };
       socket.onmessage = (event) => {
