@@ -150,7 +150,7 @@ Use this overview to see which feature group is done, in progress, or still pend
 | Subtitle import/export | Phase 12 | Done |
 | Video dubbing | Phase 13 | Mostly done |
 | Speaker diarization | Phase 14 | Mostly done |
-| Realtime dictation | Phase 15 | Pending |
+| Realtime dictation | Phase 15 | Mostly done |
 | Batch queue | Phase 16 | Pending |
 | Voice gallery | Phase 17 | Pending |
 | Watermarking | Phase 18 | Pending |
@@ -237,15 +237,15 @@ Related feature: Speaker diarization.
 
 Related feature: Realtime dictation.
 
-- [ ] Create streaming ASR abstraction.
-- [ ] Add WebSocket endpoint for audio chunks.
-- [ ] Add partial/final transcript event schema.
+- [x] Create streaming ASR abstraction.
+- [x] Add WebSocket endpoint for audio chunks.
+- [x] Add partial/final transcript event schema.
 - [ ] Add silence/end-of-utterance detection.
-- [ ] Add microphone capture UI prototype in Gradio if feasible.
+- [x] Add microphone capture UI prototype in frontend if feasible.
 - [ ] Add CLI microphone dictation prototype if feasible.
-- [ ] Add settings for dictation model/device/language.
-- [ ] Add smoke tests for WebSocket protocol with fake ASR backend.
-- [ ] Update README.
+- [x] Add settings for dictation model/device/language.
+- [x] Add smoke tests for WebSocket protocol with fake ASR backend.
+- [x] Update README.
 
 ## Phase 16: Batch Queue
 
@@ -375,3 +375,4 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Completed Phase 12 subtitle import/export with SRT/VTT parsing, JSON segment conversion, API/CLI hooks, basic Transcription UI import/export, and roundtrip tests.
 - [x] Implemented Phase 13 video dubbing v1 with ffmpeg media helpers, synchronous ASR/translation/TTS pipeline, one-voice assignment, dubbed WAV/SRT/VTT/video outputs, API/CLI hooks, Dubbing UI, and timing unit tests. Real short media fixture smoke test remains pending.
 - [x] Implemented Phase 14 speaker diarization v1 with optional pyannote backend, Hugging Face token setting/env fallback, diarization API/CLI, speaker-label merge helpers, Dubbing UI toggle, and mocked merge tests. Per-speaker voice assignment remains pending.
+- [x] Implemented Phase 15 realtime dictation v1 with WebSocket audio chunks, ready/partial/final/done/error events, browser microphone capture in Transcription, fake protocol test helpers, and README notes. Silence detection and CLI microphone mode remain pending.

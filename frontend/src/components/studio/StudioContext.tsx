@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   API_BASE_URL,
   type AppSettings,
@@ -14,6 +14,7 @@ import {
   apiAudio,
   apiForm,
   apiJson,
+  apiWebSocketUrl,
 } from "../../lib/api";
 import { emptyMeta } from "../../types/api";
 import type { GenerationMode } from "../../types/studio";
@@ -73,6 +74,10 @@ type StudioContextValue = {
   transcription: string;
   setTranscription: (text: string) => void;
   transcribe: () => Promise<void>;
+  dictationActive: boolean;
+  dictationTranscript: string;
+  startDictation: () => Promise<void>;
+  stopDictation: () => void;
   subtitleFile: File | null;
   setSubtitleFile: (file: File | null) => void;
   subtitleFormat: string;
@@ -157,6 +162,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [asrModel, setAsrModel] = useState("");
   const [transcribeFormat, setTranscribeFormat] = useState("verbose_json");
   const [transcription, setTranscription] = useState("");
+  const [dictationActive, setDictationActive] = useState(false);
+  const [dictationTranscript, setDictationTranscript] = useState("");
   const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
   const [subtitleFormat, setSubtitleFormat] = useState("srt");
   const [subtitleSegments, setSubtitleSegments] = useState<SubtitleSegment[]>([]);
@@ -180,6 +187,9 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [newVoiceId, setNewVoiceId] = useState("");
   const [newVoiceFile, setNewVoiceFile] = useState<File | null>(null);
   const [newVoiceText, setNewVoiceText] = useState("");
+  const dictationSocketRef = useRef<WebSocket | null>(null);
+  const dictationRecorderRef = useRef<MediaRecorder | null>(null);
+  const dictationStreamRef = useRef<MediaStream | null>(null);
 
   const activeModel = settings?.default_model || meta.omnivoice_models[0]?.id || "k2-fsa/OmniVoice";
   const activeAsrModel = asrModel || meta.asr_models[0]?.id || "Systran/faster-whisper-large-v3";
@@ -334,6 +344,106 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       setSubtitleSegments(normalizeSubtitleSegments(data.segments));
     }
     return data;
+  }
+
+  async function startDictation() {
+    if (dictationActive) return;
+    if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setError("This browser does not support microphone dictation.");
+      return;
+    }
+    setError(null);
+    setMessage("Starting dictation...");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const params = new URLSearchParams({
+        model: activeAsrModel,
+        language,
+      });
+      const socket = new WebSocket(apiWebSocketUrl(`/v1/dictation/ws?${params.toString()}`));
+      dictationStreamRef.current = stream;
+      dictationRecorderRef.current = recorder;
+      dictationSocketRef.current = socket;
+
+      socket.onopen = () => {
+        socket.send(JSON.stringify({ type: "start", mime_type: recorder.mimeType }));
+        recorder.start(1000);
+        setDictationActive(true);
+        setMessage("Dictation recording.");
+      };
+      socket.onmessage = (event) => {
+        const payload = parseDictationEvent(event.data);
+        if (payload.type === "partial" && typeof payload.bytes_received === "number") {
+          setMessage(`Dictation received ${payload.bytes_received} bytes.`);
+        } else if (payload.type === "final") {
+          const text = typeof payload.text === "string" ? payload.text : "";
+          setDictationTranscript(text);
+          setTranscription(text);
+          setMessage("Dictation complete.");
+        } else if (payload.type === "error") {
+          setError(typeof payload.message === "string" ? payload.message : "Dictation failed.");
+        }
+      };
+      socket.onerror = () => {
+        setError("Dictation WebSocket failed.");
+        cleanupDictation(false);
+      };
+      socket.onclose = () => {
+        cleanupDictation(false);
+      };
+      recorder.ondataavailable = async (event) => {
+        if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+          socket.send(await event.data.arrayBuffer());
+        }
+      };
+      recorder.onerror = () => {
+        setError("Microphone recorder failed.");
+        stopDictation();
+      };
+    } catch (err) {
+      cleanupDictation(true);
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  function stopDictation() {
+    const recorder = dictationRecorderRef.current;
+    const socket = dictationSocketRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    }
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      setTimeout(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: "stop" }));
+        }
+      }, 150);
+    } else {
+      cleanupDictation(true);
+    }
+    setMessage("Stopping dictation...");
+  }
+
+  function cleanupDictation(closeSocket: boolean) {
+    dictationStreamRef.current?.getTracks().forEach((track) => track.stop());
+    dictationStreamRef.current = null;
+    dictationRecorderRef.current = null;
+    if (closeSocket) {
+      dictationSocketRef.current?.close();
+    }
+    dictationSocketRef.current = null;
+    setDictationActive(false);
+  }
+
+  function parseDictationEvent(data: unknown): Record<string, unknown> {
+    if (typeof data !== "string") return {};
+    try {
+      const parsed = JSON.parse(data);
+      return typeof parsed === "object" && parsed !== null ? (parsed as Record<string, unknown>) : {};
+    } catch {
+      return {};
+    }
   }
 
   async function importSubtitles() {
@@ -618,6 +728,10 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         transcription,
         setTranscription,
         transcribe,
+        dictationActive,
+        dictationTranscript,
+        startDictation,
+        stopDictation,
         subtitleFile,
         setSubtitleFile,
         subtitleFormat,

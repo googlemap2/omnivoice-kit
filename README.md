@@ -333,6 +333,20 @@ uv run voicekit diarize \
   --output speakers.json
 ```
 
+### 3.7 Realtime dictation v1
+
+Tab **Transcription** có nút **Start dictation** để ghi microphone bằng
+`MediaRecorder`, stream audio chunks qua WebSocket, rồi nhận transcript khi bấm
+**Stop dictation**. Backend endpoint:
+
+```text
+ws://127.0.0.1:8000/v1/dictation/ws?model=Systran/faster-whisper-large-v3&language=en
+```
+
+Event JSON trả về gồm `ready`, `partial`, `final`, `done`, `error`. V1 dùng
+stop thủ công để chốt transcript; silence/end-of-utterance detection sẽ là bước
+nâng cấp sau.
+
 Provider có sẵn: `passthrough`, `google` (qua `deep-translator`, không cần API key), `nllb`
 (cần `transformers` + model trong `models/`), `deepl`, `microsoft`, `mymemory` (ba provider cuối
 cần API key trong settings, chưa implement đầy đủ).

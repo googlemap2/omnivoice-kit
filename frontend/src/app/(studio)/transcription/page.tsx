@@ -2,8 +2,10 @@
 
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import MicIcon from "@mui/icons-material/Mic";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SaveAltIcon from "@mui/icons-material/SaveAlt";
+import StopIcon from "@mui/icons-material/Stop";
 import SubtitlesIcon from "@mui/icons-material/Subtitles";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import {
@@ -63,6 +65,14 @@ export default function TranscriptionPage() {
             onChange={studio.setTranscribeFormat}
             options={studio.meta.transcription_formats.map((id) => ({ id, label: id }))}
           />
+          <Button
+            startIcon={studio.dictationActive ? <StopIcon /> : <MicIcon />}
+            variant={studio.dictationActive ? "contained" : "outlined"}
+            color={studio.dictationActive ? "error" : "primary"}
+            onClick={studio.dictationActive ? studio.stopDictation : studio.startDictation}
+          >
+            {studio.dictationActive ? "Stop dictation" : "Start dictation"}
+          </Button>
           <Button component="label" startIcon={<UploadFileIcon />} variant="outlined">
             {studio.subtitleFile ? studio.subtitleFile.name : "Import subtitle"}
             <input

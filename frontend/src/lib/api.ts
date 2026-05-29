@@ -13,6 +13,12 @@ export type {
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
 
+export function apiWebSocketUrl(path: string): string {
+  const base = API_BASE_URL || (typeof window !== "undefined" ? window.location.origin : "");
+  const websocketBase = base.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
+  return `${websocketBase}${path}`;
+}
+
 function apiHeaders(initHeaders?: HeadersInit, json = false): Headers {
   const headers = new Headers(initHeaders);
   headers.set("ngrok-skip-browser-warning", "true");
