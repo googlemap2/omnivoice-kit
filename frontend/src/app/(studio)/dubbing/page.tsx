@@ -82,6 +82,15 @@ export default function DubbingPage() {
             }
             label="Diarize speakers"
           />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={studio.dubbingQueued}
+                onChange={(event) => studio.setDubbingQueued(event.target.checked)}
+              />
+            }
+            label="Send to queue"
+          />
         </Stack>
 
         <Stack spacing={2}>

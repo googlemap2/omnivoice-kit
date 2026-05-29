@@ -109,6 +109,8 @@ type StudioContextValue = {
   setDubbingProvider: (provider: string) => void;
   dubbingDiarize: boolean;
   setDubbingDiarize: (value: boolean) => void;
+  dubbingQueued: boolean;
+  setDubbingQueued: (value: boolean) => void;
   dubbingResult: DubbingResult | null;
   dubbingAudioUrl: string | null;
   dubbingVideoUrl: string | null;
@@ -181,6 +183,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [dubbingTargetLanguage, setDubbingTargetLanguage] = useState("vi");
   const [dubbingProvider, setDubbingProvider] = useState("passthrough");
   const [dubbingDiarize, setDubbingDiarize] = useState(false);
+  const [dubbingQueued, setDubbingQueued] = useState(false);
   const [dubbingResult, setDubbingResult] = useState<DubbingResult | null>(null);
   const [dubbingAudioUrl, setDubbingAudioUrl] = useState<string | null>(null);
   const [dubbingVideoUrl, setDubbingVideoUrl] = useState<string | null>(null);
@@ -537,10 +540,24 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       form.set("guidance_scale", String(guidanceScale));
       form.set("speed", String(speed));
       form.set("enable_diarization", String(dubbingDiarize));
-      const result = await apiForm<{ data: DubbingResult }>("/v1/dubbing/dub-upload", form);
-      setDubbingResult(result.data);
-      await loadDubbingMedia(result.data);
-      setMessage(`Dubbing complete: ${result.data.segment_count} segments.`);
+      form.set("queued", String(dubbingQueued));
+      const result = await apiForm<{ object: string; data: DubbingResult | JobRecord }>("/v1/dubbing/dub-upload", form);
+      if (result.object === "job") {
+        const job = result.data as JobRecord;
+        setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
+        setDubbingResult(null);
+        if (dubbingAudioUrl) URL.revokeObjectURL(dubbingAudioUrl);
+        if (dubbingVideoUrl) URL.revokeObjectURL(dubbingVideoUrl);
+        setDubbingAudioUrl(null);
+        setDubbingVideoUrl(null);
+        setMessage(`Queued dubbing job ${job.id}.`);
+        await refreshJobs();
+      } else {
+        const dubbing = result.data as DubbingResult;
+        setDubbingResult(dubbing);
+        await loadDubbingMedia(dubbing);
+        setMessage(`Dubbing complete: ${dubbing.segment_count} segments.`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -827,6 +844,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         setDubbingProvider,
         dubbingDiarize,
         setDubbingDiarize,
+        dubbingQueued,
+        setDubbingQueued,
         dubbingResult,
         dubbingAudioUrl,
         dubbingVideoUrl,
