@@ -32,6 +32,12 @@ from voicekit.core import (
     get_profile_store,
     rename_speaker_id,
 )
+from voicekit.diarization import (
+    DEFAULT_DIARIZATION_MODEL_ID,
+    assign_speakers_to_segments,
+    diarization_availability,
+    diarize_file,
+)
 from voicekit.dubbing import dub_file
 from voicekit.history import list_history
 from voicekit.model_store import DEFAULT_MODEL_ID, install_model, list_model_statuses
@@ -116,6 +122,7 @@ class SettingsRequest(BaseModel):
     output_dir: str = "outputs"
     default_translation_provider: str | None = None
     translation_provider_config: dict | None = None
+    huggingface_token: str | None = None
 
 
 class VoiceDesignRequest(BaseModel):
@@ -187,6 +194,14 @@ class DubbingRequest(BaseModel):
     num_step: int = 16
     guidance_scale: float = 2.0
     speed: float = 1.0
+    enable_diarization: bool = False
+    diarization_model: str = DEFAULT_DIARIZATION_MODEL_ID
+    hf_token: str | None = None
+
+
+class DiarizationMergeRequest(BaseModel):
+    subtitles: list[SubtitleSegmentRequest] = Field(default_factory=list)
+    diarization: list[dict[str, Any]] = Field(default_factory=list)
 
 
 @app.get("/health")
@@ -212,6 +227,7 @@ def get_meta() -> dict:
         "devices": ["", "cpu", "cuda", "mps"],
         "compute_types": ["", "int8", "float16", "float32"],
         "default_nllb_model_id": DEFAULT_NLLB_MODEL_ID,
+        "default_diarization_model_id": DEFAULT_DIARIZATION_MODEL_ID,
     }
 
 
@@ -262,6 +278,7 @@ def update_settings(request: SettingsRequest) -> dict:
             request.default_translation_provider or current.default_translation_provider
         ),
         translation_provider_config=provider_config,
+        huggingface_token=request.huggingface_token if request.huggingface_token is not None else current.huggingface_token,
     )
     saved = save_settings(settings)
     return {
@@ -472,6 +489,55 @@ def export_subtitle_endpoint(request: SubtitleExportRequest) -> Response:
     return PlainTextResponse(content, media_type=media_type)
 
 
+@app.get("/v1/diarization/status")
+def get_diarization_status() -> dict:
+    available, message = diarization_availability()
+    return {
+        "object": "diarization_status",
+        "data": {
+            "available": available,
+            "message": message,
+            "model": DEFAULT_DIARIZATION_MODEL_ID,
+        },
+    }
+
+
+@app.post("/v1/diarization/diarize")
+async def create_diarization(
+    file: UploadFile = File(...),
+    model: str = Form(DEFAULT_DIARIZATION_MODEL_ID),
+    hf_token: str | None = Form(None),
+) -> dict:
+    upload_dir = Path("data") / "uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    suffix = Path(file.filename or "audio").suffix or ".wav"
+    upload_path = upload_dir / f"diarization_input_{uuid4().hex}{suffix}"
+    try:
+        upload_path.write_bytes(await file.read())
+        segments = diarize_file(upload_path, hf_token=hf_token, model_id=model)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+    finally:
+        upload_path.unlink(missing_ok=True)
+    return {
+        "object": "diarization",
+        "data": [segment.to_dict() for segment in segments],
+    }
+
+
+@app.post("/v1/diarization/merge")
+def merge_diarization(request: DiarizationMergeRequest) -> dict:
+    try:
+        subtitles = [segment.model_dump() for segment in request.subtitles]
+        assigned = assign_speakers_to_segments(subtitles, request.diarization)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"{type(e).__name__}: {e}") from e
+    return {
+        "object": "subtitle",
+        "data": [segment.to_dict() for segment in assigned],
+    }
+
+
 @app.post("/v1/dubbing/dub")
 def create_dubbing_job(request: DubbingRequest) -> dict:
     try:
@@ -487,6 +553,9 @@ def create_dubbing_job(request: DubbingRequest) -> dict:
             num_step=request.num_step,
             guidance_scale=request.guidance_scale,
             speed=request.speed,
+            enable_diarization=request.enable_diarization,
+            diarization_model=request.diarization_model,
+            hf_token=request.hf_token,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
@@ -506,6 +575,9 @@ async def create_dubbing_job_from_upload(
     num_step: int = Form(16),
     guidance_scale: float = Form(2.0),
     speed: float = Form(1.0),
+    enable_diarization: bool = Form(False),
+    diarization_model: str = Form(DEFAULT_DIARIZATION_MODEL_ID),
+    hf_token: str | None = Form(None),
 ) -> dict:
     upload_dir = Path("data") / "uploads"
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -525,6 +597,9 @@ async def create_dubbing_job_from_upload(
             num_step=num_step,
             guidance_scale=guidance_scale,
             speed=speed,
+            enable_diarization=enable_diarization,
+            diarization_model=diarization_model,
+            hf_token=hf_token,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e

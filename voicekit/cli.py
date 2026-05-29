@@ -17,6 +17,7 @@ from voicekit.core import (
     load_model,
     load_voice_clone_prompt,
 )
+from voicekit.diarization import DEFAULT_DIARIZATION_MODEL_ID, diarize_file
 from voicekit.dubbing import dub_file
 from voicekit.history import try_record_generation
 from voicekit.model_store import DEFAULT_MODEL_ID
@@ -241,8 +242,21 @@ def run_dub(args: argparse.Namespace) -> None:
         guidance_scale=args.guidance_scale,
         speed=args.speed,
         device=args.device,
+        enable_diarization=args.diarize,
+        diarization_model=args.diarization_model,
+        hf_token=args.hf_token,
     )
     print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+
+
+def run_diarize(args: argparse.Namespace) -> None:
+    segments = diarize_file(args.input, hf_token=args.hf_token, model_id=args.model)
+    output = json.dumps({"segments": [segment.to_dict() for segment in segments]}, ensure_ascii=False, indent=2)
+    if args.output:
+        Path(args.output).write_text(output, encoding="utf-8")
+        print(f"Saved to: {args.output}")
+    else:
+        print(output)
 
 
 def run_transcribe(args: argparse.Namespace) -> None:
@@ -382,7 +396,17 @@ def main() -> None:
     dub.add_argument("--guidance_scale", type=float, default=2.0)
     dub.add_argument("--speed", type=float, default=1.0)
     dub.add_argument("--device", default=settings.default_device, help="cuda | mps | cpu")
+    dub.add_argument("--diarize", action="store_true", help="Run pyannote speaker diarization before dubbing")
+    dub.add_argument("--diarization-model", default=DEFAULT_DIARIZATION_MODEL_ID)
+    dub.add_argument("--hf-token", default=None, help="Hugging Face token for pyannote")
     dub.set_defaults(func=run_dub)
+
+    diarize = subparsers.add_parser("diarize", help="Run speaker diarization with pyannote")
+    diarize.add_argument("--input", required=True, help="Input audio/video path")
+    diarize.add_argument("--output", default=None, help="Optional output JSON path")
+    diarize.add_argument("--model", default=DEFAULT_DIARIZATION_MODEL_ID)
+    diarize.add_argument("--hf-token", default=None, help="Hugging Face token for pyannote")
+    diarize.set_defaults(func=run_diarize)
 
     args = parser.parse_args()
     args.func(args)

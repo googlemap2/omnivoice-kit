@@ -29,6 +29,7 @@ export type AppSettings = {
   output_dir: string;
   default_translation_provider: string;
   translation_provider_config: Record<string, unknown>;
+  huggingface_token?: string | null;
 };
 
 export type Meta = {
@@ -85,6 +86,7 @@ export type DubbingResult = {
   source_language: string | null;
   target_language: string | null;
   voice: string;
+  speakers: string[];
 };
 
 export const emptyMeta: Meta = {

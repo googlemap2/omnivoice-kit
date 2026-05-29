@@ -295,6 +295,27 @@ uv run voicekit dub \
 Kết quả trả JSON gồm đường dẫn `dubbed_audio_path`, `dubbed_video_path`,
 `srt_path`, và `vtt_path`.
 
+Chạy thêm speaker diarization nếu đã cài `pyannote.audio`, đã accept license
+model `pyannote/speaker-diarization-3.1`, và có Hugging Face token trong
+Settings hoặc env `HF_TOKEN`/`HUGGINGFACE_TOKEN`:
+
+```bash
+uv run voicekit dub \
+  --input path/to/video.mp4 \
+  --voice yen \
+  --source-language en \
+  --target-language vi \
+  --diarize
+```
+
+Chạy diarization riêng:
+
+```bash
+uv run voicekit diarize \
+  --input path/to/audio.wav \
+  --output speakers.json
+```
+
 Provider có sẵn: `passthrough`, `google` (qua `deep-translator`, không cần API key), `nllb`
 (cần `transformers` + model trong `models/`), `deepl`, `microsoft`, `mymemory` (ba provider cuối
 cần API key trong settings, chưa implement đầy đủ).
@@ -439,6 +460,13 @@ curl -X POST http://127.0.0.1:8000/v1/dubbing/dub-upload \
   -F "source_language=en" \
   -F "target_language=vi" \
   -F "translation_provider=passthrough"
+```
+
+Run speaker diarization through API:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/diarization/diarize \
+  -F "file=@path/to/audio.wav"
 ```
 
 Liệt kê translation providers:

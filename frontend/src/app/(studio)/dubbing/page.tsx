@@ -3,7 +3,7 @@
 import MovieIcon from "@mui/icons-material/Movie";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { Box, Button, Chip, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Chip, FormControlLabel, Paper, Stack, Switch, TextField, Typography } from "@mui/material";
 import { WorkspaceShell } from "../../../components/layout/WorkspaceShell";
 import { useStudio } from "../../../components/studio/StudioContext";
 import { SelectField } from "../../../components/ui/SelectField";
@@ -68,6 +68,15 @@ export default function DubbingPage() {
             onChange={(value) => studio.setEffectPreset(value as "raw" | "normalize" | "broadcast")}
             options={studio.meta.effect_presets.map((id) => ({ id, label: id }))}
           />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={studio.dubbingDiarize}
+                onChange={(event) => studio.setDubbingDiarize(event.target.checked)}
+              />
+            }
+            label="Diarize speakers"
+          />
         </Stack>
 
         <Stack spacing={2}>
@@ -80,6 +89,9 @@ export default function DubbingPage() {
                 <Stack direction="row" spacing={1}>
                   <Chip size="small" color="success" label={`${studio.dubbingResult.segment_count} segments`} />
                   <Chip size="small" variant="outlined" label={studio.dubbingResult.voice} />
+                  {studio.dubbingResult.speakers.map((speaker) => (
+                    <Chip key={speaker} size="small" variant="outlined" label={speaker} />
+                  ))}
                   <Chip
                     size="small"
                     variant="outlined"

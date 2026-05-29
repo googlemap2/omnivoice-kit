@@ -9,6 +9,7 @@ import soundfile as sf
 
 from voicekit.asr import DEFAULT_ASR_MODEL_ID, transcribe_file
 from voicekit.core import generate_clone_with_speaker_id
+from voicekit.diarization import assign_speakers_to_segments, diarize_file
 from voicekit.media import extract_audio, has_video_stream, mux_video_with_audio
 from voicekit.model_store import DEFAULT_MODEL_ID
 from voicekit.subtitles import export_subtitle, from_transcription_result
@@ -28,6 +29,7 @@ class DubbingResult:
     source_language: str | None
     target_language: str | None
     voice: str
+    speakers: list[str]
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -72,6 +74,9 @@ def dub_file(
     guidance_scale: float = 2.0,
     speed: float = 1.0,
     device: str | None = None,
+    enable_diarization: bool = False,
+    diarization_model: str | None = None,
+    hf_token: str | None = None,
 ) -> DubbingResult:
     source = Path(input_path)
     if not source.exists():
@@ -93,6 +98,13 @@ def dub_file(
         device=device,
     )
     subtitle_segments = from_transcription_result(transcription)
+    if enable_diarization:
+        diarized = diarize_file(
+            extracted_audio,
+            hf_token=hf_token,
+            model_id=diarization_model or "pyannote/speaker-diarization-3.1",
+        )
+        subtitle_segments = assign_speakers_to_segments(subtitle_segments, diarized)
     segment_payload = [segment.to_dict() for segment in subtitle_segments]
     translated = translate_segments(
         segments=segment_payload,
@@ -171,4 +183,11 @@ def dub_file(
         source_language=source_language or transcription.language,
         target_language=target_language,
         voice=voice,
+        speakers=sorted(
+            {
+                str(segment.speaker or segment.metadata.get("speaker"))
+                for segment in subtitle_segments
+                if segment.speaker or segment.metadata.get("speaker")
+            }
+        ),
     )

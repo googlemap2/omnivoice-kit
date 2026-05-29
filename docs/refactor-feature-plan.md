@@ -149,7 +149,7 @@ Use this overview to see which feature group is done, in progress, or still pend
 | Translation provider registry | Phase 11 | Done |
 | Subtitle import/export | Phase 12 | Done |
 | Video dubbing | Phase 13 | Mostly done |
-| Speaker diarization | Phase 14 | Pending |
+| Speaker diarization | Phase 14 | Mostly done |
 | Realtime dictation | Phase 15 | Pending |
 | Batch queue | Phase 16 | Pending |
 | Voice gallery | Phase 17 | Pending |
@@ -220,18 +220,18 @@ Related feature: Video dubbing.
 
 Related feature: Speaker diarization.
 
-- [ ] Create `voicekit/diarization.py`.
-- [ ] Add optional pyannote dependency strategy.
-- [ ] Add Hugging Face token setting.
-- [ ] Add pyannote license/token error messages.
-- [ ] Run diarization on source audio.
-- [ ] Merge diarization speaker labels into ASR subtitle segments.
+- [x] Create `voicekit/diarization.py`.
+- [x] Add optional pyannote dependency strategy.
+- [x] Add Hugging Face token setting.
+- [x] Add pyannote license/token error messages.
+- [x] Run diarization on source audio.
+- [x] Merge diarization speaker labels into ASR subtitle segments.
 - [ ] Add speaker-to-voice assignment structure.
-- [ ] Add API endpoint for diarization.
-- [ ] Add CLI command `voicekit diarize`.
-- [ ] Add diarization controls to Dubbing UI.
-- [ ] Add smoke tests with mocked diarization backend.
-- [ ] Update README.
+- [x] Add API endpoint for diarization.
+- [x] Add CLI command `voicekit diarize`.
+- [x] Add diarization controls to Dubbing UI.
+- [x] Add smoke tests with mocked diarization backend.
+- [x] Update README.
 
 ## Phase 15: Realtime Dictation
 
@@ -374,3 +374,4 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Completed Phase 11 translation provider registry with `voicekit/translation.py`, passthrough/NLLB/online placeholders, settings fields, API/CLI/UI, and unittest smoke tests.
 - [x] Completed Phase 12 subtitle import/export with SRT/VTT parsing, JSON segment conversion, API/CLI hooks, basic Transcription UI import/export, and roundtrip tests.
 - [x] Implemented Phase 13 video dubbing v1 with ffmpeg media helpers, synchronous ASR/translation/TTS pipeline, one-voice assignment, dubbed WAV/SRT/VTT/video outputs, API/CLI hooks, Dubbing UI, and timing unit tests. Real short media fixture smoke test remains pending.
+- [x] Implemented Phase 14 speaker diarization v1 with optional pyannote backend, Hugging Face token setting/env fallback, diarization API/CLI, speaker-label merge helpers, Dubbing UI toggle, and mocked merge tests. Per-speaker voice assignment remains pending.

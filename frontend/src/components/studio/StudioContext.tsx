@@ -94,6 +94,8 @@ type StudioContextValue = {
   setDubbingTargetLanguage: (language: string) => void;
   dubbingProvider: string;
   setDubbingProvider: (provider: string) => void;
+  dubbingDiarize: boolean;
+  setDubbingDiarize: (value: boolean) => void;
   dubbingResult: DubbingResult | null;
   runDubbing: () => Promise<void>;
   translateText: string;
@@ -159,6 +161,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [dubbingSourceLanguage, setDubbingSourceLanguage] = useState("en");
   const [dubbingTargetLanguage, setDubbingTargetLanguage] = useState("vi");
   const [dubbingProvider, setDubbingProvider] = useState("passthrough");
+  const [dubbingDiarize, setDubbingDiarize] = useState(false);
   const [dubbingResult, setDubbingResult] = useState<DubbingResult | null>(null);
 
   const [translateText, setTranslateText] = useState("Hello, this is a local studio workflow.");
@@ -405,6 +408,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       form.set("num_step", String(numStep));
       form.set("guidance_scale", String(guidanceScale));
       form.set("speed", String(speed));
+      form.set("enable_diarization", String(dubbingDiarize));
       const result = await apiForm<{ data: DubbingResult }>("/v1/dubbing/dub-upload", form);
       setDubbingResult(result.data);
       setMessage(`Dubbing complete: ${result.data.segment_count} segments.`);
@@ -611,6 +615,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         setDubbingTargetLanguage,
         dubbingProvider,
         setDubbingProvider,
+        dubbingDiarize,
+        setDubbingDiarize,
         dubbingResult,
         runDubbing,
         translateText,
