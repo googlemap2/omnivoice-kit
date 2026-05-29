@@ -70,7 +70,10 @@ async function errorMessage(response: Response) {
   const contentType = response.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
     const body = await response.json().catch(() => null);
-    return body?.detail || body?.message || `${response.status} ${response.statusText}`;
+    const detail = body?.detail || body?.message;
+    if (typeof detail === "string") return detail;
+    if (detail) return JSON.stringify(detail);
+    return `${response.status} ${response.statusText}`;
   }
   const text = await response.text().catch(() => "");
   return text || `${response.status} ${response.statusText}`;

@@ -1,6 +1,8 @@
 import json
+import logging
 import os
 import tempfile
+import traceback
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Literal
@@ -52,6 +54,10 @@ from voicekit.subtitles import SUBTITLE_FORMATS, export_subtitle, parse_subtitle
 from voicekit.translation import TRANSLATION_LANGUAGE_CHOICES, list_providers, translate_segments, translate_text
 
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("voicekit.api")
+
+
 CORS_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -92,6 +98,11 @@ def _wav_response(audio: tuple[int, Any] | None, detail: str = "Generation faile
 
 def _generation_error(detail: str) -> HTTPException:
     return HTTPException(status_code=400, detail=detail)
+
+
+def _server_error(e: Exception) -> HTTPException:
+    logger.error("%s: %s\n%s", type(e).__name__, e, traceback.format_exc())
+    return HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
 
 
 def _output_file_response(path: str) -> FileResponse:
@@ -539,7 +550,7 @@ async def create_diarization(
         upload_path.write_bytes(await file.read())
         segments = diarize_file(upload_path, hf_token=hf_token, model_id=model)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+        raise _server_error(e) from e
     finally:
         upload_path.unlink(missing_ok=True)
     return {
@@ -582,7 +593,7 @@ def create_dubbing_job(request: DubbingRequest) -> dict:
             hf_token=request.hf_token,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+        raise _server_error(e) from e
     return {"object": "dubbing_job", "data": result.to_dict()}
 
 
@@ -628,7 +639,7 @@ async def create_dubbing_job_from_upload(
             hf_token=hf_token,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+        raise _server_error(e) from e
     return {"object": "dubbing_job", "data": result.to_dict()}
 
 
