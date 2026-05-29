@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import os
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, make_dataclass
+from importlib import import_module
 from pathlib import Path
 from typing import Any
 
@@ -44,6 +45,36 @@ def configure_headless_matplotlib() -> None:
             pass
 
 
+def patch_torchaudio_audio_metadata() -> None:
+    try:
+        import torchaudio
+    except ImportError:
+        return
+    if hasattr(torchaudio, "AudioMetaData"):
+        return
+
+    for module_name in ("torchaudio._backend.common", "torchaudio.backend.common"):
+        try:
+            module = import_module(module_name)
+        except Exception:
+            continue
+        audio_metadata = getattr(module, "AudioMetaData", None)
+        if audio_metadata is not None:
+            torchaudio.AudioMetaData = audio_metadata
+            return
+
+    torchaudio.AudioMetaData = make_dataclass(
+        "AudioMetaData",
+        [
+            ("sample_rate", int),
+            ("num_frames", int),
+            ("num_channels", int),
+            ("bits_per_sample", int),
+            ("encoding", str),
+        ],
+    )
+
+
 def is_gated_model_error(e: Exception) -> bool:
     text = f"{type(e).__name__}: {e}"
     return (
@@ -73,6 +104,7 @@ def gated_model_message(e: Exception) -> str:
 
 def diarization_availability(token: str | None = None) -> tuple[bool, str | None]:
     configure_headless_matplotlib()
+    patch_torchaudio_audio_metadata()
     try:
         import pyannote.audio  # noqa: F401
     except ImportError:
@@ -94,6 +126,7 @@ def diarize_file(
     if not token:
         raise RuntimeError("Hugging Face token is required for pyannote diarization.")
     configure_headless_matplotlib()
+    patch_torchaudio_audio_metadata()
     try:
         from pyannote.audio import Pipeline
     except ImportError as e:
