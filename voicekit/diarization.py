@@ -66,8 +66,8 @@ def gated_model_message(e: Exception) -> str:
         f"Cannot access gated pyannote model '{repo}'. "
         "Open the model page on Hugging Face, accept the user conditions/license, "
         "then use a Hugging Face token that has access. "
-        "For diarization, accept pyannote/speaker-diarization-3.1, "
-        "pyannote/segmentation-3.0, and pyannote/speaker-diarization-community-1."
+        "For pyannote.audio 4.x diarization, accept pyannote/speaker-diarization-community-1 "
+        "and any gated dependencies it requests."
     )
 
 
@@ -100,34 +100,17 @@ def diarize_file(
         raise RuntimeError("Missing dependency 'pyannote.audio'. Install it before running diarization.") from e
 
     model_source = str(Path(model_id)) if Path(model_id).exists() else ensure_local_model(model_id, token=token)
-    try:
-        pipeline = Pipeline.from_pretrained(model_source, use_auth_token=token)
-    except TypeError as e:
-        if "use_auth_token" not in str(e):
-            raise
-        try:
-            pipeline = Pipeline.from_pretrained(model_source, token=token)
-        except Exception as token_error:
-            if is_gated_model_error(token_error):
-                raise RuntimeError(gated_model_message(token_error)) from token_error
-            if not isinstance(token_error, TypeError) or "token" not in str(token_error):
-                raise
-            pipeline = Pipeline.from_pretrained(model_source)
-    except Exception as e:
-        if is_gated_model_error(e):
-            raise RuntimeError(gated_model_message(e)) from e
-        raise RuntimeError(
-            f"Could not load {model_id}. Accept the model license on Hugging Face and verify your token."
-        ) from e
+    pipeline = load_pyannote_pipeline(Pipeline, model_source, token=token, model_id=model_id)
 
     try:
-        diarization = pipeline(str(path))
+        diarization = run_pyannote_pipeline(pipeline, path)
     except Exception as e:
         if is_gated_model_error(e):
             raise RuntimeError(gated_model_message(e)) from e
         raise
+    annotation = get_diarization_annotation(diarization)
     segments: list[DiarizationSegment] = []
-    for turn, _, speaker in diarization.itertracks(yield_label=True):
+    for turn, _, speaker in annotation.itertracks(yield_label=True):
         segments.append(
             DiarizationSegment(
                 start=float(turn.start),
@@ -136,6 +119,55 @@ def diarize_file(
             )
         )
     return sorted(segments, key=lambda item: (item.start, item.end, item.speaker))
+
+
+def load_pyannote_pipeline(pipeline_cls: Any, model_source: str, token: str, model_id: str) -> Any:
+    try:
+        return pipeline_cls.from_pretrained(model_source, token=token)
+    except TypeError as e:
+        if "token" not in str(e):
+            raise
+        try:
+            return pipeline_cls.from_pretrained(model_source, use_auth_token=token)
+        except TypeError as legacy_error:
+            if "use_auth_token" not in str(legacy_error):
+                raise
+            return pipeline_cls.from_pretrained(model_source)
+    except Exception as e:
+        if is_gated_model_error(e):
+            raise RuntimeError(gated_model_message(e)) from e
+        raise RuntimeError(
+            f"Could not load {model_id}. Accept the model license on Hugging Face and verify your token."
+        ) from e
+
+
+def run_pyannote_pipeline(pipeline: Any, audio_path: str | Path) -> Any:
+    path = Path(audio_path)
+    try:
+        return pipeline(str(path))
+    except TypeError as e:
+        message = str(e)
+        if "audio" not in message and "uri" not in message and "AudioFile" not in message:
+            raise
+        return pipeline({"uri": path.stem, "audio": str(path)})
+
+
+def get_diarization_annotation(output: Any) -> Any:
+    if hasattr(output, "itertracks"):
+        return output
+    for attr in ("speaker_diarization", "exclusive_speaker_diarization", "annotation"):
+        annotation = getattr(output, attr, None)
+        if annotation is not None and hasattr(annotation, "itertracks"):
+            return annotation
+    if isinstance(output, dict):
+        for key in ("speaker_diarization", "exclusive_speaker_diarization", "annotation"):
+            annotation = output.get(key)
+            if annotation is not None and hasattr(annotation, "itertracks"):
+                return annotation
+    raise TypeError(
+        f"Unsupported pyannote diarization output type: {type(output).__name__}. "
+        "Expected an Annotation or an object with speaker_diarization."
+    )
 
 
 def overlap_seconds(a_start: float, a_end: float, b_start: float, b_end: float) -> float:

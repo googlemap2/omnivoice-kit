@@ -302,8 +302,6 @@ Chạy thêm speaker diarization nếu đã cài `pyannote.audio`, có Hugging F
 trong Settings hoặc env `HF_TOKEN`/`HUGGINGFACE_TOKEN`, và đã accept user
 conditions cho các gated model pyannote:
 
-- `pyannote/speaker-diarization-3.1`
-- `pyannote/segmentation-3.0`
 - `pyannote/speaker-diarization-community-1`
 
 ```bash
@@ -318,7 +316,7 @@ uv run voicekit dub \
 Model diarization cũng được snapshot vào thư mục model của project:
 
 ```text
-models/models--pyannote--speaker-diarization-3.1/
+models/models--pyannote--speaker-diarization-community-1/
 ```
 
 Cache phụ của Hugging Face/pyannote vẫn nằm trong:

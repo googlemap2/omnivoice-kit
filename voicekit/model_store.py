@@ -6,7 +6,7 @@ from typing import Any
 
 DEFAULT_MODEL_ID = "k2-fsa/OmniVoice"
 KHANH_TTS_MODEL_ID = "kjanh/KhanhTTS-OmniVoice"
-DEFAULT_DIARIZATION_MODEL_ID = "pyannote/speaker-diarization-3.1"
+DEFAULT_DIARIZATION_MODEL_ID = "pyannote/speaker-diarization-community-1"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MODEL_BASE_DIR = PROJECT_ROOT / "models"
 DEFAULT_HF_HOME = PROJECT_ROOT / "models" / ".hf_home"

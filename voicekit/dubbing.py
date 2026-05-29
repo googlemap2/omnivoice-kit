@@ -11,7 +11,7 @@ from voicekit.asr import DEFAULT_ASR_MODEL_ID, transcribe_file
 from voicekit.core import generate_clone_with_speaker_id
 from voicekit.diarization import assign_speakers_to_segments, diarize_file
 from voicekit.media import extract_audio, has_video_stream, mux_video_with_audio
-from voicekit.model_store import DEFAULT_MODEL_ID
+from voicekit.model_store import DEFAULT_DIARIZATION_MODEL_ID, DEFAULT_MODEL_ID
 from voicekit.subtitles import export_subtitle, from_transcription_result
 from voicekit.translation import translate_segments
 
@@ -127,7 +127,7 @@ def dub_file(
         diarized = diarize_file(
             extracted_audio,
             hf_token=hf_token,
-            model_id=diarization_model or "pyannote/speaker-diarization-3.1",
+            model_id=diarization_model or DEFAULT_DIARIZATION_MODEL_ID,
         )
         subtitle_segments = assign_speakers_to_segments(subtitle_segments, diarized)
     segment_payload = [segment.to_dict() for segment in subtitle_segments]
