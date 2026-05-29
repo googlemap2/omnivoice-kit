@@ -44,6 +44,33 @@ def configure_headless_matplotlib() -> None:
             pass
 
 
+def is_gated_model_error(e: Exception) -> bool:
+    text = f"{type(e).__name__}: {e}"
+    return (
+        "GatedRepoError" in text
+        or "Cannot access gated repo" in text
+        or "restricted and you are not in the authorized list" in text
+        or "accept user conditions" in text
+    )
+
+
+def gated_model_message(e: Exception) -> str:
+    text = str(e)
+    gated_repos = [
+        "pyannote/speaker-diarization-community-1",
+        "pyannote/segmentation-3.0",
+        DEFAULT_DIARIZATION_MODEL_ID,
+    ]
+    repo = next((item for item in gated_repos if item in text), DEFAULT_DIARIZATION_MODEL_ID)
+    return (
+        f"Cannot access gated pyannote model '{repo}'. "
+        "Open the model page on Hugging Face, accept the user conditions/license, "
+        "then use a Hugging Face token that has access. "
+        "For diarization, accept pyannote/speaker-diarization-3.1, "
+        "pyannote/segmentation-3.0, and pyannote/speaker-diarization-community-1."
+    )
+
+
 def diarization_availability(token: str | None = None) -> tuple[bool, str | None]:
     configure_headless_matplotlib()
     try:
@@ -80,16 +107,25 @@ def diarize_file(
             raise
         try:
             pipeline = Pipeline.from_pretrained(model_source, token=token)
-        except TypeError as token_error:
-            if "token" not in str(token_error):
+        except Exception as token_error:
+            if is_gated_model_error(token_error):
+                raise RuntimeError(gated_model_message(token_error)) from token_error
+            if not isinstance(token_error, TypeError) or "token" not in str(token_error):
                 raise
             pipeline = Pipeline.from_pretrained(model_source)
     except Exception as e:
+        if is_gated_model_error(e):
+            raise RuntimeError(gated_model_message(e)) from e
         raise RuntimeError(
             f"Could not load {model_id}. Accept the model license on Hugging Face and verify your token."
         ) from e
 
-    diarization = pipeline(str(path))
+    try:
+        diarization = pipeline(str(path))
+    except Exception as e:
+        if is_gated_model_error(e):
+            raise RuntimeError(gated_model_message(e)) from e
+        raise
     segments: list[DiarizationSegment] = []
     for turn, _, speaker in diarization.itertracks(yield_label=True):
         segments.append(

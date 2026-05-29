@@ -135,16 +135,14 @@ def ensure_local_model(repo_id: str, local_dir: Path | None = None, token: str |
         "repo_id": repo_id,
         "local_dir": str(local_dir),
         "cache_dir": str(DEFAULT_HF_CACHE),
-        "local_dir_use_symlinks": False,
     }
     if token:
         download_kwargs["token"] = token
     try:
         snapshot_download(**download_kwargs)
     except TypeError:
-        # Older huggingface_hub may not support ``token`` or ``local_dir_use_symlinks``.
+        # Older huggingface_hub may not support ``token``.
         fallback_kwargs = dict(download_kwargs)
-        fallback_kwargs.pop("local_dir_use_symlinks", None)
         if token:
             fallback_kwargs.pop("token", None)
             fallback_kwargs["use_auth_token"] = token

@@ -298,9 +298,13 @@ Kết quả trả JSON gồm đường dẫn `dubbed_audio_path`, `dubbed_video_
 sẽ dùng tên file input và tự thêm số tăng dần khi trùng, ví dụ
 `video`, `video-2`, `video-3`.
 
-Chạy thêm speaker diarization nếu đã cài `pyannote.audio`, đã accept license
-model `pyannote/speaker-diarization-3.1`, và có Hugging Face token trong
-Settings hoặc env `HF_TOKEN`/`HUGGINGFACE_TOKEN`:
+Chạy thêm speaker diarization nếu đã cài `pyannote.audio`, có Hugging Face token
+trong Settings hoặc env `HF_TOKEN`/`HUGGINGFACE_TOKEN`, và đã accept user
+conditions cho các gated model pyannote:
+
+- `pyannote/speaker-diarization-3.1`
+- `pyannote/segmentation-3.0`
+- `pyannote/speaker-diarization-community-1`
 
 ```bash
 uv run voicekit dub \
