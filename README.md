@@ -304,7 +304,6 @@ conditions cho các gated model pyannote:
 
 - `pyannote/speaker-diarization-3.1`
 - `pyannote/segmentation-3.0`
-- `pyannote/speaker-diarization-community-1`
 
 ```bash
 uv run voicekit dub \

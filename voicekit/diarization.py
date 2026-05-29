@@ -126,8 +126,9 @@ def diarize_file(
         if is_gated_model_error(e):
             raise RuntimeError(gated_model_message(e)) from e
         raise
+    annotation = get_diarization_annotation(diarization)
     segments: list[DiarizationSegment] = []
-    for turn, _, speaker in diarization.itertracks(yield_label=True):
+    for turn, _, speaker in annotation.itertracks(yield_label=True):
         segments.append(
             DiarizationSegment(
                 start=float(turn.start),
@@ -136,6 +137,24 @@ def diarize_file(
             )
         )
     return sorted(segments, key=lambda item: (item.start, item.end, item.speaker))
+
+
+def get_diarization_annotation(output: Any) -> Any:
+    if hasattr(output, "itertracks"):
+        return output
+    for attr in ("speaker_diarization", "exclusive_speaker_diarization", "annotation"):
+        annotation = getattr(output, attr, None)
+        if annotation is not None and hasattr(annotation, "itertracks"):
+            return annotation
+    if isinstance(output, dict):
+        for key in ("speaker_diarization", "exclusive_speaker_diarization", "annotation"):
+            annotation = output.get(key)
+            if annotation is not None and hasattr(annotation, "itertracks"):
+                return annotation
+    raise TypeError(
+        f"Unsupported pyannote diarization output type: {type(output).__name__}. "
+        "Expected an Annotation or an object with speaker_diarization."
+    )
 
 
 def overlap_seconds(a_start: float, a_end: float, b_start: float, b_end: float) -> float:
