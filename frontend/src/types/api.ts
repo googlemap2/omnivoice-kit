@@ -39,6 +39,7 @@ export type Meta = {
   instructs: string[];
   effect_presets: string[];
   transcription_formats: string[];
+  subtitle_formats: string[];
   devices: string[];
   compute_types: string[];
 };
@@ -63,6 +64,15 @@ export type HistoryEntry = {
   status: string;
 };
 
+export type SubtitleSegment = {
+  id: number;
+  start: number;
+  end: number;
+  text: string;
+  speaker?: string | null;
+  metadata?: Record<string, unknown>;
+};
+
 export const emptyMeta: Meta = {
   omnivoice_models: [],
   asr_models: [],
@@ -71,6 +81,7 @@ export const emptyMeta: Meta = {
   instructs: [],
   effect_presets: ["raw", "normalize", "broadcast"],
   transcription_formats: ["json", "text", "verbose_json", "srt", "vtt"],
+  subtitle_formats: ["srt", "vtt"],
   devices: ["", "cpu", "cuda", "mps"],
   compute_types: ["", "int8", "float16", "float32"],
 };

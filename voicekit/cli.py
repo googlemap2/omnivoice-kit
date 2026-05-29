@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 
 import soundfile as sf
@@ -19,6 +20,7 @@ from voicekit.core import (
 from voicekit.history import try_record_generation
 from voicekit.model_store import DEFAULT_MODEL_ID
 from voicekit.settings import load_settings
+from voicekit.subtitles import SUBTITLE_FORMATS, export_subtitle, parse_subtitle_file
 from voicekit.translation import list_providers, translate_segments, translate_text
 
 
@@ -165,8 +167,6 @@ def run_voice_design(args: argparse.Namespace) -> None:
 
 
 def run_translate(args: argparse.Namespace) -> None:
-    import json
-
     if args.segments_json:
         segments_path = Path(args.segments_json)
         raw = json.loads(segments_path.read_text(encoding="utf-8"))
@@ -191,6 +191,33 @@ def run_translate(args: argparse.Namespace) -> None:
         )
 
     output = json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
+    if args.output:
+        Path(args.output).write_text(output, encoding="utf-8")
+        print(f"Saved to: {args.output}")
+    else:
+        print(output)
+
+
+def run_subtitle_import(args: argparse.Namespace) -> None:
+    segments = parse_subtitle_file(args.input, args.format)
+    output = json.dumps(
+        {"segments": [segment.to_dict() for segment in segments]},
+        ensure_ascii=False,
+        indent=2,
+    )
+    if args.output:
+        Path(args.output).write_text(output, encoding="utf-8")
+        print(f"Saved to: {args.output}")
+    else:
+        print(output)
+
+
+def run_subtitle_export(args: argparse.Namespace) -> None:
+    raw = json.loads(Path(args.input).read_text(encoding="utf-8"))
+    segments = raw.get("segments", raw) if isinstance(raw, dict) else raw
+    if not isinstance(segments, list):
+        raise ValueError("Input JSON must be a segments array or {segments: [...]} object.")
+    output = export_subtitle(segments, args.format)
     if args.output:
         Path(args.output).write_text(output, encoding="utf-8")
         print(f"Saved to: {args.output}")
@@ -303,6 +330,23 @@ def main() -> None:
     )
     translate.add_argument("--output", default=None, help="Optional output JSON path")
     translate.set_defaults(func=run_translate)
+
+    subtitle_import = subparsers.add_parser("subtitle-import", help="Import SRT/VTT to JSON segments")
+    subtitle_import.add_argument("--input", required=True, help="Input .srt or .vtt path")
+    subtitle_import.add_argument("--output", default=None, help="Optional output JSON path")
+    subtitle_import.add_argument(
+        "--format",
+        choices=SUBTITLE_FORMATS,
+        default=None,
+        help="Subtitle format; defaults to input file extension",
+    )
+    subtitle_import.set_defaults(func=run_subtitle_import)
+
+    subtitle_export = subparsers.add_parser("subtitle-export", help="Export JSON segments to SRT/VTT")
+    subtitle_export.add_argument("--input", required=True, help="Input JSON segments path")
+    subtitle_export.add_argument("--output", default=None, help="Optional subtitle output path")
+    subtitle_export.add_argument("--format", choices=SUBTITLE_FORMATS, default="srt", help="Output subtitle format")
+    subtitle_export.set_defaults(func=run_subtitle_export)
 
     args = parser.parse_args()
     args.func(args)

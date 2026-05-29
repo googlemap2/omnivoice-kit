@@ -4,6 +4,7 @@ from typing import Any
 
 from voicekit.core import pick_device
 from voicekit.model_store import ensure_local_model
+from voicekit.subtitles import export_subtitle, from_transcription_result
 
 
 DEFAULT_ASR_MODEL_ID = "Systran/faster-whisper-large-v3"
@@ -154,19 +155,9 @@ def format_transcription(result: TranscriptionResult, response_format: str) -> s
     if response_format == "verbose_json":
         return result.to_dict(verbose=True)
     if response_format == "srt":
-        blocks = []
-        for index, segment in enumerate(result.segments, start=1):
-            start = format_timestamp(segment.start)
-            end = format_timestamp(segment.end)
-            blocks.append(f"{index}\n{start} --> {end}\n{segment.text}")
-        return "\n\n".join(blocks).strip() + ("\n" if blocks else "")
+        return export_subtitle(from_transcription_result(result), "srt")
     if response_format == "vtt":
-        blocks = ["WEBVTT", ""]
-        for segment in result.segments:
-            start = format_timestamp(segment.start, sep=".")
-            end = format_timestamp(segment.end, sep=".")
-            blocks.append(f"{start} --> {end}\n{segment.text}\n")
-        return "\n".join(blocks).strip() + "\n"
+        return export_subtitle(from_transcription_result(result), "vtt")
     raise ValueError(f"Unsupported transcription format: {response_format}")
 
 

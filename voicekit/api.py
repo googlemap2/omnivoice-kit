@@ -41,6 +41,7 @@ from voicekit.settings import (
     merge_translation_provider_config,
     save_settings,
 )
+from voicekit.subtitles import SUBTITLE_FORMATS, export_subtitle, parse_subtitle
 from voicekit.translation import TRANSLATION_LANGUAGE_CHOICES, list_providers, translate_segments, translate_text
 
 
@@ -159,6 +160,20 @@ class TranslateRequest(BaseModel):
     provider: str | None = None
 
 
+class SubtitleSegmentRequest(BaseModel):
+    id: int = 0
+    start: float
+    end: float
+    text: str = Field(min_length=1)
+    speaker: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class SubtitleExportRequest(BaseModel):
+    format: Literal["srt", "vtt"] = "srt"
+    segments: list[SubtitleSegmentRequest] = Field(default_factory=list)
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
@@ -178,6 +193,7 @@ def get_meta() -> dict:
         "instructs": list(VALID_INSTRUCTS),
         "effect_presets": list(EFFECT_PRESETS),
         "transcription_formats": list(TRANSCRIPTION_FORMATS),
+        "subtitle_formats": list(SUBTITLE_FORMATS),
         "devices": ["", "cpu", "cuda", "mps"],
         "compute_types": ["", "int8", "float16", "float32"],
         "default_nllb_model_id": DEFAULT_NLLB_MODEL_ID,
@@ -402,6 +418,43 @@ def list_generation_history(limit: int = 50) -> dict:
         "object": "list",
         "data": data,
     }
+
+
+@app.post("/v1/subtitles/import")
+async def import_subtitle(
+    file: UploadFile = File(...),
+    format: Literal["srt", "vtt"] | None = Form(None),
+    duration: float | None = Form(None),
+) -> dict:
+    suffix = Path(file.filename or "").suffix.lstrip(".").lower()
+    subtitle_format = (format or suffix or "").lower()
+    if subtitle_format not in SUBTITLE_FORMATS:
+        raise HTTPException(status_code=400, detail="Subtitle format must be srt or vtt.")
+    try:
+        content = (await file.read()).decode("utf-8-sig")
+        segments = parse_subtitle(content, subtitle_format, duration=duration)
+    except UnicodeDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid subtitle encoding: {e}") from e
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"{type(e).__name__}: {e}") from e
+    return {
+        "object": "subtitle",
+        "format": subtitle_format,
+        "data": [segment.to_dict() for segment in segments],
+    }
+
+
+@app.post("/v1/subtitles/export")
+def export_subtitle_endpoint(request: SubtitleExportRequest) -> Response:
+    if not request.segments:
+        raise HTTPException(status_code=400, detail="segments must not be empty.")
+    try:
+        payload = [segment.model_dump() for segment in request.segments]
+        content = export_subtitle(payload, request.format)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"{type(e).__name__}: {e}") from e
+    media_type = "application/x-subrip" if request.format == "srt" else "text/vtt"
+    return PlainTextResponse(content, media_type=media_type)
 
 
 @app.post("/v1/audio/speech")

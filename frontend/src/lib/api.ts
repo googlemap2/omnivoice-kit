@@ -4,6 +4,7 @@ export type {
   Meta,
   ModelStatus,
   Option,
+  SubtitleSegment,
   TranslationProvider,
   Voice,
 } from "../types/api";

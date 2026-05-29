@@ -234,6 +234,25 @@ uv run voicekit transcribe \
   --output transcript.srt
 ```
 
+### 3.4.1 Import/export subtitles
+
+Import SRT/VTT to JSON segments:
+
+```bash
+uv run voicekit subtitle-import \
+  --input transcript.srt \
+  --output transcript_segments.json
+```
+
+Export JSON segments back to SRT/VTT:
+
+```bash
+uv run voicekit subtitle-export \
+  --input transcript_segments.json \
+  --format vtt \
+  --output transcript.vtt
+```
+
 ### 3.5 Translate text hoặc segments
 
 Dịch plain text (provider mặc định `passthrough` trả nguyên văn để test pipeline):
@@ -369,6 +388,28 @@ curl -X POST http://127.0.0.1:8000/v1/audio/transcriptions \
 ```
 
 Các `response_format` đang hỗ trợ: `json`, `text`, `verbose_json`, `srt`, `vtt`.
+
+Import subtitle file:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/subtitles/import \
+  -F "file=@transcript.srt" \
+  -F "format=srt"
+```
+
+Export subtitle segments:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/subtitles/export \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "srt",
+    "segments": [
+      {"id": 0, "start": 0.0, "end": 1.5, "text": "Xin chao"},
+      {"id": 1, "start": 1.5, "end": 3.0, "text": "the gioi"}
+    ]
+  }'
+```
 
 Liệt kê translation providers:
 

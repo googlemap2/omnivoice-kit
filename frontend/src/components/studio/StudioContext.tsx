@@ -7,6 +7,7 @@ import {
   type HistoryEntry,
   type Meta,
   type ModelStatus,
+  type SubtitleSegment,
   type TranslationProvider,
   type Voice,
   apiAudio,
@@ -69,7 +70,19 @@ type StudioContextValue = {
   transcribeFormat: string;
   setTranscribeFormat: (format: string) => void;
   transcription: string;
+  setTranscription: (text: string) => void;
   transcribe: () => Promise<void>;
+  subtitleFile: File | null;
+  setSubtitleFile: (file: File | null) => void;
+  subtitleFormat: string;
+  setSubtitleFormat: (format: string) => void;
+  subtitleSegments: SubtitleSegment[];
+  setSubtitleSegments: (segments: SubtitleSegment[]) => void;
+  updateSubtitleSegment: (index: number, patch: Partial<SubtitleSegment>) => void;
+  addSubtitleSegment: () => void;
+  deleteSubtitleSegment: (index: number) => void;
+  importSubtitles: () => Promise<void>;
+  exportSubtitles: () => Promise<void>;
   translateText: string;
   setTranslateText: (text: string) => void;
   translatedText: string;
@@ -125,6 +138,9 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [asrModel, setAsrModel] = useState("");
   const [transcribeFormat, setTranscribeFormat] = useState("verbose_json");
   const [transcription, setTranscription] = useState("");
+  const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
+  const [subtitleFormat, setSubtitleFormat] = useState("srt");
+  const [subtitleSegments, setSubtitleSegments] = useState<SubtitleSegment[]>([]);
 
   const [translateText, setTranslateText] = useState("Hello, this is a local studio workflow.");
   const [translatedText, setTranslatedText] = useState("");
@@ -268,7 +284,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       if (!response.ok) throw new Error(await response.text());
       const contentType = response.headers.get("content-type") || "";
       const output = contentType.includes("application/json")
-        ? JSON.stringify(await response.json(), null, 2)
+        ? JSON.stringify(await handleTranscriptionJson(response), null, 2)
         : await response.text();
       setTranscription(output);
       setMessage("Transcription complete.");
@@ -277,6 +293,116 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleTranscriptionJson(response: Response) {
+    const data = await response.json();
+    if (Array.isArray(data?.segments)) {
+      setSubtitleSegments(normalizeSubtitleSegments(data.segments));
+    }
+    return data;
+  }
+
+  async function importSubtitles() {
+    if (!subtitleFile) {
+      setError("Choose a subtitle file first.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.set("file", subtitleFile);
+      form.set("format", subtitleFormat);
+      const result = await apiForm<{ data: Array<Record<string, unknown>>; format: string }>("/v1/subtitles/import", form);
+      setSubtitleFormat(result.format);
+      const segments = normalizeSubtitleSegments(result.data);
+      setSubtitleSegments(segments);
+      setTranscription(JSON.stringify({ segments }, null, 2));
+      setMessage("Subtitle import complete.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function exportSubtitles() {
+    setBusy(true);
+    setError(null);
+    try {
+      let segments: unknown = subtitleSegments;
+      if (subtitleSegments.length === 0) {
+        const parsed = JSON.parse(transcription);
+        segments = Array.isArray(parsed) ? parsed : parsed.segments;
+      }
+      if (!Array.isArray(segments)) {
+        throw new Error("Subtitle editor must contain at least one segment.");
+      }
+      const blob = await apiAudio("/v1/subtitles/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ format: subtitleFormat, segments }),
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `subtitles.${subtitleFormat}`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setMessage(`Exported subtitles.${subtitleFormat}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function updateSubtitleSegment(index: number, patch: Partial<SubtitleSegment>) {
+    setSubtitleSegments((current) => {
+      const next = current.map((segment, itemIndex) => (itemIndex === index ? { ...segment, ...patch } : segment));
+      setTranscription(JSON.stringify({ segments: next }, null, 2));
+      return next;
+    });
+  }
+
+  function addSubtitleSegment() {
+    setSubtitleSegments((current) => {
+      const previous = current[current.length - 1];
+      const start = previous ? Number(previous.end.toFixed(3)) : 0;
+      const nextSegment: SubtitleSegment = {
+        id: current.length,
+        start,
+        end: Number((start + 2).toFixed(3)),
+        text: "",
+        speaker: null,
+        metadata: {},
+      };
+      const next = [...current, nextSegment];
+      setTranscription(JSON.stringify({ segments: next }, null, 2));
+      return next;
+    });
+  }
+
+  function deleteSubtitleSegment(index: number) {
+    setSubtitleSegments((current) => {
+      const next = current
+        .filter((_, itemIndex) => itemIndex !== index)
+        .map((segment, itemIndex) => ({ ...segment, id: itemIndex }));
+      setTranscription(JSON.stringify({ segments: next }, null, 2));
+      return next;
+    });
+  }
+
+  function normalizeSubtitleSegments(items: Array<Record<string, unknown>>): SubtitleSegment[] {
+    return items.map((item, index) => ({
+      id: Number(item.id ?? index),
+      start: Number(item.start ?? 0),
+      end: Number(item.end ?? item.start ?? 0),
+      text: String(item.text ?? ""),
+      speaker: item.speaker ? String(item.speaker) : null,
+      metadata: typeof item.metadata === "object" && item.metadata !== null ? (item.metadata as Record<string, unknown>) : {},
+    }));
   }
 
   async function translate() {
@@ -405,7 +531,19 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         transcribeFormat,
         setTranscribeFormat,
         transcription,
+        setTranscription,
         transcribe,
+        subtitleFile,
+        setSubtitleFile,
+        subtitleFormat,
+        setSubtitleFormat,
+        subtitleSegments,
+        setSubtitleSegments,
+        updateSubtitleSegment,
+        addSubtitleSegment,
+        deleteSubtitleSegment,
+        importSubtitles,
+        exportSubtitles,
         translateText,
         setTranslateText,
         translatedText,

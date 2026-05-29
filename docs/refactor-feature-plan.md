@@ -147,7 +147,7 @@ Use this overview to see which feature group is done, in progress, or still pend
 | ASR transcription | Phase 9 | Done |
 | OpenAI transcription API | Phase 10 | Done |
 | Translation provider registry | Phase 11 | Done |
-| Subtitle import/export | Phase 12 | Pending |
+| Subtitle import/export | Phase 12 | Done |
 | Video dubbing | Phase 13 | Pending |
 | Speaker diarization | Phase 14 | Pending |
 | Realtime dictation | Phase 15 | Pending |
@@ -180,19 +180,19 @@ Related feature: Translation.
 
 Related feature: Subtitle import/export.
 
-- [ ] Create `voicekit/subtitles.py`.
-- [ ] Define subtitle segment dataclass: `id`, `start`, `end`, `text`, `speaker`, `metadata`.
-- [ ] Parse `.srt`.
-- [ ] Parse `.vtt`.
-- [ ] Validate timestamps and sort cues.
-- [ ] Export `.srt`.
-- [ ] Export `.vtt`.
-- [ ] Convert ASR transcription result into subtitle segments.
-- [ ] Add subtitle import/export API endpoints.
-- [ ] Add CLI commands: `subtitle-import`, `subtitle-export`, `transcribe --format srt/vtt`.
-- [ ] Add basic subtitle preview/editor UI.
-- [ ] Add unit tests for SRT/VTT roundtrip.
-- [ ] Update README.
+- [x] Create `voicekit/subtitles.py`.
+- [x] Define subtitle segment dataclass: `id`, `start`, `end`, `text`, `speaker`, `metadata`.
+- [x] Parse `.srt`.
+- [x] Parse `.vtt`.
+- [x] Validate timestamps and sort cues.
+- [x] Export `.srt`.
+- [x] Export `.vtt`.
+- [x] Convert ASR transcription result into subtitle segments.
+- [x] Add subtitle import/export API endpoints.
+- [x] Add CLI commands: `subtitle-import`, `subtitle-export`, `transcribe --format srt/vtt`.
+- [x] Add basic subtitle preview/editor UI.
+- [x] Add unit tests for SRT/VTT roundtrip.
+- [x] Update README.
 
 ## Phase 13: Video Dubbing Pipeline v1
 
@@ -372,3 +372,4 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Completed Phase 9 ASR transcription with lazy `faster-whisper` backend, CLI command, and Gradio Transcription tab.
 - [x] Completed Phase 10 OpenAI-compatible transcription endpoint at `/v1/audio/transcriptions`.
 - [x] Completed Phase 11 translation provider registry with `voicekit/translation.py`, passthrough/NLLB/online placeholders, settings fields, API/CLI/UI, and unittest smoke tests.
+- [x] Completed Phase 12 subtitle import/export with SRT/VTT parsing, JSON segment conversion, API/CLI hooks, basic Transcription UI import/export, and roundtrip tests.
