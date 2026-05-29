@@ -32,6 +32,11 @@ export default function DubbingPage() {
               onChange={(event) => studio.setDubbingFile(event.target.files?.[0] || null)}
             />
           </Button>
+          <TextField
+            label="Output folder name"
+            value={studio.dubbingFolderName}
+            onChange={(event) => studio.setDubbingFolderName(event.target.value)}
+          />
           <SelectField
             label="Voice"
             value={studio.dubbingVoice}
@@ -87,6 +92,7 @@ export default function DubbingPage() {
             {studio.dubbingResult ? (
               <Stack spacing={1.25}>
                 <Stack direction="row" spacing={1}>
+                  <Chip size="small" color="primary" label={studio.dubbingResult.folder_name} />
                   <Chip size="small" color="success" label={`${studio.dubbingResult.segment_count} segments`} />
                   <Chip size="small" variant="outlined" label={studio.dubbingResult.voice} />
                   {studio.dubbingResult.speakers.map((speaker) => (

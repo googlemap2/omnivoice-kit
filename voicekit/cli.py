@@ -232,6 +232,7 @@ def run_dub(args: argparse.Namespace) -> None:
         input_path=args.input,
         voice=args.voice,
         target_language=args.target_language,
+        folder_name=args.folder_name,
         source_language=args.source_language,
         translation_provider=args.provider,
         output_dir=args.output_dir,
@@ -389,6 +390,7 @@ def main() -> None:
     dub.add_argument("--source-language", default=None, help="Optional source language code")
     dub.add_argument("--provider", default=settings.default_translation_provider, help="Translation provider id")
     dub.add_argument("--output-dir", default="outputs/dubbing", help="Output directory")
+    dub.add_argument("--folder-name", default=None, help="Optional output subfolder name")
     dub.add_argument("--tts-model", default=settings.default_model, help="TTS model id or local path")
     dub.add_argument("--asr-model", default=DEFAULT_ASR_MODEL_ID, help="ASR model id or local path")
     dub.add_argument("--effect-preset", choices=EFFECT_PRESETS, default=settings.default_effect_preset)

@@ -86,6 +86,8 @@ type StudioContextValue = {
   exportSubtitles: () => Promise<void>;
   dubbingFile: File | null;
   setDubbingFile: (file: File | null) => void;
+  dubbingFolderName: string;
+  setDubbingFolderName: (name: string) => void;
   dubbingVoice: string;
   setDubbingVoice: (voice: string) => void;
   dubbingSourceLanguage: string;
@@ -157,6 +159,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [subtitleFormat, setSubtitleFormat] = useState("srt");
   const [subtitleSegments, setSubtitleSegments] = useState<SubtitleSegment[]>([]);
   const [dubbingFile, setDubbingFile] = useState<File | null>(null);
+  const [dubbingFolderName, setDubbingFolderName] = useState("");
   const [dubbingVoice, setDubbingVoice] = useState("");
   const [dubbingSourceLanguage, setDubbingSourceLanguage] = useState("en");
   const [dubbingTargetLanguage, setDubbingTargetLanguage] = useState("vi");
@@ -398,6 +401,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     try {
       const form = new FormData();
       form.set("file", dubbingFile);
+      form.set("folder_name", dubbingFolderName);
       form.set("voice", dubbingVoice);
       form.set("source_language", dubbingSourceLanguage);
       form.set("target_language", dubbingTargetLanguage);
@@ -607,6 +611,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         exportSubtitles,
         dubbingFile,
         setDubbingFile,
+        dubbingFolderName,
+        setDubbingFolderName,
         dubbingVoice,
         setDubbingVoice,
         dubbingSourceLanguage,

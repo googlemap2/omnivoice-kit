@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from uuid import uuid4
 
 import numpy as np
 import soundfile as sf
@@ -19,6 +19,7 @@ from voicekit.translation import translate_segments
 @dataclass(frozen=True)
 class DubbingResult:
     id: str
+    folder_name: str
     input_path: str
     extracted_audio_path: str
     dubbed_audio_path: str
@@ -60,6 +61,31 @@ def place_segment(
     timeline[start_idx:end_idx] += fitted[: end_idx - start_idx]
 
 
+def sanitize_folder_name(value: str) -> str:
+    normalized = re.sub(r"[^A-Za-z0-9._-]+", "-", value.strip())
+    normalized = re.sub(r"-+", "-", normalized).strip(" .-_")
+    return normalized[:80] or "dubbing"
+
+
+def next_output_folder(output_dir: str | Path, input_path: str | Path, folder_name: str | None = None) -> tuple[str, Path]:
+    base_dir = Path(output_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+    source = Path(input_path)
+    base_name = sanitize_folder_name(folder_name or source.stem or "dubbing")
+    candidate = base_dir / base_name
+    if not candidate.exists():
+        candidate.mkdir(parents=True)
+        return base_name, candidate
+    index = 2
+    while True:
+        next_name = f"{base_name}-{index}"
+        candidate = base_dir / next_name
+        if not candidate.exists():
+            candidate.mkdir(parents=True)
+            return next_name, candidate
+        index += 1
+
+
 def dub_file(
     input_path: str | Path,
     voice: str,
@@ -67,6 +93,7 @@ def dub_file(
     source_language: str | None = None,
     translation_provider: str | None = None,
     output_dir: str | Path = "outputs/dubbing",
+    folder_name: str | None = None,
     tts_model: str = DEFAULT_MODEL_ID,
     asr_model: str = DEFAULT_ASR_MODEL_ID,
     effect_preset: str = "raw",
@@ -86,9 +113,7 @@ def dub_file(
     if not target_language:
         raise ValueError("target_language is required for dubbing.")
 
-    job_id = uuid4().hex
-    job_dir = Path(output_dir) / job_id
-    job_dir.mkdir(parents=True, exist_ok=True)
+    job_id, job_dir = next_output_folder(output_dir, source, folder_name=folder_name)
 
     extracted_audio = extract_audio(source, job_dir / "source.wav")
     transcription = transcribe_file(
@@ -173,6 +198,7 @@ def dub_file(
 
     return DubbingResult(
         id=job_id,
+        folder_name=job_id,
         input_path=str(source),
         extracted_audio_path=str(extracted_audio),
         dubbed_audio_path=str(dubbed_audio),

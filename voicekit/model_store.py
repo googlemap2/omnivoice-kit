@@ -6,6 +6,7 @@ from typing import Any
 
 DEFAULT_MODEL_ID = "k2-fsa/OmniVoice"
 KHANH_TTS_MODEL_ID = "kjanh/KhanhTTS-OmniVoice"
+DEFAULT_DIARIZATION_MODEL_ID = "pyannote/speaker-diarization-3.1"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MODEL_BASE_DIR = PROJECT_ROOT / "models"
 DEFAULT_HF_HOME = PROJECT_ROOT / "models" / ".hf_home"
@@ -19,6 +20,7 @@ KNOWN_MODEL_IDS = [
     "Systran/faster-whisper-medium",
     "Systran/faster-whisper-small",
     "Systran/faster-whisper-base",
+    DEFAULT_DIARIZATION_MODEL_ID,
 ]
 
 
@@ -32,7 +34,10 @@ class ModelStatus:
     cache_path: str
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        data["has_config"] = self.config_exists
+        data["has_weights"] = self.weights_exist
+        return data
 
 
 def get_models_dir() -> Path:
@@ -95,12 +100,13 @@ def get_local_model_dir(repo_id: str) -> Path:
 
 def get_model_status(repo_id: str = DEFAULT_MODEL_ID, local_dir: Path | None = None) -> ModelStatus:
     target_dir = local_dir or get_local_model_dir(repo_id)
-    config_exists = (target_dir / "config.json").exists()
+    config_exists = (target_dir / "config.json").exists() or (target_dir / "config.yaml").exists()
     weights_exist = has_model_weights(target_dir)
+    pipeline_config_exists = repo_id == DEFAULT_DIARIZATION_MODEL_ID and (target_dir / "config.yaml").exists()
     return ModelStatus(
         repo_id=repo_id,
         local_path=str(target_dir.resolve()),
-        installed=config_exists and weights_exist,
+        installed=config_exists and (weights_exist or pipeline_config_exists),
         config_exists=config_exists,
         weights_exist=weights_exist,
         cache_path=str(DEFAULT_HF_CACHE.resolve()),
@@ -111,12 +117,12 @@ def list_model_statuses(repo_ids: list[str] | None = None) -> list[ModelStatus]:
     return [get_model_status(repo_id) for repo_id in (repo_ids or KNOWN_MODEL_IDS)]
 
 
-def install_model(repo_id: str = DEFAULT_MODEL_ID, local_dir: Path | None = None) -> ModelStatus:
-    ensure_local_model(repo_id, local_dir=local_dir)
+def install_model(repo_id: str = DEFAULT_MODEL_ID, local_dir: Path | None = None, token: str | None = None) -> ModelStatus:
+    ensure_local_model(repo_id, local_dir=local_dir, token=token)
     return get_model_status(repo_id, local_dir=local_dir)
 
 
-def ensure_local_model(repo_id: str, local_dir: Path | None = None) -> str:
+def ensure_local_model(repo_id: str, local_dir: Path | None = None, token: str | None = None) -> str:
     configure_hf_local_cache()
     local_dir = local_dir or get_local_model_dir(repo_id)
     local_dir.mkdir(parents=True, exist_ok=True)
@@ -128,16 +134,22 @@ def ensure_local_model(repo_id: str, local_dir: Path | None = None) -> str:
     download_kwargs: dict[str, Any] = {
         "repo_id": repo_id,
         "local_dir": str(local_dir),
+        "cache_dir": str(DEFAULT_HF_CACHE),
+        "local_dir_use_symlinks": False,
     }
+    if token:
+        download_kwargs["token"] = token
     try:
-        snapshot_download(**download_kwargs, local_dir_only=True)
+        snapshot_download(**download_kwargs)
     except TypeError:
-        # Older huggingface_hub: fall back to explicit project cache under models/.
+        # Older huggingface_hub may not support ``token`` or ``local_dir_use_symlinks``.
+        fallback_kwargs = dict(download_kwargs)
+        fallback_kwargs.pop("local_dir_use_symlinks", None)
+        if token:
+            fallback_kwargs.pop("token", None)
+            fallback_kwargs["use_auth_token"] = token
         snapshot_download(
-            repo_id=repo_id,
-            local_dir=str(local_dir),
-            cache_dir=str(DEFAULT_HF_CACHE),
-            local_dir_use_symlinks=False,
+            **fallback_kwargs,
         )
     return str(local_dir.resolve())
 

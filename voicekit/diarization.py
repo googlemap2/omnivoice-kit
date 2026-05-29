@@ -5,11 +5,9 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from voicekit.model_store import DEFAULT_DIARIZATION_MODEL_ID, ensure_local_model
 from voicekit.settings import load_settings
 from voicekit.subtitles import SubtitleSegment, normalize_segments
-
-
-DEFAULT_DIARIZATION_MODEL_ID = "pyannote/speaker-diarization-3.1"
 
 
 @dataclass(frozen=True)
@@ -58,8 +56,9 @@ def diarize_file(
     except ImportError as e:
         raise RuntimeError("Missing dependency 'pyannote.audio'. Install it before running diarization.") from e
 
+    model_source = str(Path(model_id)) if Path(model_id).exists() else ensure_local_model(model_id, token=token)
     try:
-        pipeline = Pipeline.from_pretrained(model_id, use_auth_token=token)
+        pipeline = Pipeline.from_pretrained(model_source, use_auth_token=token)
     except Exception as e:
         raise RuntimeError(
             f"Could not load {model_id}. Accept the model license on Hugging Face and verify your token."

@@ -113,6 +113,7 @@ class SpeechRequest(BaseModel):
 
 class ModelInstallRequest(BaseModel):
     repo_id: str = DEFAULT_MODEL_ID
+    hf_token: str | None = None
 
 
 class SettingsRequest(BaseModel):
@@ -186,6 +187,7 @@ class DubbingRequest(BaseModel):
     input_path: str = Field(min_length=1)
     voice: str = Field(min_length=1)
     target_language: str = Field(min_length=1)
+    folder_name: str | None = None
     source_language: str | None = None
     translation_provider: str | None = None
     tts_model: str = DEFAULT_MODEL_ID
@@ -316,7 +318,8 @@ def update_translation_provider_settings(request: TranslationProviderSettingsReq
 @app.post("/v1/model-status/install")
 def install_model_endpoint(request: ModelInstallRequest) -> dict:
     try:
-        status = install_model(request.repo_id)
+        token = request.hf_token or load_settings().huggingface_token
+        status = install_model(request.repo_id, token=token)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
     return {
@@ -545,6 +548,7 @@ def create_dubbing_job(request: DubbingRequest) -> dict:
             input_path=request.input_path,
             voice=request.voice,
             target_language=request.target_language,
+            folder_name=request.folder_name,
             source_language=request.source_language,
             translation_provider=request.translation_provider,
             tts_model=request.tts_model,
@@ -567,6 +571,7 @@ async def create_dubbing_job_from_upload(
     file: UploadFile = File(...),
     voice: str = Form(...),
     target_language: str = Form(...),
+    folder_name: str | None = Form(None),
     source_language: str | None = Form(None),
     translation_provider: str | None = Form(None),
     tts_model: str = Form(DEFAULT_MODEL_ID),
@@ -589,6 +594,7 @@ async def create_dubbing_job_from_upload(
             input_path=upload_path,
             voice=voice,
             target_language=target_language,
+            folder_name=folder_name or Path(file.filename or "").stem or None,
             source_language=source_language,
             translation_provider=translation_provider,
             tts_model=tts_model,

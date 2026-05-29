@@ -76,6 +76,7 @@ export type SubtitleSegment = {
 
 export type DubbingResult = {
   id: string;
+  folder_name: string;
   input_path: string;
   extracted_audio_path: string;
   dubbed_audio_path: string;

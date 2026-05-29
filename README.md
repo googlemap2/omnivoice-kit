@@ -289,11 +289,14 @@ uv run voicekit dub \
   --source-language en \
   --target-language vi \
   --provider passthrough \
+  --folder-name video-demo \
   --output-dir outputs/dubbing
 ```
 
 Kết quả trả JSON gồm đường dẫn `dubbed_audio_path`, `dubbed_video_path`,
-`srt_path`, và `vtt_path`.
+`srt_path`, và `vtt_path`. Nếu không truyền `--folder-name`, output subfolder
+sẽ dùng tên file input và tự thêm số tăng dần khi trùng, ví dụ
+`video`, `video-2`, `video-3`.
 
 Chạy thêm speaker diarization nếu đã cài `pyannote.audio`, đã accept license
 model `pyannote/speaker-diarization-3.1`, và có Hugging Face token trong
@@ -306,6 +309,18 @@ uv run voicekit dub \
   --source-language en \
   --target-language vi \
   --diarize
+```
+
+Model diarization cũng được snapshot vào thư mục model của project:
+
+```text
+models/models--pyannote--speaker-diarization-3.1/
+```
+
+Cache phụ của Hugging Face/pyannote vẫn nằm trong:
+
+```text
+models/.hf_home/hub/
 ```
 
 Chạy diarization riêng:
