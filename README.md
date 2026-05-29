@@ -347,6 +347,29 @@ Event JSON trả về gồm `ready`, `partial`, `final`, `done`, `error`. V1 dù
 stop thủ công để chốt transcript; silence/end-of-utterance detection sẽ là bước
 nâng cấp sau.
 
+### 3.8 Batch queue v1
+
+Backend có SQLite job queue tại `data/jobs.sqlite3`, worker nền chạy cùng
+FastAPI, và tab **Jobs** để xem/cancel/delete job. Endpoint chính:
+
+```text
+GET    /v1/jobs
+POST   /v1/jobs
+GET    /v1/jobs/{job_id}
+POST   /v1/jobs/{job_id}/cancel
+DELETE /v1/jobs/{job_id}
+```
+
+Tạo translation job:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/jobs \
+  -H "Content-Type: application/json" \
+  -d '{"type":"translation","params":{"text":"hello","source_language":"en","target_language":"vi","provider":"passthrough"}}'
+```
+
+Dubbing upload có thể route qua queue bằng form field `queued=true`.
+
 Provider có sẵn: `passthrough`, `google` (qua `deep-translator`, không cần API key), `nllb`
 (cần `transformers` + model trong `models/`), `deepl`, `microsoft`, `mymemory` (ba provider cuối
 cần API key trong settings, chưa implement đầy đủ).

@@ -43,6 +43,7 @@ from voicekit.diarization import (
 from voicekit.dictation import fake_result_event, partial_event, result_event, transcribe_audio_bytes
 from voicekit.dubbing import dub_file
 from voicekit.history import list_history
+from voicekit.jobs import JOB_STATUSES, JobType, get_job_store, get_job_worker
 from voicekit.model_store import DEFAULT_MODEL_ID, install_model, list_model_statuses
 from voicekit.settings import (
     DEFAULT_NLLB_MODEL_ID,
@@ -236,6 +237,21 @@ class DubbingRequest(BaseModel):
 class DiarizationMergeRequest(BaseModel):
     subtitles: list[SubtitleSegmentRequest] = Field(default_factory=list)
     diarization: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class JobCreateRequest(BaseModel):
+    type: JobType
+    params: dict[str, Any] = Field(default_factory=dict)
+
+
+@app.on_event("startup")
+def start_job_worker() -> None:
+    get_job_worker().start()
+
+
+@app.on_event("shutdown")
+def stop_job_worker() -> None:
+    get_job_worker().stop()
 
 
 @app.get("/health")
@@ -487,6 +503,48 @@ def list_generation_history(limit: int = 50) -> dict:
     }
 
 
+@app.get("/v1/jobs")
+def list_jobs(limit: int = 50) -> dict:
+    try:
+        data = [job.to_dict() for job in get_job_store().list_jobs(limit=limit)]
+    except Exception as e:
+        raise _server_error(e) from e
+    return {"object": "list", "data": data, "statuses": list(JOB_STATUSES)}
+
+
+@app.post("/v1/jobs")
+def create_job(request: JobCreateRequest) -> dict:
+    try:
+        job = get_job_store().create_job(request.type, request.params)
+    except Exception as e:
+        raise _server_error(e) from e
+    return {"object": "job", "data": job.to_dict()}
+
+
+@app.get("/v1/jobs/{job_id}")
+def get_job(job_id: str) -> dict:
+    job = get_job_store().get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job not found: {job_id}")
+    return {"object": "job", "data": job.to_dict()}
+
+
+@app.post("/v1/jobs/{job_id}/cancel")
+def cancel_job(job_id: str) -> dict:
+    job = get_job_store().cancel_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job not found: {job_id}")
+    return {"object": "job", "data": job.to_dict()}
+
+
+@app.delete("/v1/jobs/{job_id}")
+def delete_job(job_id: str) -> dict:
+    deleted = get_job_store().delete_job(job_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Job not found: {job_id}")
+    return {"object": "job", "deleted": True, "id": job_id}
+
+
 @app.get("/v1/files")
 def get_output_file(path: str) -> FileResponse:
     return _output_file_response(path)
@@ -620,6 +678,7 @@ async def create_dubbing_job_from_upload(
     enable_diarization: bool = Form(False),
     diarization_model: str = Form(DEFAULT_DIARIZATION_MODEL_ID),
     hf_token: str | None = Form(None),
+    queued: bool = Form(False),
 ) -> dict:
     upload_dir = Path("data") / "uploads"
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -627,6 +686,28 @@ async def create_dubbing_job_from_upload(
     upload_path = upload_dir / f"dubbing_input_{uuid4().hex}{suffix}"
     try:
         upload_path.write_bytes(await file.read())
+        if queued:
+            job = get_job_store().create_job(
+                "dubbing",
+                {
+                    "input_path": str(upload_path),
+                    "voice": voice,
+                    "target_language": target_language,
+                    "folder_name": folder_name or Path(file.filename or "").stem or None,
+                    "source_language": source_language,
+                    "translation_provider": translation_provider,
+                    "tts_model": tts_model,
+                    "asr_model": asr_model,
+                    "effect_preset": effect_preset,
+                    "num_step": num_step,
+                    "guidance_scale": guidance_scale,
+                    "speed": speed,
+                    "enable_diarization": enable_diarization,
+                    "diarization_model": diarization_model,
+                    "hf_token": hf_token,
+                },
+            )
+            return {"object": "job", "data": job.to_dict()}
         result = dub_file(
             input_path=upload_path,
             voice=voice,

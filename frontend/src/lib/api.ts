@@ -2,6 +2,7 @@ export type {
   AppSettings,
   DubbingResult,
   HistoryEntry,
+  JobRecord,
   Meta,
   ModelStatus,
   Option,

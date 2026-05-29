@@ -90,6 +90,18 @@ export type DubbingResult = {
   speakers: string[];
 };
 
+export type JobRecord = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  type: string;
+  status: "pending" | "running" | "completed" | "failed" | "canceled";
+  params: Record<string, unknown>;
+  result: Record<string, unknown> | null;
+  error: string | null;
+  progress: number;
+};
+
 export const emptyMeta: Meta = {
   omnivoice_models: [],
   asr_models: [],

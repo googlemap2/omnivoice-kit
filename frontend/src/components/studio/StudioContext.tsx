@@ -6,6 +6,7 @@ import {
   type AppSettings,
   type DubbingResult,
   type HistoryEntry,
+  type JobRecord,
   type Meta,
   type ModelStatus,
   type SubtitleSegment,
@@ -27,11 +28,16 @@ type StudioContextValue = {
   settings: AppSettings | null;
   setSettings: (settings: AppSettings) => void;
   history: HistoryEntry[];
+  jobs: JobRecord[];
   busy: boolean;
   message: string;
   error: string | null;
   installedCount: number;
   refreshAll: () => Promise<void>;
+  refreshJobs: () => Promise<void>;
+  createTranslationJob: () => Promise<void>;
+  cancelJob: (jobId: string) => Promise<void>;
+  deleteJob: (jobId: string) => Promise<void>;
   mode: GenerationMode;
   setMode: (mode: GenerationMode) => void;
   speechText: string;
@@ -136,6 +142,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [providers, setProviders] = useState<TranslationProvider[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("Ready.");
   const [error, setError] = useState<string | null>(null);
@@ -199,13 +206,14 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setBusy(true);
     setError(null);
     try {
-      const [metaData, voiceData, statusData, providerData, settingsData, historyData] = await Promise.all([
+      const [metaData, voiceData, statusData, providerData, settingsData, historyData, jobsData] = await Promise.all([
         apiJson<{ data?: Meta } | Meta>("/v1/meta"),
         apiJson<{ data: Voice[] }>("/v1/voices"),
         apiJson<{ data: ModelStatus[] }>("/v1/model-status"),
         apiJson<{ data: TranslationProvider[] }>("/v1/translation/providers"),
         apiJson<{ data: AppSettings }>("/v1/settings"),
         apiJson<{ data: HistoryEntry[] }>("/v1/generation-history?limit=20"),
+        apiJson<{ data: JobRecord[] }>("/v1/jobs?limit=50"),
       ]);
       const nextMeta = "data" in metaData && metaData.data ? metaData.data : (metaData as Meta);
       setMeta(nextMeta);
@@ -220,6 +228,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       setDubbingProvider(settingsData.data.default_translation_provider || "passthrough");
       setEffectPreset(settingsData.data.default_effect_preset);
       setHistory(historyData.data);
+      setJobs(jobsData.data);
       setMessage("Workspace synchronized with API.");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -672,6 +681,61 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setHistory(result.data);
   }
 
+  async function refreshJobs() {
+    try {
+      const result = await apiJson<{ data: JobRecord[] }>("/v1/jobs?limit=50");
+      setJobs(result.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  async function createTranslationJob() {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await apiJson<{ data: JobRecord }>("/v1/jobs", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "translation",
+          params: {
+            text: translateText,
+            source_language: sourceLanguage,
+            target_language: targetLanguage,
+            provider,
+          },
+        }),
+      });
+      setJobs((current) => [result.data, ...current.filter((job) => job.id !== result.data.id)]);
+      setMessage(`Queued translation job ${result.data.id}.`);
+      await refreshJobs();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelJob(jobId: string) {
+    try {
+      const result = await apiJson<{ data: JobRecord }>(`/v1/jobs/${jobId}/cancel`, { method: "POST" });
+      setJobs((current) => current.map((job) => (job.id === jobId ? result.data : job)));
+      setMessage(`Canceled job ${jobId}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  async function deleteJob(jobId: string) {
+    try {
+      await apiJson(`/v1/jobs/${jobId}`, { method: "DELETE" });
+      setJobs((current) => current.filter((job) => job.id !== jobId));
+      setMessage(`Deleted job ${jobId}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   return (
     <StudioContext.Provider
       value={{
@@ -682,11 +746,16 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         settings,
         setSettings,
         history,
+        jobs,
         busy,
         message,
         error,
         installedCount,
         refreshAll,
+        refreshJobs,
+        createTranslationJob,
+        cancelJob,
+        deleteJob,
         mode,
         setMode,
         speechText,
