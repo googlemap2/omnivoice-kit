@@ -38,6 +38,7 @@ type StudioContextValue = {
   createTranslationJob: () => Promise<void>;
   cancelJob: (jobId: string) => Promise<void>;
   deleteJob: (jobId: string) => Promise<void>;
+  downloadJobOutput: (job: JobRecord, artifact?: string) => Promise<void>;
   mode: GenerationMode;
   setMode: (mode: GenerationMode) => void;
   speechText: string;
@@ -806,6 +807,62 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function downloadJobOutput(job: JobRecord, artifact = "primary") {
+    try {
+      const outputPath = jobOutputPath(job, artifact);
+      let blob: Blob;
+      let filename: string;
+      if (outputPath) {
+        blob = await apiAudio(`/v1/files?path=${encodeURIComponent(outputPath)}`);
+        filename = outputPath.split(/[\\/]/).pop() || `${job.type}-${job.id}`;
+      } else {
+        const fallback = jobFallbackDownload(job, artifact);
+        if (!fallback) throw new Error("Job has no downloadable output.");
+        blob = fallback.blob;
+        filename = fallback.filename;
+      }
+      downloadLocalBlob(blob, filename);
+      setMessage(`Downloaded ${filename}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  function jobOutputPath(job: JobRecord, artifact: string) {
+    const result = job.result || {};
+    if (artifact === "audio" && typeof result.dubbed_audio_path === "string") return result.dubbed_audio_path;
+    if (artifact === "video" && typeof result.dubbed_video_path === "string") return result.dubbed_video_path;
+    if (artifact === "srt" && typeof result.srt_path === "string") return result.srt_path;
+    if (artifact === "vtt" && typeof result.vtt_path === "string") return result.vtt_path;
+    if (typeof result.output_path === "string") return result.output_path;
+    if (typeof result.dubbed_video_path === "string") return result.dubbed_video_path;
+    if (typeof result.dubbed_audio_path === "string") return result.dubbed_audio_path;
+    return "";
+  }
+
+  function jobFallbackDownload(job: JobRecord, artifact: string) {
+    if (!job.result) return null;
+    if (job.type === "translation" && typeof job.result.text === "string" && artifact !== "json") {
+      return {
+        blob: new Blob([job.result.text], { type: "text/plain;charset=utf-8" }),
+        filename: `translation-${job.id.slice(0, 8)}.txt`,
+      };
+    }
+    return {
+      blob: new Blob([JSON.stringify(job.result, null, 2)], { type: "application/json" }),
+      filename: `${job.type}-${job.id.slice(0, 8)}.json`,
+    };
+  }
+
+  function downloadLocalBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <StudioContext.Provider
       value={{
@@ -826,6 +883,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         createTranslationJob,
         cancelJob,
         deleteJob,
+        downloadJobOutput,
         mode,
         setMode,
         speechText,

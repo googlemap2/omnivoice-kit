@@ -2,6 +2,7 @@ import os
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 
 DATABASE_ENV_KEYS = ("VOICEKIT_DATABASE_URL", "SUPABASE_DATABASE_URL", "DATABASE_URL")
@@ -13,10 +14,22 @@ def database_url() -> str:
     for key in DATABASE_ENV_KEYS:
         value = os.environ.get(key)
         if value:
-            return value
+            return validate_database_url(value)
     raise RuntimeError(
         "PostgreSQL database URL is required. Set VOICEKIT_DATABASE_URL, SUPABASE_DATABASE_URL, or DATABASE_URL."
     )
+
+
+def validate_database_url(value: str) -> str:
+    parsed = urlparse(value)
+    if parsed.scheme not in {"postgresql", "postgres"}:
+        raise RuntimeError("PostgreSQL database URL must start with postgresql:// or postgres://.")
+    if not parsed.hostname or parsed.hostname == "postgres":
+        raise RuntimeError(
+            "PostgreSQL database URL host is invalid. If your password contains '/', '@', '#', '?', '&', ':', "
+            "or '%', URL-encode the password before putting it in VOICEKIT_DATABASE_URL."
+        )
+    return value
 
 
 def load_env_file() -> None:

@@ -2,9 +2,9 @@
 
 import CancelIcon from "@mui/icons-material/Cancel";
 import DeleteIcon from "@mui/icons-material/Delete";
+import DownloadIcon from "@mui/icons-material/Download";
 import QueueIcon from "@mui/icons-material/Queue";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import SendIcon from "@mui/icons-material/Send";
 import {
   Box,
   Button,
@@ -19,17 +19,29 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import type { ChipProps } from "@mui/material";
+import { useEffect, useRef } from "react";
 import { WorkspaceShell } from "../../../components/layout/WorkspaceShell";
-import { SelectField } from "../../../components/ui/SelectField";
 import { useStudio } from "../../../components/studio/StudioContext";
 
 export default function JobsPage() {
   const studio = useStudio();
+  const refreshJobsRef = useRef(studio.refreshJobs);
+
+  useEffect(() => {
+    refreshJobsRef.current = studio.refreshJobs;
+  }, [studio.refreshJobs]);
+
+  useEffect(() => {
+    void refreshJobsRef.current();
+    const intervalId = window.setInterval(() => {
+      void refreshJobsRef.current();
+    }, 3000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   return (
     <WorkspaceShell
@@ -41,37 +53,7 @@ export default function JobsPage() {
         </Button>
       }
     >
-      <Box sx={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", gap: 2 }}>
-        <Stack spacing={2}>
-          <TextField
-            label="Translation text"
-            multiline
-            minRows={5}
-            value={studio.translateText}
-            onChange={(event) => studio.setTranslateText(event.target.value)}
-          />
-          <SelectField
-            label="Source language"
-            value={studio.sourceLanguage}
-            onChange={studio.setSourceLanguage}
-            options={studio.meta.translation_languages}
-          />
-          <SelectField
-            label="Target language"
-            value={studio.targetLanguage}
-            onChange={studio.setTargetLanguage}
-            options={studio.meta.translation_languages}
-          />
-          <SelectField
-            label="Provider"
-            value={studio.provider}
-            onChange={studio.setProvider}
-            options={studio.providers.map((item) => ({ id: item.id, label: item.name }))}
-          />
-          <Button startIcon={<SendIcon />} variant="contained" onClick={studio.createTranslationJob}>
-            Queue translation
-          </Button>
-        </Stack>
+      <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 2 }}>
         <Paper variant="outlined" sx={{ bgcolor: "#252526", overflow: "hidden", minWidth: 0 }}>
           <TableContainer sx={{ maxHeight: 620 }}>
             <Table stickyHeader size="small">
@@ -116,6 +98,13 @@ export default function JobsPage() {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={0.5}>
+                        {downloadArtifacts(job).map((artifact) => (
+                          <Tooltip key={artifact.id} title={artifact.label}>
+                            <IconButton size="small" onClick={() => studio.downloadJobOutput(job, artifact.id)}>
+                              <DownloadIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ))}
                         <Tooltip title="Cancel job">
                           <span>
                             <IconButton
@@ -174,4 +163,33 @@ function summarizeParams(params: Record<string, unknown>) {
   if (typeof params.text === "string") return params.text;
   if (typeof params.input_path === "string") return params.input_path;
   return JSON.stringify(params);
+}
+
+function downloadArtifacts(job: {
+  type: string;
+  status: string;
+  result: Record<string, unknown> | null;
+}) {
+  if (job.status !== "completed" || !job.result) return [];
+  if (job.type === "speech" && typeof job.result.output_path === "string") {
+    return [{ id: "primary", label: "Download speech WAV" }];
+  }
+  if (job.type === "dubbing") {
+    const items = [];
+    if (typeof job.result.dubbed_video_path === "string") items.push({ id: "video", label: "Download dubbed video" });
+    if (typeof job.result.dubbed_audio_path === "string") items.push({ id: "audio", label: "Download dubbed audio" });
+    if (typeof job.result.srt_path === "string") items.push({ id: "srt", label: "Download SRT" });
+    if (typeof job.result.vtt_path === "string") items.push({ id: "vtt", label: "Download VTT" });
+    return items;
+  }
+  if (job.type === "translation") {
+    return [
+      { id: "text", label: "Download text" },
+      { id: "json", label: "Download JSON" },
+    ];
+  }
+  if (job.type === "transcription") {
+    return [{ id: "json", label: "Download transcript JSON" }];
+  }
+  return [{ id: "json", label: "Download JSON" }];
 }

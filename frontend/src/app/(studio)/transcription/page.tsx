@@ -67,7 +67,7 @@ export default function TranscriptionPage() {
             onChange={studio.setTranscribeFormat}
             options={studio.meta.transcription_formats.map((id) => ({ id, label: id }))}
           />
-          <FormControlLabel
+          {/* <FormControlLabel
             control={
               <Switch
                 checked={studio.transcribeQueued}
@@ -75,7 +75,7 @@ export default function TranscriptionPage() {
               />
             }
             label="Send to queue"
-          />
+          /> */}
           <Button
             startIcon={studio.dictationActive ? <StopIcon /> : <MicIcon />}
             variant={studio.dictationActive ? "contained" : "outlined"}
