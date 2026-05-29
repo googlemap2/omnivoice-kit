@@ -105,7 +105,7 @@ export default function DubbingPage() {
                     }}
                   />
                 )}
-                {studio.dubbingAudioUrl && (
+                {studio.dubbingAudioUrl && !studio.dubbingVideoUrl && (
                   <Box
                     component="audio"
                     src={studio.dubbingAudioUrl}
@@ -113,8 +113,20 @@ export default function DubbingPage() {
                     sx={{ width: "100%" }}
                   />
                 )}
-                <Stack direction="row" spacing={1}>
-                  <Chip size="small" color="primary" label={studio.dubbingResult.folder_name} />
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ minWidth: 0 }}>
+                  <Chip
+                    size="small"
+                    color="primary"
+                    label={studio.dubbingResult.folder_name}
+                    sx={{
+                      maxWidth: 360,
+                      "& .MuiChip-label": {
+                        display: "block",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      },
+                    }}
+                  />
                   <Chip size="small" color="success" label={`${studio.dubbingResult.segment_count} segments`} />
                   <Chip size="small" variant="outlined" label={studio.dubbingResult.voice} />
                   {studio.dubbingResult.speakers.map((speaker) => (
