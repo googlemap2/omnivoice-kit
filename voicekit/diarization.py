@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -30,7 +31,21 @@ def get_huggingface_token(token: str | None = None) -> str | None:
     return os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
 
 
+def configure_headless_matplotlib() -> None:
+    backend = os.environ.get("MPLBACKEND", "").strip()
+    if backend.startswith("module://") or backend == "":
+        os.environ["MPLBACKEND"] = "agg"
+    if "matplotlib" in sys.modules:
+        try:
+            import matplotlib
+
+            matplotlib.use("agg", force=True)
+        except Exception:
+            pass
+
+
 def diarization_availability(token: str | None = None) -> tuple[bool, str | None]:
+    configure_headless_matplotlib()
     try:
         import pyannote.audio  # noqa: F401
     except ImportError:
@@ -51,6 +66,7 @@ def diarize_file(
     token = get_huggingface_token(hf_token)
     if not token:
         raise RuntimeError("Hugging Face token is required for pyannote diarization.")
+    configure_headless_matplotlib()
     try:
         from pyannote.audio import Pipeline
     except ImportError as e:

@@ -1,6 +1,12 @@
 import unittest
+from unittest.mock import patch
 
-from voicekit.diarization import DiarizationSegment, assign_speakers_to_segments, overlap_seconds
+from voicekit.diarization import (
+    DiarizationSegment,
+    assign_speakers_to_segments,
+    configure_headless_matplotlib,
+    overlap_seconds,
+)
 
 
 class DiarizationMergeTests(unittest.TestCase):
@@ -28,6 +34,13 @@ class DiarizationMergeTests(unittest.TestCase):
             [{"start": 0.0, "end": 1.0, "speaker": "SPEAKER_00"}],
         )
         self.assertIsNone(assigned[0].speaker)
+
+    def test_configure_headless_matplotlib_replaces_colab_backend(self) -> None:
+        with patch.dict("os.environ", {"MPLBACKEND": "module://matplotlib_inline.backend_inline"}):
+            configure_headless_matplotlib()
+            import os
+
+            self.assertEqual(os.environ["MPLBACKEND"], "agg")
 
 
 if __name__ == "__main__":
