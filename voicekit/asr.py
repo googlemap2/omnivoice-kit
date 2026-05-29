@@ -89,6 +89,11 @@ def transcribe_file(
     compute_type: str | None = None,
     word_timestamps: bool = False,
     beam_size: int = 5,
+    vad_filter: bool = False,
+    vad_parameters: dict[str, Any] | None = None,
+    condition_on_previous_text: bool = True,
+    no_speech_threshold: float | None = 0.6,
+    hallucination_silence_threshold: float | None = None,
 ) -> TranscriptionResult:
     path = Path(audio_path)
     if not path.exists():
@@ -100,6 +105,11 @@ def transcribe_file(
         language=language or None,
         beam_size=beam_size,
         word_timestamps=word_timestamps,
+        vad_filter=vad_filter,
+        vad_parameters=vad_parameters,
+        condition_on_previous_text=condition_on_previous_text,
+        no_speech_threshold=no_speech_threshold,
+        hallucination_silence_threshold=hallucination_silence_threshold,
     )
 
     segments: list[TranscriptionSegment] = []

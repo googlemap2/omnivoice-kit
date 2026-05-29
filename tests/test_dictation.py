@@ -1,7 +1,7 @@
 import unittest
 from importlib.util import find_spec
 
-from voicekit.dictation import fake_result_event, media_suffix_from_mime, partial_event
+from voicekit.dictation import DICTATION_VAD_PARAMETERS, fake_result_event, media_suffix_from_mime, partial_event
 
 
 class DictationProtocolTests(unittest.TestCase):
@@ -20,6 +20,10 @@ class DictationProtocolTests(unittest.TestCase):
         self.assertEqual(event["bytes_received"], 3)
         self.assertEqual(event["segments"], [])
         self.assertIn("fake dictation transcript", event["text"])
+
+    def test_dictation_vad_parameters_are_enabled(self) -> None:
+        self.assertEqual(DICTATION_VAD_PARAMETERS["min_silence_duration_ms"], 500)
+        self.assertEqual(DICTATION_VAD_PARAMETERS["speech_pad_ms"], 200)
 
     @unittest.skipIf(
         any(find_spec(name) is None for name in ("fastapi", "soundfile", "numpy", "omnivoice")),

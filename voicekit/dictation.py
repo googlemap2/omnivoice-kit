@@ -6,6 +6,10 @@ from uuid import uuid4
 
 DEFAULT_DICTATION_MODEL_ID = "Systran/faster-whisper-large-v3"
 DICTATION_UPLOAD_DIR = Path("data") / "dictation"
+DICTATION_VAD_PARAMETERS = {
+    "min_silence_duration_ms": 500,
+    "speech_pad_ms": 200,
+}
 
 
 @dataclass(frozen=True)
@@ -83,6 +87,11 @@ def transcribe_audio_bytes(
             compute_type=compute_type,
             word_timestamps=word_timestamps,
             beam_size=beam_size,
+            vad_filter=True,
+            vad_parameters=DICTATION_VAD_PARAMETERS,
+            condition_on_previous_text=False,
+            no_speech_threshold=0.8,
+            hallucination_silence_threshold=1.0,
         )
     finally:
         path.unlink(missing_ok=True)
