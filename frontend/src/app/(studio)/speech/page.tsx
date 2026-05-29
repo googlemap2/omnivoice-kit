@@ -231,6 +231,15 @@ export default function SpeechPage() {
             }
             label="Postprocess output"
           />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={studio.speechQueued}
+                onChange={(event) => studio.setSpeechQueued(event.target.checked)}
+              />
+            }
+            label="Send to queue"
+          />
         </Stack>
       </Box>
     </WorkspaceShell>

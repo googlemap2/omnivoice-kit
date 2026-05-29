@@ -84,7 +84,7 @@ Use this file to track refactor and feature work. Check each task after it is co
 
 ## Phase 6: Generation History
 
-- [x] Choose initial storage: SQLite or JSONL.
+- [x] Choose initial storage: PostgreSQL.
 - [x] Save metadata for each generation.
 - [x] Save mode: `speaker-id`, `ref-audio`, `voice-design`.
 - [x] Save model id/source.
@@ -252,14 +252,14 @@ Related feature: Realtime dictation.
 Related feature: Batch queue.
 
 - [x] Create `voicekit/jobs.py`.
-- [x] Add SQLite job table.
+- [x] Add PostgreSQL job table.
 - [x] Define job states: pending, running, completed, failed, canceled.
 - [x] Add worker loop for TTS/ASR/translation/dubbing jobs.
 - [x] Persist job params and result paths.
 - [x] Add cancel/delete job operations.
 - [x] Add `/v1/jobs` list/create/detail/cancel endpoints.
 - [x] Add basic queue UI.
-- [x] Route long-running dubbing through job queue.
+- [x] Route long-running TTS/ASR/translation/dubbing through job queue.
 - [x] Add smoke tests for job lifecycle.
 - [x] Update README.
 
@@ -366,7 +366,7 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Reorganized backend code into `voicekit/` package and removed unnecessary root shims.
 - [x] Moved UI, CLI, and helper scripts from legacy `omnivoice/` folder into `voicekit/`, then removed the legacy folder.
 - [x] Completed Phase 5 basic model status/install support in `voicekit.model_store`, FastAPI, and Gradio UI.
-- [x] Completed Phase 6 SQLite generation history with core/CLI recording, API listing, and Gradio History tab.
+- [x] Completed Phase 6 PostgreSQL generation history with core/CLI recording, API listing, and Gradio History tab.
 - [x] Completed Phase 7 audio DSP presets with raw/normalize/broadcast options in core, UI, CLI, and API.
 - [x] Completed Phase 8 local settings with JSON storage, API endpoints, UI tab, and CLI/UI defaults.
 - [x] Completed Phase 9 ASR transcription with lazy `faster-whisper` backend, CLI command, and Gradio Transcription tab.
@@ -376,4 +376,4 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Implemented Phase 13 video dubbing v1 with ffmpeg media helpers, synchronous ASR/translation/TTS pipeline, one-voice assignment, dubbed WAV/SRT/VTT/video outputs, API/CLI hooks, Dubbing UI, and timing unit tests. Real short media fixture smoke test remains pending.
 - [x] Implemented Phase 14 speaker diarization v1 with optional pyannote backend, Hugging Face token setting/env fallback, diarization API/CLI, speaker-label merge helpers, Dubbing UI toggle, and mocked merge tests. Per-speaker voice assignment remains pending.
 - [x] Implemented Phase 15 realtime dictation v1 with WebSocket audio chunks, ready/partial/final/done/error events, browser microphone capture in Transcription, fake protocol test helpers, and README notes. Silence detection and CLI microphone mode remain pending.
-- [x] Implemented Phase 16 batch queue v1 with SQLite jobs, background worker, job lifecycle API, queued dubbing upload mode, Jobs UI, and lifecycle tests. Fine-grained progress/cancel for already-running inference remains pending.
+- [x] Implemented Phase 16 batch queue v1 with Supabase/PostgreSQL jobs, background worker, job lifecycle API, queued Speech/Transcription/Translation/Dubbing modes, Jobs UI, and lifecycle tests. Fine-grained progress/cancel for already-running inference remains pending.

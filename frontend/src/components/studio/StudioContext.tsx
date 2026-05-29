@@ -71,6 +71,8 @@ type StudioContextValue = {
   audioUrl: string | null;
   lastAudio: Blob | null;
   generateSpeech: () => Promise<void>;
+  speechQueued: boolean;
+  setSpeechQueued: (value: boolean) => void;
   transcribeFile: File | null;
   setTranscribeFile: (file: File | null) => void;
   asrModel: string;
@@ -80,6 +82,8 @@ type StudioContextValue = {
   transcription: string;
   setTranscription: (text: string) => void;
   transcribe: () => Promise<void>;
+  transcribeQueued: boolean;
+  setTranscribeQueued: (value: boolean) => void;
   dictationActive: boolean;
   dictationTranscript: string;
   startDictation: () => Promise<void>;
@@ -124,6 +128,8 @@ type StudioContextValue = {
   setTargetLanguage: (language: string) => void;
   provider: string;
   setProvider: (provider: string) => void;
+  translateQueued: boolean;
+  setTranslateQueued: (value: boolean) => void;
   translate: () => Promise<void>;
   newVoiceId: string;
   setNewVoiceId: (id: string) => void;
@@ -150,6 +156,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [lastAudio, setLastAudio] = useState<Blob | null>(null);
+  const [speechQueued, setSpeechQueued] = useState(false);
 
   const [mode, setMode] = useState<GenerationMode>("speaker");
   const [speechText, setSpeechText] = useState("Xin chao, day la ban clone giong tu OmniVoice Kit.");
@@ -171,6 +178,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [asrModel, setAsrModel] = useState("");
   const [transcribeFormat, setTranscribeFormat] = useState("verbose_json");
   const [transcription, setTranscription] = useState("");
+  const [transcribeQueued, setTranscribeQueued] = useState(false);
   const [dictationActive, setDictationActive] = useState(false);
   const [dictationTranscript, setDictationTranscript] = useState("");
   const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
@@ -193,6 +201,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [sourceLanguage, setSourceLanguage] = useState("en");
   const [targetLanguage, setTargetLanguage] = useState("vi");
   const [provider, setProvider] = useState("passthrough");
+  const [translateQueued, setTranslateQueued] = useState(false);
 
   const [newVoiceId, setNewVoiceId] = useState("");
   const [newVoiceFile, setNewVoiceFile] = useState<File | null>(null);
@@ -259,11 +268,17 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     try {
       let blob: Blob;
       if (mode === "speaker") {
-        blob = await apiAudio("/v1/audio/speech", {
+        const init = {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(baseGenerationPayload({ voice: selectedVoice })),
-        });
+          body: JSON.stringify(baseGenerationPayload({ voice: selectedVoice, queued: speechQueued })),
+        };
+        if (speechQueued) {
+          const result = await apiJson<{ data: JobRecord }>("/v1/audio/speech", init);
+          trackQueuedJob(result.data, "speech");
+          return;
+        }
+        blob = await apiAudio("/v1/audio/speech", init);
       } else if (mode === "clone") {
         if (!refAudio) throw new Error("Choose a reference audio file first.");
         const form = new FormData();
@@ -281,13 +296,25 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         form.set("preprocess_prompt", String(preprocessPrompt));
         form.set("postprocess_output", String(postprocessOutput));
         form.set("effect_preset", effectPreset);
+        form.set("queued", String(speechQueued));
+        if (speechQueued) {
+          const result = await apiForm<{ data: JobRecord }>("/v1/audio/speech/clone", form);
+          trackQueuedJob(result.data, "speech");
+          return;
+        }
         blob = await apiAudio("/v1/audio/speech/clone", { method: "POST", body: form });
       } else {
-        blob = await apiAudio("/v1/audio/speech/design", {
+        const init = {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(baseGenerationPayload({ instruct_items: instructs })),
-        });
+          body: JSON.stringify(baseGenerationPayload({ instruct_items: instructs, queued: speechQueued })),
+        };
+        if (speechQueued) {
+          const result = await apiJson<{ data: JobRecord }>("/v1/audio/speech/design", init);
+          trackQueuedJob(result.data, "speech");
+          return;
+        }
+        blob = await apiAudio("/v1/audio/speech/design", init);
       }
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       setAudioUrl(URL.createObjectURL(blob));
@@ -332,6 +359,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       form.set("model", activeAsrModel);
       form.set("language", language);
       form.set("response_format", transcribeFormat);
+      form.set("queued", String(transcribeQueued));
+      if (transcribeQueued) {
+        const result = await apiForm<{ data: JobRecord }>("/v1/audio/transcriptions", form);
+        trackQueuedJob(result.data, "transcription");
+        return;
+      }
       const response = await fetch(`${API_BASE_URL}/v1/audio/transcriptions`, {
         method: "POST",
         body: form,
@@ -544,13 +577,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       const result = await apiForm<{ object: string; data: DubbingResult | JobRecord }>("/v1/dubbing/dub-upload", form);
       if (result.object === "job") {
         const job = result.data as JobRecord;
-        setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
         setDubbingResult(null);
         if (dubbingAudioUrl) URL.revokeObjectURL(dubbingAudioUrl);
         if (dubbingVideoUrl) URL.revokeObjectURL(dubbingVideoUrl);
         setDubbingAudioUrl(null);
         setDubbingVideoUrl(null);
-        setMessage(`Queued dubbing job ${job.id}.`);
+        trackQueuedJob(job, "dubbing");
         await refreshJobs();
       } else {
         const dubbing = result.data as DubbingResult;
@@ -631,6 +663,22 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setBusy(true);
     setError(null);
     try {
+      if (translateQueued) {
+        const result = await apiJson<{ data: JobRecord }>("/v1/jobs", {
+          method: "POST",
+          body: JSON.stringify({
+            type: "translation",
+            params: {
+              text: translateText,
+              source_language: sourceLanguage,
+              target_language: targetLanguage,
+              provider,
+            },
+          }),
+        });
+        trackQueuedJob(result.data, "translation");
+        return;
+      }
       const result = await apiJson<{ data: { text: string } }>("/v1/translation/translate", {
         method: "POST",
         body: JSON.stringify({
@@ -696,6 +744,11 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   async function refreshHistoryOnly() {
     const result = await apiJson<{ data: HistoryEntry[] }>("/v1/generation-history?limit=20");
     setHistory(result.data);
+  }
+
+  function trackQueuedJob(job: JobRecord, label: string) {
+    setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
+    setMessage(`Queued ${label} job ${job.id}.`);
   }
 
   async function refreshJobs() {
@@ -806,6 +859,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         audioUrl,
         lastAudio,
         generateSpeech,
+        speechQueued,
+        setSpeechQueued,
         transcribeFile,
         setTranscribeFile,
         asrModel,
@@ -815,6 +870,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         transcription,
         setTranscription,
         transcribe,
+        transcribeQueued,
+        setTranscribeQueued,
         dictationActive,
         dictationTranscript,
         startDictation,
@@ -859,6 +916,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         setTargetLanguage,
         provider,
         setProvider,
+        translateQueued,
+        setTranslateQueued,
         translate,
         newVoiceId,
         setNewVoiceId,

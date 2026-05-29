@@ -11,6 +11,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import {
   Box,
   Button,
+  FormControlLabel,
   IconButton,
   Paper,
   Stack,
@@ -23,6 +24,7 @@ import {
   TextField,
   Tooltip,
   Typography,
+  Switch,
 } from "@mui/material";
 import { WorkspaceShell } from "../../../components/layout/WorkspaceShell";
 import { SelectField } from "../../../components/ui/SelectField";
@@ -64,6 +66,15 @@ export default function TranscriptionPage() {
             value={studio.transcribeFormat}
             onChange={studio.setTranscribeFormat}
             options={studio.meta.transcription_formats.map((id) => ({ id, label: id }))}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={studio.transcribeQueued}
+                onChange={(event) => studio.setTranscribeQueued(event.target.checked)}
+              />
+            }
+            label="Send to queue"
           />
           <Button
             startIcon={studio.dictationActive ? <StopIcon /> : <MicIcon />}

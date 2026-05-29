@@ -24,6 +24,7 @@ Thumbs.db
 .vscode/
 
 # Local runtime files
+.env
 .app_pid
 .colab_api_pid
 *.log

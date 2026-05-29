@@ -2,7 +2,7 @@
 
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import TranslateIcon from "@mui/icons-material/Translate";
-import { Box, Button, Stack, TextField } from "@mui/material";
+import { Box, Button, FormControlLabel, Stack, Switch, TextField } from "@mui/material";
 import { WorkspaceShell } from "../../../components/layout/WorkspaceShell";
 import { SelectField } from "../../../components/ui/SelectField";
 import { useStudio } from "../../../components/studio/StudioContext";
@@ -48,6 +48,15 @@ export default function TranslationPage() {
             minRows={18}
             value={studio.translateText}
             onChange={(event) => studio.setTranslateText(event.target.value)}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={studio.translateQueued}
+                onChange={(event) => studio.setTranslateQueued(event.target.checked)}
+              />
+            }
+            label="Send to queue"
           />
         </Stack>
         <TextField

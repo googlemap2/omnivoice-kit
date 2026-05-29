@@ -349,8 +349,21 @@ nâng cấp sau.
 
 ### 3.8 Batch queue v1
 
-Backend có SQLite job queue tại `data/jobs.sqlite3`, worker nền chạy cùng
-FastAPI, và tab **Jobs** để xem/cancel/delete job. Endpoint chính:
+Backend dùng PostgreSQL của Supabase cho job queue và generation history. Đặt
+connection string trước khi chạy API:
+
+```bash
+export VOICEKIT_DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require"
+```
+
+Trên Windows PowerShell:
+
+```powershell
+$env:VOICEKIT_DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require"
+```
+
+Worker nền chạy cùng FastAPI, và tab **Jobs** dùng để xem/cancel/delete job.
+Endpoint chính:
 
 ```text
 GET    /v1/jobs
@@ -368,7 +381,10 @@ curl -X POST http://127.0.0.1:8000/v1/jobs \
   -d '{"type":"translation","params":{"text":"hello","source_language":"en","target_language":"vi","provider":"passthrough"}}'
 ```
 
-Dubbing upload có thể route qua queue bằng form field `queued=true`.
+Các tab **Speech**, **Transcription**, **Translation**, và **Dubbing** đều có
+switch **Send to queue**. Khi bật, action chính sẽ tạo job thay vì chạy sync.
+Các upload endpoint cũng nhận form field `queued=true` cho transcription,
+clone speech, và dubbing.
 
 Provider có sẵn: `passthrough`, `google` (qua `deep-translator`, không cần API key), `nllb`
 (cần `transformers` + model trong `models/`), `deepl`, `microsoft`, `mymemory` (ba provider cuối

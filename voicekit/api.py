@@ -142,6 +142,7 @@ class SpeechRequest(BaseModel):
     preprocess_prompt: bool = True
     postprocess_output: bool = True
     effect_preset: Literal["raw", "normalize", "broadcast"] = "raw"
+    queued: bool = False
 
 
 class ModelInstallRequest(BaseModel):
@@ -171,6 +172,7 @@ class VoiceDesignRequest(BaseModel):
     denoise: bool = True
     postprocess_output: bool = True
     effect_preset: Literal["raw", "normalize", "broadcast"] = "raw"
+    queued: bool = False
 
 
 class VoiceRenameRequest(BaseModel):
@@ -732,6 +734,27 @@ async def create_dubbing_job_from_upload(
 
 @app.post("/v1/audio/speech")
 def create_speech(request: SpeechRequest) -> Response:
+    if request.queued:
+        job = get_job_store().create_job(
+            "speech",
+            {
+                "mode": "speaker",
+                "text": request.input,
+                "speaker_id": request.voice,
+                "model_id": request.model,
+                "language": request.language,
+                "instruct_items": request.instruct_items,
+                "num_step": request.num_step,
+                "guidance_scale": request.guidance_scale,
+                "speed": request.speed,
+                "duration": request.duration,
+                "denoise": request.denoise,
+                "preprocess_prompt": request.preprocess_prompt,
+                "postprocess_output": request.postprocess_output,
+                "effect_preset": request.effect_preset,
+            },
+        )
+        return JSONResponse({"object": "job", "data": job.to_dict()})
     audio, status = generate_clone_with_speaker_id(
         text=request.input,
         speaker_id=request.voice,
@@ -768,6 +791,7 @@ async def create_speech_from_reference(
     preprocess_prompt: bool = Form(True),
     postprocess_output: bool = Form(True),
     effect_preset: Literal["raw", "normalize", "broadcast"] = Form("raw"),
+    queued: bool = Form(False),
 ) -> Response:
     try:
         parsed_instruct = json.loads(instruct_items) if instruct_items else []
@@ -777,6 +801,32 @@ async def create_speech_from_reference(
         parsed_instruct = []
 
     suffix = Path(ref_audio.filename or "ref.wav").suffix or ".wav"
+    if queued:
+        upload_dir = Path("data") / "uploads"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        upload_path = upload_dir / f"speech_ref_{uuid4().hex}{suffix}"
+        upload_path.write_bytes(await ref_audio.read())
+        job = get_job_store().create_job(
+            "speech",
+            {
+                "mode": "clone",
+                "text": text,
+                "ref_audio": str(upload_path),
+                "ref_text": ref_text,
+                "model_id": model,
+                "language": language,
+                "instruct_items": parsed_instruct,
+                "num_step": num_step,
+                "guidance_scale": guidance_scale,
+                "speed": speed,
+                "duration": duration,
+                "denoise": denoise,
+                "preprocess_prompt": preprocess_prompt,
+                "postprocess_output": postprocess_output,
+                "effect_preset": effect_preset,
+            },
+        )
+        return JSONResponse({"object": "job", "data": job.to_dict()})
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(await ref_audio.read())
         tmp_path = tmp.name
@@ -806,6 +856,25 @@ async def create_speech_from_reference(
 
 @app.post("/v1/audio/speech/design")
 def create_speech_voice_design(request: VoiceDesignRequest) -> Response:
+    if request.queued:
+        job = get_job_store().create_job(
+            "speech",
+            {
+                "mode": "design",
+                "text": request.input,
+                "model_id": request.model,
+                "language": request.language,
+                "instruct_items": request.instruct_items,
+                "num_step": request.num_step,
+                "guidance_scale": request.guidance_scale,
+                "speed": request.speed,
+                "duration": request.duration,
+                "denoise": request.denoise,
+                "postprocess_output": request.postprocess_output,
+                "effect_preset": request.effect_preset,
+            },
+        )
+        return JSONResponse({"object": "job", "data": job.to_dict()})
     audio, status = generate_voice_design(
         text=request.input,
         model_id=request.model,
@@ -912,6 +981,7 @@ async def create_transcription(
     compute_type: str | None = Form(None),
     word_timestamps: bool = Form(False),
     beam_size: int = Form(5),
+    queued: bool = Form(False),
 ):
     if response_format not in TRANSCRIPTION_FORMATS:
         raise HTTPException(status_code=400, detail=f"Unsupported response_format: {response_format}")
@@ -922,6 +992,20 @@ async def create_transcription(
     upload_path = upload_dir / f"transcription_input_{uuid4().hex}{suffix}"
     try:
         upload_path.write_bytes(await file.read())
+        if queued:
+            job = get_job_store().create_job(
+                "transcription",
+                {
+                    "audio_path": str(upload_path),
+                    "model_id": model,
+                    "language": language,
+                    "device": device,
+                    "compute_type": compute_type,
+                    "word_timestamps": word_timestamps,
+                    "beam_size": beam_size,
+                },
+            )
+            return JSONResponse({"object": "job", "data": job.to_dict()})
         result = transcribe_file(
             audio_path=upload_path,
             model_id=model,
@@ -935,10 +1019,11 @@ async def create_transcription(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
     finally:
-        try:
-            upload_path.unlink(missing_ok=True)
-        except Exception:
-            pass
+        if not queued:
+            try:
+                upload_path.unlink(missing_ok=True)
+            except Exception:
+                pass
 
     if isinstance(formatted, dict):
         return JSONResponse(formatted)

@@ -1,13 +1,9 @@
-import json
-import sqlite3
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
-
-DEFAULT_HISTORY_DB_PATH = Path("data") / "generation_history.sqlite3"
+from voicekit.database import iso_value, json_value, postgres_connection
 
 
 def utc_now_iso() -> str:
@@ -32,30 +28,31 @@ class GenerationHistoryEntry:
 
 
 class GenerationHistoryStore:
-    def __init__(self, db_path: str | Path = DEFAULT_HISTORY_DB_PATH):
-        self.db_path = Path(db_path)
+    table_name = "voicekit_generation_history"
 
-    def _connect(self) -> sqlite3.Connection:
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
+    def _ensure_table(self, conn) -> None:
         conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS generation_history (
+            f"""
+            CREATE TABLE IF NOT EXISTS {self.table_name} (
                 id TEXT PRIMARY KEY,
-                created_at TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL,
                 mode TEXT NOT NULL,
                 model TEXT,
                 text TEXT NOT NULL,
                 voice TEXT,
                 language TEXT,
                 output_path TEXT,
-                params_json TEXT NOT NULL,
+                params JSONB NOT NULL DEFAULT '{{}}'::jsonb,
                 status TEXT NOT NULL
             )
             """
         )
-        return conn
+        conn.execute(
+            f"""
+            CREATE INDEX IF NOT EXISTS idx_{self.table_name}_created
+            ON {self.table_name} (created_at DESC)
+            """
+        )
 
     def record_generation(
         self,
@@ -68,6 +65,8 @@ class GenerationHistoryStore:
         params: dict[str, Any] | None = None,
         status: str = "completed",
     ) -> GenerationHistoryEntry:
+        from psycopg.types.json import Jsonb
+
         entry = GenerationHistoryEntry(
             id=str(uuid.uuid4()),
             created_at=utc_now_iso(),
@@ -80,12 +79,13 @@ class GenerationHistoryStore:
             params=params or {},
             status=status,
         )
-        with self._connect() as conn:
+        with postgres_connection() as conn:
+            self._ensure_table(conn)
             conn.execute(
-                """
-                INSERT INTO generation_history (
-                    id, created_at, mode, model, text, voice, language, output_path, params_json, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                f"""
+                INSERT INTO {self.table_name} (
+                    id, created_at, mode, model, text, voice, language, output_path, params, status
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     entry.id,
@@ -96,32 +96,34 @@ class GenerationHistoryStore:
                     entry.voice,
                     entry.language,
                     entry.output_path,
-                    json.dumps(entry.params, ensure_ascii=True),
+                    Jsonb(entry.params),
                     entry.status,
                 ),
             )
         return entry
 
     def list_history(self, limit: int = 50) -> list[GenerationHistoryEntry]:
-        with self._connect() as conn:
+        with postgres_connection() as conn:
+            self._ensure_table(conn)
             rows = conn.execute(
-                """
-                SELECT id, created_at, mode, model, text, voice, language, output_path, params_json, status
-                FROM generation_history
+                f"""
+                SELECT id, created_at, mode, model, text, voice, language, output_path, params, status
+                FROM {self.table_name}
                 ORDER BY created_at DESC
-                LIMIT ?
+                LIMIT %s
                 """,
                 (max(1, int(limit)),),
             ).fetchall()
         return [self._row_to_entry(row) for row in rows]
 
     def get_history_entry(self, entry_id: str) -> GenerationHistoryEntry | None:
-        with self._connect() as conn:
+        with postgres_connection() as conn:
+            self._ensure_table(conn)
             row = conn.execute(
-                """
-                SELECT id, created_at, mode, model, text, voice, language, output_path, params_json, status
-                FROM generation_history
-                WHERE id = ?
+                f"""
+                SELECT id, created_at, mode, model, text, voice, language, output_path, params, status
+                FROM {self.table_name}
+                WHERE id = %s
                 """,
                 (entry_id,),
             ).fetchone()
@@ -130,21 +132,17 @@ class GenerationHistoryStore:
         return self._row_to_entry(row)
 
     @staticmethod
-    def _row_to_entry(row: sqlite3.Row) -> GenerationHistoryEntry:
-        try:
-            params = json.loads(row["params_json"])
-        except Exception:
-            params = {}
+    def _row_to_entry(row: dict[str, Any]) -> GenerationHistoryEntry:
         return GenerationHistoryEntry(
             id=row["id"],
-            created_at=row["created_at"],
+            created_at=iso_value(row["created_at"]),
             mode=row["mode"],
             model=row["model"],
             text=row["text"],
             voice=row["voice"],
             language=row["language"],
             output_path=row["output_path"],
-            params=params,
+            params=json_value(row.get("params"), {}),
             status=row["status"],
         )
 
