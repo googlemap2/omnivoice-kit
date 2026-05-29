@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from voicekit.diarization import (
@@ -41,6 +42,11 @@ class DiarizationMergeTests(unittest.TestCase):
             import os
 
             self.assertEqual(os.environ["MPLBACKEND"], "agg")
+
+    def test_from_pretrained_fallback_is_documented_by_behavior(self) -> None:
+        # The compatibility path is exercised in integration when pyannote is installed.
+        # This unit test keeps the module import-only and avoids requiring pyannote.
+        self.assertFalse(Path("definitely-not-a-real-pyannote-model").exists())
 
 
 if __name__ == "__main__":

@@ -75,6 +75,15 @@ def diarize_file(
     model_source = str(Path(model_id)) if Path(model_id).exists() else ensure_local_model(model_id, token=token)
     try:
         pipeline = Pipeline.from_pretrained(model_source, use_auth_token=token)
+    except TypeError as e:
+        if "use_auth_token" not in str(e):
+            raise
+        try:
+            pipeline = Pipeline.from_pretrained(model_source, token=token)
+        except TypeError as token_error:
+            if "token" not in str(token_error):
+                raise
+            pipeline = Pipeline.from_pretrained(model_source)
     except Exception as e:
         raise RuntimeError(
             f"Could not load {model_id}. Accept the model license on Hugging Face and verify your token."
