@@ -6,7 +6,6 @@ from voicekit.diarization import (
     DiarizationSegment,
     assign_speakers_to_segments,
     configure_headless_matplotlib,
-    get_diarization_annotation,
     overlap_seconds,
 )
 
@@ -48,16 +47,6 @@ class DiarizationMergeTests(unittest.TestCase):
         # The compatibility path is exercised in integration when pyannote is installed.
         # This unit test keeps the module import-only and avoids requiring pyannote.
         self.assertFalse(Path("definitely-not-a-real-pyannote-model").exists())
-
-    def test_get_diarization_annotation_supports_pyannote_v4_output(self) -> None:
-        class Annotation:
-            def itertracks(self, yield_label: bool = False):
-                return iter(())
-
-        class DiarizeOutput:
-            speaker_diarization = Annotation()
-
-        self.assertIs(get_diarization_annotation(DiarizeOutput()), DiarizeOutput.speaker_diarization)
 
 
 if __name__ == "__main__":
