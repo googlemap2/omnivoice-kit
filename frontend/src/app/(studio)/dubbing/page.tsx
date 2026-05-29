@@ -91,6 +91,28 @@ export default function DubbingPage() {
             </Typography>
             {studio.dubbingResult ? (
               <Stack spacing={1.25}>
+                {studio.dubbingVideoUrl && (
+                  <Box
+                    component="video"
+                    src={studio.dubbingVideoUrl}
+                    controls
+                    sx={{
+                      width: "100%",
+                      maxHeight: 420,
+                      bgcolor: "#111111",
+                      border: "1px solid",
+                      borderColor: "divider",
+                    }}
+                  />
+                )}
+                {studio.dubbingAudioUrl && (
+                  <Box
+                    component="audio"
+                    src={studio.dubbingAudioUrl}
+                    controls
+                    sx={{ width: "100%" }}
+                  />
+                )}
                 <Stack direction="row" spacing={1}>
                   <Chip size="small" color="primary" label={studio.dubbingResult.folder_name} />
                   <Chip size="small" color="success" label={`${studio.dubbingResult.segment_count} segments`} />

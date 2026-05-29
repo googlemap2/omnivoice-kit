@@ -99,6 +99,8 @@ type StudioContextValue = {
   dubbingDiarize: boolean;
   setDubbingDiarize: (value: boolean) => void;
   dubbingResult: DubbingResult | null;
+  dubbingAudioUrl: string | null;
+  dubbingVideoUrl: string | null;
   runDubbing: () => Promise<void>;
   translateText: string;
   setTranslateText: (text: string) => void;
@@ -166,6 +168,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [dubbingProvider, setDubbingProvider] = useState("passthrough");
   const [dubbingDiarize, setDubbingDiarize] = useState(false);
   const [dubbingResult, setDubbingResult] = useState<DubbingResult | null>(null);
+  const [dubbingAudioUrl, setDubbingAudioUrl] = useState<string | null>(null);
+  const [dubbingVideoUrl, setDubbingVideoUrl] = useState<string | null>(null);
 
   const [translateText, setTranslateText] = useState("Hello, this is a local studio workflow.");
   const [translatedText, setTranslatedText] = useState("");
@@ -415,11 +419,27 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       form.set("enable_diarization", String(dubbingDiarize));
       const result = await apiForm<{ data: DubbingResult }>("/v1/dubbing/dub-upload", form);
       setDubbingResult(result.data);
+      await loadDubbingMedia(result.data);
       setMessage(`Dubbing complete: ${result.data.segment_count} segments.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function loadDubbingMedia(result: DubbingResult) {
+    if (dubbingAudioUrl) URL.revokeObjectURL(dubbingAudioUrl);
+    if (dubbingVideoUrl) URL.revokeObjectURL(dubbingVideoUrl);
+
+    const audioBlob = await apiAudio(`/v1/files?path=${encodeURIComponent(result.dubbed_audio_path)}`);
+    setDubbingAudioUrl(URL.createObjectURL(audioBlob));
+
+    if (result.dubbed_video_path) {
+      const videoBlob = await apiAudio(`/v1/files?path=${encodeURIComponent(result.dubbed_video_path)}`);
+      setDubbingVideoUrl(URL.createObjectURL(videoBlob));
+    } else {
+      setDubbingVideoUrl(null);
     }
   }
 
@@ -624,6 +644,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         dubbingDiarize,
         setDubbingDiarize,
         dubbingResult,
+        dubbingAudioUrl,
+        dubbingVideoUrl,
         runDubbing,
         translateText,
         setTranslateText,

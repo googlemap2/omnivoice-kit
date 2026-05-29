@@ -9,7 +9,7 @@ from uuid import uuid4
 import soundfile as sf
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from pydantic import BaseModel, Field
 
 from voicekit.audio import EFFECT_PRESETS
@@ -92,6 +92,21 @@ def _wav_response(audio: tuple[int, Any] | None, detail: str = "Generation faile
 
 def _generation_error(detail: str) -> HTTPException:
     return HTTPException(status_code=400, detail=detail)
+
+
+def _output_file_response(path: str) -> FileResponse:
+    requested = Path(path)
+    if not requested.is_absolute():
+        requested = Path.cwd() / requested
+    resolved = requested.resolve()
+    outputs_root = (Path.cwd() / "outputs").resolve()
+    try:
+        resolved.relative_to(outputs_root)
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail="Only files under outputs/ can be served.") from e
+    if not resolved.is_file():
+        raise HTTPException(status_code=404, detail=f"Output file not found: {path}")
+    return FileResponse(resolved)
 
 
 class SpeechRequest(BaseModel):
@@ -453,6 +468,11 @@ def list_generation_history(limit: int = 50) -> dict:
         "object": "list",
         "data": data,
     }
+
+
+@app.get("/v1/files")
+def get_output_file(path: str) -> FileResponse:
+    return _output_file_response(path)
 
 
 @app.post("/v1/subtitles/import")
