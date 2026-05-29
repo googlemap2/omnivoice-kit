@@ -17,6 +17,7 @@ from voicekit.core import (
     load_model,
     load_voice_clone_prompt,
 )
+from voicekit.dubbing import dub_file
 from voicekit.history import try_record_generation
 from voicekit.model_store import DEFAULT_MODEL_ID
 from voicekit.settings import load_settings
@@ -225,6 +226,25 @@ def run_subtitle_export(args: argparse.Namespace) -> None:
         print(output)
 
 
+def run_dub(args: argparse.Namespace) -> None:
+    result = dub_file(
+        input_path=args.input,
+        voice=args.voice,
+        target_language=args.target_language,
+        source_language=args.source_language,
+        translation_provider=args.provider,
+        output_dir=args.output_dir,
+        tts_model=args.tts_model,
+        asr_model=args.asr_model,
+        effect_preset=args.effect_preset,
+        num_step=args.num_step,
+        guidance_scale=args.guidance_scale,
+        speed=args.speed,
+        device=args.device,
+    )
+    print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+
+
 def run_transcribe(args: argparse.Namespace) -> None:
     result = transcribe_file(
         audio_path=args.input,
@@ -347,6 +367,22 @@ def main() -> None:
     subtitle_export.add_argument("--output", default=None, help="Optional subtitle output path")
     subtitle_export.add_argument("--format", choices=SUBTITLE_FORMATS, default="srt", help="Output subtitle format")
     subtitle_export.set_defaults(func=run_subtitle_export)
+
+    dub = subparsers.add_parser("dub", help="Dub an audio/video file with ASR, translation, and TTS")
+    dub.add_argument("--input", required=True, help="Input audio/video path")
+    dub.add_argument("--voice", required=True, help="Voice profile id used for all segments in v1")
+    dub.add_argument("--target-language", required=True, help="Target language code, e.g. vi or en")
+    dub.add_argument("--source-language", default=None, help="Optional source language code")
+    dub.add_argument("--provider", default=settings.default_translation_provider, help="Translation provider id")
+    dub.add_argument("--output-dir", default="outputs/dubbing", help="Output directory")
+    dub.add_argument("--tts-model", default=settings.default_model, help="TTS model id or local path")
+    dub.add_argument("--asr-model", default=DEFAULT_ASR_MODEL_ID, help="ASR model id or local path")
+    dub.add_argument("--effect-preset", choices=EFFECT_PRESETS, default=settings.default_effect_preset)
+    dub.add_argument("--num_step", type=int, default=16)
+    dub.add_argument("--guidance_scale", type=float, default=2.0)
+    dub.add_argument("--speed", type=float, default=1.0)
+    dub.add_argument("--device", default=settings.default_device, help="cuda | mps | cpu")
+    dub.set_defaults(func=run_dub)
 
     args = parser.parse_args()
     args.func(args)

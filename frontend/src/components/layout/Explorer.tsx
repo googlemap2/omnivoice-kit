@@ -62,6 +62,7 @@ function workspaceLabel(workspace: Workspace) {
     tts: "Speech",
     transcribe: "Transcription",
     translate: "Translation",
+    dubbing: "Dubbing",
     voices: "Voices",
     settings: "Settings",
   }[workspace];

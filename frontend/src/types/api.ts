@@ -73,6 +73,20 @@ export type SubtitleSegment = {
   metadata?: Record<string, unknown>;
 };
 
+export type DubbingResult = {
+  id: string;
+  input_path: string;
+  extracted_audio_path: string;
+  dubbed_audio_path: string;
+  dubbed_video_path: string | null;
+  srt_path: string;
+  vtt_path: string;
+  segment_count: number;
+  source_language: string | null;
+  target_language: string | null;
+  voice: string;
+};
+
 export const emptyMeta: Meta = {
   omnivoice_models: [],
   asr_models: [],

@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import {
   API_BASE_URL,
   type AppSettings,
+  type DubbingResult,
   type HistoryEntry,
   type Meta,
   type ModelStatus,
@@ -83,6 +84,18 @@ type StudioContextValue = {
   deleteSubtitleSegment: (index: number) => void;
   importSubtitles: () => Promise<void>;
   exportSubtitles: () => Promise<void>;
+  dubbingFile: File | null;
+  setDubbingFile: (file: File | null) => void;
+  dubbingVoice: string;
+  setDubbingVoice: (voice: string) => void;
+  dubbingSourceLanguage: string;
+  setDubbingSourceLanguage: (language: string) => void;
+  dubbingTargetLanguage: string;
+  setDubbingTargetLanguage: (language: string) => void;
+  dubbingProvider: string;
+  setDubbingProvider: (provider: string) => void;
+  dubbingResult: DubbingResult | null;
+  runDubbing: () => Promise<void>;
   translateText: string;
   setTranslateText: (text: string) => void;
   translatedText: string;
@@ -141,6 +154,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
   const [subtitleFormat, setSubtitleFormat] = useState("srt");
   const [subtitleSegments, setSubtitleSegments] = useState<SubtitleSegment[]>([]);
+  const [dubbingFile, setDubbingFile] = useState<File | null>(null);
+  const [dubbingVoice, setDubbingVoice] = useState("");
+  const [dubbingSourceLanguage, setDubbingSourceLanguage] = useState("en");
+  const [dubbingTargetLanguage, setDubbingTargetLanguage] = useState("vi");
+  const [dubbingProvider, setDubbingProvider] = useState("passthrough");
+  const [dubbingResult, setDubbingResult] = useState<DubbingResult | null>(null);
 
   const [translateText, setTranslateText] = useState("Hello, this is a local studio workflow.");
   const [translatedText, setTranslatedText] = useState("");
@@ -178,6 +197,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       setProviders(providerData.data);
       setSettings(settingsData.data);
       setProvider(settingsData.data.default_translation_provider || "passthrough");
+      setDubbingProvider(settingsData.data.default_translation_provider || "passthrough");
       setEffectPreset(settingsData.data.default_effect_preset);
       setHistory(historyData.data);
       setMessage("Workspace synchronized with API.");
@@ -196,7 +216,10 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     if (!selectedVoice && voices.length > 0) {
       setSelectedVoice(voices[0].id);
     }
-  }, [selectedVoice, voices]);
+    if (!dubbingVoice && voices.length > 0) {
+      setDubbingVoice(voices[0].id);
+    }
+  }, [dubbingVoice, selectedVoice, voices]);
 
   async function generateSpeech() {
     setBusy(true);
@@ -351,6 +374,40 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       anchor.click();
       URL.revokeObjectURL(url);
       setMessage(`Exported subtitles.${subtitleFormat}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runDubbing() {
+    if (!dubbingFile) {
+      setError("Choose an audio or video file first.");
+      return;
+    }
+    if (!dubbingVoice) {
+      setError("Choose a voice profile first.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.set("file", dubbingFile);
+      form.set("voice", dubbingVoice);
+      form.set("source_language", dubbingSourceLanguage);
+      form.set("target_language", dubbingTargetLanguage);
+      form.set("translation_provider", dubbingProvider);
+      form.set("tts_model", activeModel);
+      form.set("asr_model", activeAsrModel);
+      form.set("effect_preset", effectPreset);
+      form.set("num_step", String(numStep));
+      form.set("guidance_scale", String(guidanceScale));
+      form.set("speed", String(speed));
+      const result = await apiForm<{ data: DubbingResult }>("/v1/dubbing/dub-upload", form);
+      setDubbingResult(result.data);
+      setMessage(`Dubbing complete: ${result.data.segment_count} segments.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -544,6 +601,18 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         deleteSubtitleSegment,
         importSubtitles,
         exportSubtitles,
+        dubbingFile,
+        setDubbingFile,
+        dubbingVoice,
+        setDubbingVoice,
+        dubbingSourceLanguage,
+        setDubbingSourceLanguage,
+        dubbingTargetLanguage,
+        setDubbingTargetLanguage,
+        dubbingProvider,
+        setDubbingProvider,
+        dubbingResult,
+        runDubbing,
         translateText,
         setTranslateText,
         translatedText,

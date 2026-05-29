@@ -1,5 +1,6 @@
 import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
+import MovieIcon from "@mui/icons-material/Movie";
 import SettingsIcon from "@mui/icons-material/Settings";
 import SubtitlesIcon from "@mui/icons-material/Subtitles";
 import TranslateIcon from "@mui/icons-material/Translate";
@@ -17,6 +18,7 @@ export function ActivityBar({ workspace }: ActivityBarProps) {
     ["tts", "/speech", <GraphicEqIcon key="tts" />, "Speech"],
     ["transcribe", "/transcription", <SubtitlesIcon key="transcribe" />, "Transcription"],
     ["translate", "/translation", <TranslateIcon key="translate" />, "Translation"],
+    ["dubbing", "/dubbing", <MovieIcon key="dubbing" />, "Dubbing"],
     ["voices", "/voices", <LibraryMusicIcon key="voices" />, "Voices"],
     ["settings", "/settings", <SettingsIcon key="settings" />, "Settings"],
   ];

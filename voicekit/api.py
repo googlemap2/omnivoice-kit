@@ -32,6 +32,7 @@ from voicekit.core import (
     get_profile_store,
     rename_speaker_id,
 )
+from voicekit.dubbing import dub_file
 from voicekit.history import list_history
 from voicekit.model_store import DEFAULT_MODEL_ID, install_model, list_model_statuses
 from voicekit.settings import (
@@ -172,6 +173,20 @@ class SubtitleSegmentRequest(BaseModel):
 class SubtitleExportRequest(BaseModel):
     format: Literal["srt", "vtt"] = "srt"
     segments: list[SubtitleSegmentRequest] = Field(default_factory=list)
+
+
+class DubbingRequest(BaseModel):
+    input_path: str = Field(min_length=1)
+    voice: str = Field(min_length=1)
+    target_language: str = Field(min_length=1)
+    source_language: str | None = None
+    translation_provider: str | None = None
+    tts_model: str = DEFAULT_MODEL_ID
+    asr_model: str = DEFAULT_ASR_MODEL_ID
+    effect_preset: Literal["raw", "normalize", "broadcast"] = "raw"
+    num_step: int = 16
+    guidance_scale: float = 2.0
+    speed: float = 1.0
 
 
 @app.get("/health")
@@ -455,6 +470,65 @@ def export_subtitle_endpoint(request: SubtitleExportRequest) -> Response:
         raise HTTPException(status_code=400, detail=f"{type(e).__name__}: {e}") from e
     media_type = "application/x-subrip" if request.format == "srt" else "text/vtt"
     return PlainTextResponse(content, media_type=media_type)
+
+
+@app.post("/v1/dubbing/dub")
+def create_dubbing_job(request: DubbingRequest) -> dict:
+    try:
+        result = dub_file(
+            input_path=request.input_path,
+            voice=request.voice,
+            target_language=request.target_language,
+            source_language=request.source_language,
+            translation_provider=request.translation_provider,
+            tts_model=request.tts_model,
+            asr_model=request.asr_model,
+            effect_preset=request.effect_preset,
+            num_step=request.num_step,
+            guidance_scale=request.guidance_scale,
+            speed=request.speed,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+    return {"object": "dubbing_job", "data": result.to_dict()}
+
+
+@app.post("/v1/dubbing/dub-upload")
+async def create_dubbing_job_from_upload(
+    file: UploadFile = File(...),
+    voice: str = Form(...),
+    target_language: str = Form(...),
+    source_language: str | None = Form(None),
+    translation_provider: str | None = Form(None),
+    tts_model: str = Form(DEFAULT_MODEL_ID),
+    asr_model: str = Form(DEFAULT_ASR_MODEL_ID),
+    effect_preset: Literal["raw", "normalize", "broadcast"] = Form("raw"),
+    num_step: int = Form(16),
+    guidance_scale: float = Form(2.0),
+    speed: float = Form(1.0),
+) -> dict:
+    upload_dir = Path("data") / "uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    suffix = Path(file.filename or "media").suffix or ".wav"
+    upload_path = upload_dir / f"dubbing_input_{uuid4().hex}{suffix}"
+    try:
+        upload_path.write_bytes(await file.read())
+        result = dub_file(
+            input_path=upload_path,
+            voice=voice,
+            target_language=target_language,
+            source_language=source_language,
+            translation_provider=translation_provider,
+            tts_model=tts_model,
+            asr_model=asr_model,
+            effect_preset=effect_preset,
+            num_step=num_step,
+            guidance_scale=guidance_scale,
+            speed=speed,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+    return {"object": "dubbing_job", "data": result.to_dict()}
 
 
 @app.post("/v1/audio/speech")

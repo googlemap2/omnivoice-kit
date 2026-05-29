@@ -148,7 +148,7 @@ Use this overview to see which feature group is done, in progress, or still pend
 | OpenAI transcription API | Phase 10 | Done |
 | Translation provider registry | Phase 11 | Done |
 | Subtitle import/export | Phase 12 | Done |
-| Video dubbing | Phase 13 | Pending |
+| Video dubbing | Phase 13 | Mostly done |
 | Speaker diarization | Phase 14 | Pending |
 | Realtime dictation | Phase 15 | Pending |
 | Batch queue | Phase 16 | Pending |
@@ -198,23 +198,23 @@ Related feature: Subtitle import/export.
 
 Related feature: Video dubbing.
 
-- [ ] Create `voicekit/media.py` for ffmpeg wrappers.
-- [ ] Add ffmpeg availability check.
-- [ ] Extract audio from video/audio input.
-- [ ] Run ASR to timestamped segments.
-- [ ] Translate segments through translation registry.
-- [ ] Assign one voice profile to all segments for v1.
-- [ ] Generate TTS per segment.
-- [ ] Fit generated audio to segment timing with simple padding/trimming.
-- [ ] Mix dubbed speech track.
-- [ ] Export dubbed WAV.
-- [ ] Export SRT/VTT subtitles.
-- [ ] Export dubbed video with original video stream.
-- [ ] Add API endpoint to start dubbing job.
-- [ ] Add CLI command `voicekit dub`.
-- [ ] Add basic Dubbing tab in UI.
+- [x] Create `voicekit/media.py` for ffmpeg wrappers.
+- [x] Add ffmpeg availability check.
+- [x] Extract audio from video/audio input.
+- [x] Run ASR to timestamped segments.
+- [x] Translate segments through translation registry.
+- [x] Assign one voice profile to all segments for v1.
+- [x] Generate TTS per segment.
+- [x] Fit generated audio to segment timing with simple padding/trimming.
+- [x] Mix dubbed speech track.
+- [x] Export dubbed WAV.
+- [x] Export SRT/VTT subtitles.
+- [x] Export dubbed video with original video stream.
+- [x] Add API endpoint to start dubbing job.
+- [x] Add CLI command `voicekit dub`.
+- [x] Add basic Dubbing tab in UI.
 - [ ] Add smoke test with short audio/video fixture.
-- [ ] Update README.
+- [x] Update README.
 
 ## Phase 14: Speaker Diarization
 
@@ -373,3 +373,4 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Completed Phase 10 OpenAI-compatible transcription endpoint at `/v1/audio/transcriptions`.
 - [x] Completed Phase 11 translation provider registry with `voicekit/translation.py`, passthrough/NLLB/online placeholders, settings fields, API/CLI/UI, and unittest smoke tests.
 - [x] Completed Phase 12 subtitle import/export with SRT/VTT parsing, JSON segment conversion, API/CLI hooks, basic Transcription UI import/export, and roundtrip tests.
+- [x] Implemented Phase 13 video dubbing v1 with ffmpeg media helpers, synchronous ASR/translation/TTS pipeline, one-voice assignment, dubbed WAV/SRT/VTT/video outputs, API/CLI hooks, Dubbing UI, and timing unit tests. Real short media fixture smoke test remains pending.

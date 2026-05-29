@@ -35,6 +35,7 @@ export function StudioFrame({ children }: { children: ReactNode }) {
 function workspaceFromPath(pathname: string): Workspace {
   if (pathname.startsWith("/transcription")) return "transcribe";
   if (pathname.startsWith("/translation")) return "translate";
+  if (pathname.startsWith("/dubbing")) return "dubbing";
   if (pathname.startsWith("/voices")) return "voices";
   if (pathname.startsWith("/settings")) return "settings";
   return "tts";

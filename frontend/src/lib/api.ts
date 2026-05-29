@@ -1,5 +1,6 @@
 export type {
   AppSettings,
+  DubbingResult,
   HistoryEntry,
   Meta,
   ModelStatus,

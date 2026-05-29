@@ -276,6 +276,25 @@ uv run voicekit translate \
   --output translated.json
 ```
 
+### 3.6 Dub audio/video v1
+
+Pipeline dubbing v1 chạy tuần tự: extract audio bằng FFmpeg, transcribe, translate,
+generate TTS cho từng segment bằng một voice profile, mix WAV, export SRT/VTT và
+cố gắng mux video nếu input có video stream.
+
+```bash
+uv run voicekit dub \
+  --input path/to/video.mp4 \
+  --voice yen \
+  --source-language en \
+  --target-language vi \
+  --provider passthrough \
+  --output-dir outputs/dubbing
+```
+
+Kết quả trả JSON gồm đường dẫn `dubbed_audio_path`, `dubbed_video_path`,
+`srt_path`, và `vtt_path`.
+
 Provider có sẵn: `passthrough`, `google` (qua `deep-translator`, không cần API key), `nllb`
 (cần `transformers` + model trong `models/`), `deepl`, `microsoft`, `mymemory` (ba provider cuối
 cần API key trong settings, chưa implement đầy đủ).
@@ -409,6 +428,17 @@ curl -X POST http://127.0.0.1:8000/v1/subtitles/export \
       {"id": 1, "start": 1.5, "end": 3.0, "text": "the gioi"}
     ]
   }'
+```
+
+Dub uploaded media through API:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/dubbing/dub-upload \
+  -F "file=@path/to/video.mp4" \
+  -F "voice=yen" \
+  -F "source_language=en" \
+  -F "target_language=vi" \
+  -F "translation_provider=passthrough"
 ```
 
 Liệt kê translation providers:
