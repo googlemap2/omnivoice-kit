@@ -1,3 +1,4 @@
+import logging
 import threading
 import traceback
 import uuid
@@ -7,6 +8,9 @@ from pathlib import Path
 from typing import Any, Literal, Protocol
 
 from voicekit.database import iso_value, json_value, postgres_connection
+
+
+logger = logging.getLogger("voicekit.jobs")
 
 
 JOB_STATUSES = ("pending", "running", "completed", "failed", "canceled")
@@ -239,7 +243,12 @@ class JobWorker:
 
     def _run_loop(self) -> None:
         while not self._stop_event.is_set():
-            job = self.store.next_pending_job()
+            try:
+                job = self.store.next_pending_job()
+            except Exception as e:
+                logger.error("Job worker database polling failed: %s: %s", type(e).__name__, e)
+                self._stop_event.wait(max(self.poll_interval, 5.0))
+                continue
             if job is None:
                 self._stop_event.wait(self.poll_interval)
                 continue
