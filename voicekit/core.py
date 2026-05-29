@@ -7,7 +7,7 @@ from omnivoice import OmniVoice
 from omnivoice.models.omnivoice import VoiceClonePrompt
 
 from voicekit.audio import apply_effect_preset, to_wav16
-from voicekit.model_store import DEFAULT_MODEL_ID, resolve_model_source
+from voicekit.model_store import DEFAULT_MODEL_ID, KHANH_TTS_MODEL_ID, resolve_model_source
 from voicekit.profiles import VoiceProfileStore
 from voicekit.history import try_record_generation
 
@@ -81,6 +81,7 @@ OMNIVOICE_LANGUAGE_CHOICES = [
 ]
 OMNIVOICE_MODEL_CHOICES = [
     ("OmniVoice Original (k2-fsa/OmniVoice)", "k2-fsa/OmniVoice"),
+    ("KhanhTTS OmniVoice (kjanh/KhanhTTS-OmniVoice)", KHANH_TTS_MODEL_ID),
 ]
 
 

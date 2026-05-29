@@ -5,12 +5,14 @@ from typing import Any
 
 
 DEFAULT_MODEL_ID = "k2-fsa/OmniVoice"
+KHANH_TTS_MODEL_ID = "kjanh/KhanhTTS-OmniVoice"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MODEL_BASE_DIR = PROJECT_ROOT / "models"
 DEFAULT_HF_HOME = PROJECT_ROOT / "models" / ".hf_home"
 DEFAULT_HF_CACHE = DEFAULT_HF_HOME / "hub"
 KNOWN_MODEL_IDS = [
     DEFAULT_MODEL_ID,
+    KHANH_TTS_MODEL_ID,
     "Systran/faster-whisper-large-v3",
     "Systran/faster-whisper-large-v3-turbo",
     "Systran/faster-distil-whisper-large-v3",
