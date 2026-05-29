@@ -10,6 +10,7 @@ from voicekit.dubbing import (
     normalize_speaker_voice_map,
     place_segment,
     sanitize_folder_name,
+    validate_speaker_voice_map,
     voice_for_segment,
 )
 
@@ -59,6 +60,10 @@ class DubbingAudioTests(unittest.TestCase):
             normalize_speaker_voice_map({" SPEAKER_00 ": " alice ", "": "skip", "SPEAKER_01": ""}),
             {"SPEAKER_00": "alice"},
         )
+
+    def test_validate_speaker_voice_map_rejects_missing_voice(self) -> None:
+        with self.assertRaises(ValueError):
+            validate_speaker_voice_map("missing-default", {"SPEAKER_00": "missing-speaker"})
 
 
 if __name__ == "__main__":

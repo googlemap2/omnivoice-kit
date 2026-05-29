@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -9,7 +10,7 @@ import numpy as np
 import soundfile as sf
 
 from voicekit.asr import DEFAULT_ASR_MODEL_ID, transcribe_file
-from voicekit.core import generate_clone_with_speaker_id
+from voicekit.core import generate_clone_with_speaker_id, get_profile_store
 from voicekit.diarization import assign_speakers_to_segments, diarize_file
 from voicekit.media import extract_audio, has_video_stream, mux_video_with_audio
 from voicekit.model_store import DEFAULT_DIARIZATION_MODEL_ID, DEFAULT_MODEL_ID
@@ -33,6 +34,8 @@ class DubbingResult:
     voice: str
     speakers: list[str]
     speaker_voices: dict[str, str]
+    segment_voices: list[dict[str, Any]]
+    voice_manifest_path: str
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -100,6 +103,14 @@ def voice_for_segment(default_voice: str, speaker: str | None, speaker_voice_map
     return default_voice
 
 
+def validate_speaker_voice_map(default_voice: str, speaker_voice_map: dict[str, str]) -> None:
+    profile_store = get_profile_store()
+    voice_ids = {profile.id for profile in profile_store.list_profiles()}
+    missing = sorted({default_voice, *speaker_voice_map.values()} - voice_ids)
+    if missing:
+        raise ValueError(f"Unknown voice profile(s): {', '.join(missing)}")
+
+
 def dub_file(
     input_path: str | Path,
     voice: str,
@@ -129,6 +140,7 @@ def dub_file(
         raise ValueError("target_language is required for dubbing.")
 
     normalized_speaker_voice_map = normalize_speaker_voice_map(speaker_voice_map)
+    validate_speaker_voice_map(voice, normalized_speaker_voice_map)
     job_id, job_dir = next_output_folder(output_dir, source, folder_name=folder_name)
 
     extracted_audio = extract_audio(source, job_dir / "source.wav")
@@ -158,6 +170,7 @@ def dub_file(
     sample_rate = 24000
     duration = max((segment.end for segment in subtitle_segments), default=0.0)
     timeline = np.zeros(max(1, int(round((duration + 1.0) * sample_rate))), dtype=np.float32)
+    segment_voice_manifest: list[dict[str, Any]] = []
 
     for original, translated_segment in zip(subtitle_segments, translated_segments):
         text = (translated_segment.translated_text or translated_segment.text or "").strip()
@@ -165,6 +178,16 @@ def dub_file(
             continue
         speaker = original.speaker or original.metadata.get("speaker")
         segment_voice = voice_for_segment(voice, str(speaker) if speaker else None, normalized_speaker_voice_map)
+        segment_voice_manifest.append(
+            {
+                "id": original.id,
+                "start": original.start,
+                "end": original.end,
+                "speaker": str(speaker) if speaker else None,
+                "voice": segment_voice,
+                "text": text,
+            }
+        )
         audio, status = generate_clone_with_speaker_id(
             text=text,
             speaker_id=segment_voice,
@@ -196,14 +219,23 @@ def dub_file(
             "end": segment.end,
             "text": segment.translated_text or segment.text,
             "speaker": segment.metadata.get("speaker") if segment.metadata else None,
-            "metadata": segment.metadata,
+            "metadata": {
+                **segment.metadata,
+                "voice": voice_for_segment(
+                    voice,
+                    str(segment.metadata.get("speaker")) if segment.metadata.get("speaker") else None,
+                    normalized_speaker_voice_map,
+                ),
+            },
         }
         for segment in translated_segments
     ]
     srt_path = job_dir / "dubbed.srt"
     vtt_path = job_dir / "dubbed.vtt"
+    voice_manifest_path = job_dir / "voice_manifest.json"
     srt_path.write_text(export_subtitle(translated_subtitle_payload, "srt"), encoding="utf-8")
     vtt_path.write_text(export_subtitle(translated_subtitle_payload, "vtt"), encoding="utf-8")
+    voice_manifest_path.write_text(json.dumps(segment_voice_manifest, ensure_ascii=True, indent=2), encoding="utf-8")
 
     dubbed_video_path = None
     if has_video_stream(source):
@@ -235,4 +267,6 @@ def dub_file(
             }
         ),
         speaker_voices=normalized_speaker_voice_map,
+        segment_voices=segment_voice_manifest,
+        voice_manifest_path=str(voice_manifest_path),
     )

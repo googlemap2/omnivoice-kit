@@ -180,6 +180,7 @@ function downloadArtifacts(job: {
     if (typeof job.result.dubbed_audio_path === "string") items.push({ id: "audio", label: "Download dubbed audio" });
     if (typeof job.result.srt_path === "string") items.push({ id: "srt", label: "Download SRT" });
     if (typeof job.result.vtt_path === "string") items.push({ id: "vtt", label: "Download VTT" });
+    if (typeof job.result.voice_manifest_path === "string") items.push({ id: "voices", label: "Download voice manifest" });
     return items;
   }
   if (job.type === "translation") {

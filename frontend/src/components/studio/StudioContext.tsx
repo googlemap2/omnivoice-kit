@@ -868,6 +868,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     if (artifact === "video" && typeof result.dubbed_video_path === "string") return result.dubbed_video_path;
     if (artifact === "srt" && typeof result.srt_path === "string") return result.srt_path;
     if (artifact === "vtt" && typeof result.vtt_path === "string") return result.vtt_path;
+    if (artifact === "voices" && typeof result.voice_manifest_path === "string") return result.voice_manifest_path;
     if (typeof result.output_path === "string") return result.output_path;
     if (typeof result.dubbed_video_path === "string") return result.dubbed_video_path;
     if (typeof result.dubbed_audio_path === "string") return result.dubbed_audio_path;

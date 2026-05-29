@@ -89,6 +89,8 @@ export type DubbingResult = {
   voice: string;
   speakers: string[];
   speaker_voices?: Record<string, string>;
+  segment_voices?: Array<Record<string, unknown>>;
+  voice_manifest_path?: string;
 };
 
 export type JobRecord = {

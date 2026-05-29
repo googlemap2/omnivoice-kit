@@ -185,7 +185,12 @@ export default function DubbingPage() {
                   <Chip size="small" color="success" label={`${studio.dubbingResult.segment_count} segments`} />
                   <Chip size="small" variant="outlined" label={studio.dubbingResult.voice} />
                   {studio.dubbingResult.speakers.map((speaker) => (
-                    <Chip key={speaker} size="small" variant="outlined" label={speaker} />
+                    <Chip
+                      key={speaker}
+                      size="small"
+                      variant="outlined"
+                      label={`${speaker} -> ${studio.dubbingResult?.speaker_voices?.[speaker] || studio.dubbingResult?.voice}`}
+                    />
                   ))}
                   <Chip
                     size="small"
@@ -197,6 +202,11 @@ export default function DubbingPage() {
                 <TextField label="Dubbed video" value={studio.dubbingResult.dubbed_video_path || ""} InputProps={{ readOnly: true }} />
                 <TextField label="SRT subtitles" value={studio.dubbingResult.srt_path} InputProps={{ readOnly: true }} />
                 <TextField label="VTT subtitles" value={studio.dubbingResult.vtt_path} InputProps={{ readOnly: true }} />
+                <TextField
+                  label="Voice manifest"
+                  value={studio.dubbingResult.voice_manifest_path || ""}
+                  InputProps={{ readOnly: true }}
+                />
               </Stack>
             ) : (
               <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
