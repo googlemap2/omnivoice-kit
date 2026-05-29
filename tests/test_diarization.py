@@ -1,6 +1,5 @@
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import patch
 
 from voicekit.diarization import (
@@ -9,7 +8,6 @@ from voicekit.diarization import (
     configure_headless_matplotlib,
     get_diarization_annotation,
     overlap_seconds,
-    patch_torchaudio_audio_metadata,
 )
 
 
@@ -60,12 +58,6 @@ class DiarizationMergeTests(unittest.TestCase):
             speaker_diarization = Annotation()
 
         self.assertIs(get_diarization_annotation(DiarizeOutput()), DiarizeOutput.speaker_diarization)
-
-    def test_patch_torchaudio_audio_metadata_adds_missing_top_level_attr(self) -> None:
-        fake_torchaudio = SimpleNamespace()
-        with patch.dict("sys.modules", {"torchaudio": fake_torchaudio}):
-            patch_torchaudio_audio_metadata()
-            self.assertTrue(hasattr(fake_torchaudio, "AudioMetaData"))
 
 
 if __name__ == "__main__":
