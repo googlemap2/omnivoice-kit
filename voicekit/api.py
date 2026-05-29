@@ -127,6 +127,18 @@ def _output_file_response(path: str) -> FileResponse:
     return FileResponse(resolved)
 
 
+def parse_speaker_voice_map(raw: str | None) -> dict[str, str]:
+    if not raw:
+        return {}
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid speaker_voice_map JSON: {e}") from e
+    if not isinstance(value, dict):
+        raise HTTPException(status_code=400, detail="speaker_voice_map must be a JSON object.")
+    return {str(key): str(item) for key, item in value.items() if str(key).strip() and str(item).strip()}
+
+
 class SpeechRequest(BaseModel):
     model: str = Field(default=DEFAULT_MODEL_ID)
     input: str = Field(min_length=1)
@@ -234,6 +246,7 @@ class DubbingRequest(BaseModel):
     enable_diarization: bool = False
     diarization_model: str = DEFAULT_DIARIZATION_MODEL_ID
     hf_token: str | None = None
+    speaker_voice_map: dict[str, str] = Field(default_factory=dict)
 
 
 class DiarizationMergeRequest(BaseModel):
@@ -657,6 +670,7 @@ def create_dubbing_job(request: DubbingRequest) -> dict:
             enable_diarization=request.enable_diarization,
             diarization_model=request.diarization_model,
             hf_token=request.hf_token,
+            speaker_voice_map=request.speaker_voice_map,
         )
     except Exception as e:
         raise _server_error(e) from e
@@ -680,6 +694,7 @@ async def create_dubbing_job_from_upload(
     enable_diarization: bool = Form(False),
     diarization_model: str = Form(DEFAULT_DIARIZATION_MODEL_ID),
     hf_token: str | None = Form(None),
+    speaker_voice_map: str | None = Form(None),
     queued: bool = Form(False),
 ) -> dict:
     upload_dir = Path("data") / "uploads"
@@ -688,6 +703,7 @@ async def create_dubbing_job_from_upload(
     upload_path = upload_dir / f"dubbing_input_{uuid4().hex}{suffix}"
     try:
         upload_path.write_bytes(await file.read())
+        parsed_speaker_voice_map = parse_speaker_voice_map(speaker_voice_map)
         if queued:
             job = get_job_store().create_job(
                 "dubbing",
@@ -707,6 +723,7 @@ async def create_dubbing_job_from_upload(
                     "enable_diarization": enable_diarization,
                     "diarization_model": diarization_model,
                     "hf_token": hf_token,
+                    "speaker_voice_map": parsed_speaker_voice_map,
                 },
             )
             return {"object": "job", "data": job.to_dict()}
@@ -726,6 +743,7 @@ async def create_dubbing_job_from_upload(
             enable_diarization=enable_diarization,
             diarization_model=diarization_model,
             hf_token=hf_token,
+            speaker_voice_map=parsed_speaker_voice_map,
         )
     except Exception as e:
         raise _server_error(e) from e

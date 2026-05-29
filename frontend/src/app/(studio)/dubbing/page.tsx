@@ -2,8 +2,10 @@
 
 import MovieIcon from "@mui/icons-material/Movie";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { Box, Button, Chip, FormControlLabel, Paper, Stack, Switch, TextField, Typography } from "@mui/material";
+import { Box, Button, Chip, FormControlLabel, IconButton, Paper, Stack, Switch, TextField, Typography } from "@mui/material";
 import { WorkspaceShell } from "../../../components/layout/WorkspaceShell";
 import { useStudio } from "../../../components/studio/StudioContext";
 import { SelectField } from "../../../components/ui/SelectField";
@@ -82,6 +84,50 @@ export default function DubbingPage() {
             }
             label="Diarize speakers"
           />
+          {studio.dubbingDiarize && (
+            <Paper variant="outlined" sx={{ p: 1.25, bgcolor: "#252526" }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}>
+                  Speaker voices
+                </Typography>
+                <Button size="small" startIcon={<AddIcon />} onClick={studio.addDubbingSpeakerVoice}>
+                  Add
+                </Button>
+              </Stack>
+              <Stack spacing={1}>
+                {Object.entries(studio.dubbingSpeakerVoiceMap).map(([speaker, mappedVoice]) => (
+                  <Stack key={speaker} direction="row" spacing={1} alignItems="center">
+                    <TextField
+                      size="small"
+                      label="Speaker"
+                      value={speaker}
+                      onChange={(event) => {
+                        studio.deleteDubbingSpeakerVoice(speaker);
+                        studio.setDubbingSpeakerVoice(event.target.value, mappedVoice);
+                      }}
+                      sx={{ width: 130 }}
+                    />
+                    <Box sx={{ flex: 1 }}>
+                      <SelectField
+                        label="Voice"
+                        value={mappedVoice}
+                        onChange={(voice) => studio.setDubbingSpeakerVoice(speaker, voice)}
+                        options={studio.voices.map((voice) => ({ id: voice.id, label: voice.name || voice.id }))}
+                      />
+                    </Box>
+                    <IconButton size="small" onClick={() => studio.deleteDubbingSpeakerVoice(speaker)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                ))}
+                {Object.keys(studio.dubbingSpeakerVoiceMap).length === 0 && (
+                  <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
+                    Add SPEAKER_00, SPEAKER_01 mappings to use different voice profiles.
+                  </Typography>
+                )}
+              </Stack>
+            </Paper>
+          )}
           <FormControlLabel
             control={
               <Switch

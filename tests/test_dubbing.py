@@ -4,7 +4,14 @@ from pathlib import Path
 
 import numpy as np
 
-from voicekit.dubbing import fit_audio_to_duration, next_output_folder, place_segment, sanitize_folder_name
+from voicekit.dubbing import (
+    fit_audio_to_duration,
+    next_output_folder,
+    normalize_speaker_voice_map,
+    place_segment,
+    sanitize_folder_name,
+    voice_for_segment,
+)
 
 
 class DubbingAudioTests(unittest.TestCase):
@@ -40,6 +47,18 @@ class DubbingAudioTests(unittest.TestCase):
             self.assertTrue(first_path.exists())
             self.assertTrue(second_path.exists())
             self.assertTrue(custom_path.exists())
+
+    def test_voice_for_segment_uses_speaker_mapping(self) -> None:
+        mapping = {"SPEAKER_00": "alice", "SPEAKER_01": "bob"}
+        self.assertEqual(voice_for_segment("default", "SPEAKER_00", mapping), "alice")
+        self.assertEqual(voice_for_segment("default", "SPEAKER_02", mapping), "default")
+        self.assertEqual(voice_for_segment("default", None, mapping), "default")
+
+    def test_normalize_speaker_voice_map_strips_empty_values(self) -> None:
+        self.assertEqual(
+            normalize_speaker_voice_map({" SPEAKER_00 ": " alice ", "": "skip", "SPEAKER_01": ""}),
+            {"SPEAKER_00": "alice"},
+        )
 
 
 if __name__ == "__main__":

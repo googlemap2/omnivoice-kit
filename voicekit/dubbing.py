@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import soundfile as sf
@@ -31,6 +32,7 @@ class DubbingResult:
     target_language: str | None
     voice: str
     speakers: list[str]
+    speaker_voices: dict[str, str]
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -86,6 +88,18 @@ def next_output_folder(output_dir: str | Path, input_path: str | Path, folder_na
         index += 1
 
 
+def normalize_speaker_voice_map(value: dict[str, Any] | None) -> dict[str, str]:
+    if not value:
+        return {}
+    return {str(key).strip(): str(item).strip() for key, item in value.items() if str(key).strip() and str(item).strip()}
+
+
+def voice_for_segment(default_voice: str, speaker: str | None, speaker_voice_map: dict[str, str]) -> str:
+    if speaker and speaker in speaker_voice_map:
+        return speaker_voice_map[speaker]
+    return default_voice
+
+
 def dub_file(
     input_path: str | Path,
     voice: str,
@@ -104,6 +118,7 @@ def dub_file(
     enable_diarization: bool = False,
     diarization_model: str | None = None,
     hf_token: str | None = None,
+    speaker_voice_map: dict[str, str] | None = None,
 ) -> DubbingResult:
     source = Path(input_path)
     if not source.exists():
@@ -113,6 +128,7 @@ def dub_file(
     if not target_language:
         raise ValueError("target_language is required for dubbing.")
 
+    normalized_speaker_voice_map = normalize_speaker_voice_map(speaker_voice_map)
     job_id, job_dir = next_output_folder(output_dir, source, folder_name=folder_name)
 
     extracted_audio = extract_audio(source, job_dir / "source.wav")
@@ -147,9 +163,11 @@ def dub_file(
         text = (translated_segment.translated_text or translated_segment.text or "").strip()
         if not text:
             continue
+        speaker = original.speaker or original.metadata.get("speaker")
+        segment_voice = voice_for_segment(voice, str(speaker) if speaker else None, normalized_speaker_voice_map)
         audio, status = generate_clone_with_speaker_id(
             text=text,
-            speaker_id=voice,
+            speaker_id=segment_voice,
             model_id=tts_model,
             language=target_language,
             instruct_items=[],
@@ -216,4 +234,5 @@ def dub_file(
                 if segment.speaker or segment.metadata.get("speaker")
             }
         ),
+        speaker_voices=normalized_speaker_voice_map,
     )

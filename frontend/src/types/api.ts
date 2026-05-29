@@ -88,6 +88,7 @@ export type DubbingResult = {
   target_language: string | null;
   voice: string;
   speakers: string[];
+  speaker_voices?: Record<string, string>;
 };
 
 export type JobRecord = {

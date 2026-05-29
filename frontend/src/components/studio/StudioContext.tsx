@@ -114,6 +114,10 @@ type StudioContextValue = {
   setDubbingProvider: (provider: string) => void;
   dubbingDiarize: boolean;
   setDubbingDiarize: (value: boolean) => void;
+  dubbingSpeakerVoiceMap: Record<string, string>;
+  setDubbingSpeakerVoice: (speaker: string, voice: string) => void;
+  addDubbingSpeakerVoice: () => void;
+  deleteDubbingSpeakerVoice: (speaker: string) => void;
   dubbingQueued: boolean;
   setDubbingQueued: (value: boolean) => void;
   dubbingResult: DubbingResult | null;
@@ -192,6 +196,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [dubbingTargetLanguage, setDubbingTargetLanguage] = useState("vi");
   const [dubbingProvider, setDubbingProvider] = useState("passthrough");
   const [dubbingDiarize, setDubbingDiarize] = useState(false);
+  const [dubbingSpeakerVoiceMap, setDubbingSpeakerVoiceMap] = useState<Record<string, string>>({});
   const [dubbingQueued, setDubbingQueued] = useState(false);
   const [dubbingResult, setDubbingResult] = useState<DubbingResult | null>(null);
   const [dubbingAudioUrl, setDubbingAudioUrl] = useState<string | null>(null);
@@ -574,6 +579,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       form.set("guidance_scale", String(guidanceScale));
       form.set("speed", String(speed));
       form.set("enable_diarization", String(dubbingDiarize));
+      form.set("speaker_voice_map", JSON.stringify(dubbingSpeakerVoiceMap));
       form.set("queued", String(dubbingQueued));
       const result = await apiForm<{ object: string; data: DubbingResult | JobRecord }>("/v1/dubbing/dub-upload", form);
       if (result.object === "job") {
@@ -658,6 +664,34 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       speaker: item.speaker ? String(item.speaker) : null,
       metadata: typeof item.metadata === "object" && item.metadata !== null ? (item.metadata as Record<string, unknown>) : {},
     }));
+  }
+
+  function setDubbingSpeakerVoice(speaker: string, voice: string) {
+    setDubbingSpeakerVoiceMap((current) => {
+      const normalizedSpeaker = speaker.trim();
+      if (!normalizedSpeaker) return current;
+      return { ...current, [normalizedSpeaker]: voice };
+    });
+  }
+
+  function addDubbingSpeakerVoice() {
+    setDubbingSpeakerVoiceMap((current) => {
+      for (let index = 0; index < 20; index += 1) {
+        const speaker = `SPEAKER_${String(index).padStart(2, "0")}`;
+        if (!(speaker in current)) {
+          return { ...current, [speaker]: dubbingVoice || selectedVoice || voices[0]?.id || "" };
+        }
+      }
+      return current;
+    });
+  }
+
+  function deleteDubbingSpeakerVoice(speaker: string) {
+    setDubbingSpeakerVoiceMap((current) => {
+      const next = { ...current };
+      delete next[speaker];
+      return next;
+    });
   }
 
   async function translate() {
@@ -959,6 +993,10 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         setDubbingProvider,
         dubbingDiarize,
         setDubbingDiarize,
+        dubbingSpeakerVoiceMap,
+        setDubbingSpeakerVoice,
+        addDubbingSpeakerVoice,
+        deleteDubbingSpeakerVoice,
         dubbingQueued,
         setDubbingQueued,
         dubbingResult,
