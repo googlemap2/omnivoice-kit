@@ -44,9 +44,19 @@ from voicekit.settings import (
 from voicekit.translation import TRANSLATION_LANGUAGE_CHOICES, list_providers, translate_segments, translate_text
 
 
+CORS_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://5365fbfj-3000.asse.devtunnels.ms"
+    # Add your frontend/ngrok domains here, for example:
+    # "https://your-frontend-domain.ngrok-free.dev",
+]
+
+
 def _cors_origins() -> list[str]:
-    raw = os.environ.get("VOICEKIT_CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
-    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+    raw = os.environ.get("VOICEKIT_CORS_ORIGINS", "")
+    env_origins = [origin.strip() for origin in raw.split(",") if origin.strip()]
+    return [*CORS_ORIGINS, *env_origins]
 
 
 app = FastAPI(title="OmniVoice Kit API", version="0.2.0")

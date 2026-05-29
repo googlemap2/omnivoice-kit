@@ -33,6 +33,17 @@ Set the backend URL in `.env.local`:
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 ```
 
+When the backend is exposed through ngrok, set `NEXT_PUBLIC_API_BASE_URL` to the
+backend ngrok URL. The backend allows localhost origins by default. If the
+frontend runs from another origin, add that exact origin to `CORS_ORIGINS` in
+`voicekit/api.py` or start the backend with:
+
+```bash
+VOICEKIT_CORS_ORIGINS=http://localhost:3000,https://your-frontend-origin.example
+```
+
+Restart both the backend and `pnpm dev` after changing environment variables.
+
 The UI uses a VS Code-style studio layout with MUI: activity bar, explorer sidebar, editor workspace, and bottom output panel.
 
 ## Source Structure
