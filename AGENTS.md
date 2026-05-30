@@ -193,6 +193,7 @@ pnpm build
 - Do not commit generated models, cache files, output media, or generated audio.
 - Do not delete `models/`, `data/`, or `outputs/` unless the user explicitly asks.
 - Do not revert user changes.
+- Whenever adding or updating a feature, update the relevant documentation in `docs/` in the same change.
 - For frontend changes, follow the existing MUI/context patterns.
 - For backend changes, prefer existing helpers in `voicekit/*` before adding new abstractions.
 
