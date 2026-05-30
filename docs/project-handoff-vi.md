@@ -765,8 +765,6 @@ pnpm build
 - Marketplace/import/export voice package.
 - Desktop packaging.
 - Fine-grained progress/cancel cho inference đang chạy.
-- Dubbing smoke test bằng fixture media ngắn.
-- Speaker-to-voice assignment nâng cao.
 - Silence detection cho realtime dictation.
 - Emotion script mới là mapping tag -> instruct, chưa phải emotion-control native.
 
