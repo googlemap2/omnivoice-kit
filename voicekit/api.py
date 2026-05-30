@@ -42,6 +42,7 @@ from voicekit.diarization import (
 )
 from voicekit.dictation import fake_result_event, partial_event, result_event, transcribe_audio_bytes
 from voicekit.dubbing import dub_file
+from voicekit.emotion_tts import load_tag_aliases, render_emotion_tts_speaker_id
 from voicekit.history import list_history
 from voicekit.jobs import JOB_STATUSES, JobType, get_job_store, get_job_worker
 from voicekit.model_store import DEFAULT_MODEL_ID, install_model, list_model_statuses
@@ -185,6 +186,25 @@ class VoiceDesignRequest(BaseModel):
     postprocess_output: bool = True
     effect_preset: Literal["raw", "normalize", "broadcast"] = "raw"
     queued: bool = False
+
+
+class EmotionSpeechRequest(BaseModel):
+    model: str = Field(default=DEFAULT_MODEL_ID)
+    input: str = Field(min_length=1)
+    voice: str = Field(min_length=1)
+    response_format: Literal["wav"] = "wav"
+    language: str | None = None
+    default_instruct: str | None = None
+    tag_aliases: dict[str, str] = Field(default_factory=dict)
+    num_step: int = 16
+    guidance_scale: float = 2.0
+    speed: float = 1.0
+    duration: float | None = None
+    denoise: bool = True
+    preprocess_prompt: bool = True
+    postprocess_output: bool = True
+    effect_preset: Literal["raw", "normalize", "broadcast"] = "raw"
+    gap_ms: int = 120
 
 
 class VoiceRenameRequest(BaseModel):
@@ -909,6 +929,35 @@ def create_speech_voice_design(request: VoiceDesignRequest) -> Response:
     if audio is None:
         raise _generation_error(status)
     return _wav_response(audio)
+
+
+@app.post("/v1/audio/speech/emotion-script")
+def create_emotion_script_speech(request: EmotionSpeechRequest) -> Response:
+    try:
+        tag_aliases = load_tag_aliases(None)
+        tag_aliases.update({key.strip().lower(): value.strip() for key, value in request.tag_aliases.items()})
+        result = render_emotion_tts_speaker_id(
+            script_text=request.input,
+            speaker_id=request.voice,
+            speakers_path="speakers.json",
+            model_id=request.model,
+            language=request.language,
+            default_instruct=request.default_instruct,
+            tag_aliases=tag_aliases,
+            num_step=request.num_step,
+            guidance_scale=request.guidance_scale,
+            speed=request.speed,
+            duration=request.duration,
+            denoise=request.denoise,
+            preprocess_prompt=request.preprocess_prompt,
+            postprocess_output=request.postprocess_output,
+            effect_preset=request.effect_preset,
+            device=load_settings().default_device,
+            gap_ms=request.gap_ms,
+        )
+    except Exception as e:
+        raise _server_error(e) from e
+    return _wav_response((result["sample_rate"], result["audio"]))
 
 
 @app.get("/v1/dictation/status")

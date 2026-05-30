@@ -309,6 +309,19 @@ export function StudioProvider({ children }: { children: ReactNode }) {
           return;
         }
         blob = await apiAudio("/v1/audio/speech/clone", { method: "POST", body: form });
+      } else if (mode === "emotion") {
+        const init = {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            baseGenerationPayload({
+              voice: selectedVoice,
+              default_instruct: instructs.length > 0 ? instructs.join(", ") : null,
+              gap_ms: 120,
+            }),
+          ),
+        };
+        blob = await apiAudio("/v1/audio/speech/emotion-script", init);
       } else {
         const init = {
           method: "POST",

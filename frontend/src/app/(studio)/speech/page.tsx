@@ -101,13 +101,24 @@ export default function SpeechPage() {
         <Tab value="speaker" label="Speaker ID" />
         <Tab value="clone" label="Reference Clone" />
         <Tab value="design" icon={<AutoAwesomeIcon fontSize="small" />} iconPosition="start" label="Voice Design" />
+        <Tab value="emotion" icon={<AutoAwesomeIcon fontSize="small" />} iconPosition="start" label="Emotion Script" />
       </Tabs>
       <Box sx={{ display: "grid", gridTemplateColumns: "minmax(360px, 1fr) 320px", gap: 2, mt: 2 }}>
         <Stack spacing={2}>
           <TextField
-            label="Input text"
+            label={studio.mode === "emotion" ? "Emotion script" : "Input text"}
             multiline
             minRows={8}
+            placeholder={
+              studio.mode === "emotion"
+                ? "[thoughtful] Chon xong may em soan kich ban nhe. [whisper] Cac vo keo xuong cuoi. [excited] Bam vao cho anh nha."
+                : undefined
+            }
+            helperText={
+              studio.mode === "emotion"
+                ? "Dung tag dang [whisper], [excited], [surprised], [thoughtful], [laughing], [chuckles] truoc tung cau."
+                : undefined
+            }
             value={studio.speechText}
             onChange={(event) => studio.setSpeechText(event.target.value)}
           />
@@ -148,7 +159,7 @@ export default function SpeechPage() {
           )}
         </Stack>
         <Stack spacing={2}>
-          {studio.mode === "speaker" && (
+          {(studio.mode === "speaker" || studio.mode === "emotion") && (
             <FormControl size="small">
               <InputLabel>Voice</InputLabel>
               <Select
@@ -172,10 +183,10 @@ export default function SpeechPage() {
             options={studio.meta.effect_presets.map((id) => ({ id, label: id }))}
           />
           <FormControl size="small">
-            <InputLabel>Instruct items</InputLabel>
+            <InputLabel>{studio.mode === "emotion" ? "Default instruct" : "Instruct items"}</InputLabel>
             <Select
               multiple
-              label="Instruct items"
+              label={studio.mode === "emotion" ? "Default instruct" : "Instruct items"}
               value={studio.instructs}
               onChange={(event) => studio.setInstructs(event.target.value as string[])}
             >
@@ -231,15 +242,17 @@ export default function SpeechPage() {
             }
             label="Postprocess output"
           />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={studio.speechQueued}
-                onChange={(event) => studio.setSpeechQueued(event.target.checked)}
-              />
-            }
-            label="Send to queue"
-          />
+          {studio.mode !== "emotion" && (
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={studio.speechQueued}
+                  onChange={(event) => studio.setSpeechQueued(event.target.checked)}
+                />
+              }
+              label="Send to queue"
+            />
+          )}
         </Stack>
       </Box>
     </WorkspaceShell>

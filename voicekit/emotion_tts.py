@@ -83,6 +83,54 @@ def run_emotion_tts_speaker_id(
     device: str | None,
     gap_ms: int,
 ) -> dict:
+    result = render_emotion_tts_speaker_id(
+        script_text=script_text,
+        speaker_id=speaker_id,
+        speakers_path=speakers_path,
+        model_id=model_id,
+        language=language,
+        default_instruct=default_instruct,
+        tag_aliases=tag_aliases,
+        num_step=num_step,
+        guidance_scale=guidance_scale,
+        speed=speed,
+        duration=duration,
+        denoise=denoise,
+        preprocess_prompt=preprocess_prompt,
+        postprocess_output=postprocess_output,
+        effect_preset=effect_preset,
+        device=device,
+        gap_ms=gap_ms,
+    )
+    sf.write(output_path, result["audio"], result["sample_rate"])
+    return {
+        "output": output_path,
+        "sample_rate": result["sample_rate"],
+        "segments": result["segments"],
+        "tag_aliases": result["tag_aliases"],
+    }
+
+
+def render_emotion_tts_speaker_id(
+    *,
+    script_text: str,
+    speaker_id: str,
+    speakers_path: str,
+    model_id: str,
+    language: str | None,
+    default_instruct: str | None,
+    tag_aliases: dict[str, str],
+    num_step: int,
+    guidance_scale: float,
+    speed: float,
+    duration: float | None,
+    denoise: bool,
+    preprocess_prompt: bool,
+    postprocess_output: bool,
+    effect_preset: str,
+    device: str | None,
+    gap_ms: int,
+) -> dict:
     if effect_preset not in EFFECT_PRESETS:
         raise ValueError(f"Unsupported effect preset: {effect_preset}")
     if not script_text.strip():
@@ -135,10 +183,9 @@ def run_emotion_tts_speaker_id(
         )
 
     merged = np.concatenate(rendered, axis=0) if rendered else np.zeros(1, dtype=np.float32)
-    sf.write(output_path, merged, sample_rate)
     return {
-        "output": output_path,
         "sample_rate": sample_rate,
+        "audio": merged,
         "segments": debug_segments,
         "tag_aliases": tag_aliases,
     }
