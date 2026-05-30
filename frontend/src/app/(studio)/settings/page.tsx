@@ -75,7 +75,7 @@ export default function SettingsPage() {
         </Button>
       }
     >
-      <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 2 }}>
+      <Tabs value={tab} onChange={(_, value) => setTab(value)} variant="scrollable" scrollButtons="auto" sx={{ mb: 2 }}>
         <Tab value="tts" label="TTS Config" />
         <Tab value="translation" label="Translation Providers" />
         <Tab value="models" label="Models" />
@@ -125,7 +125,7 @@ export default function SettingsPage() {
       )}
 
       {tab === "translation" && (
-        <Box sx={{ display: "grid", gridTemplateColumns: "minmax(360px, 520px) minmax(360px, 1fr)", gap: 2 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(360px, 520px) minmax(360px, 1fr)" }, gap: 2 }}>
           <Stack spacing={2}>
             <SelectField
               label="Default provider"
@@ -215,7 +215,7 @@ export default function SettingsPage() {
       )}
 
       {tab === "models" && (
-        <Box sx={{ display: "grid", gridTemplateColumns: "minmax(320px, 420px) 1fr", gap: 2 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(320px, 420px) 1fr" }, gap: 2 }}>
           <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#252526", alignSelf: "start" }}>
             <Typography sx={{ mb: 1, fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}>
               Models
@@ -242,8 +242,8 @@ export default function SettingsPage() {
               {studio.statuses.map((status) => (
                 <Box key={status.repo_id}>
                   <Typography sx={{ fontWeight: 600 }}>{status.repo_id}</Typography>
-                  <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{status.local_path}</Typography>
-                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                  <Typography sx={{ fontSize: 12, color: "text.secondary", overflowWrap: "anywhere" }}>{status.local_path}</Typography>
+                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
                     <Chip
                       size="small"
                       color={status.installed ? "success" : "warning"}

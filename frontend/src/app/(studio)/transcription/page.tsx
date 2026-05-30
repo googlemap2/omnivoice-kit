@@ -43,7 +43,7 @@ export default function TranscriptionPage() {
         </Button>
       }
     >
-      <Box sx={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", gap: 2 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "320px minmax(0, 1fr)" }, gap: 2 }}>
         <Stack spacing={2}>
           <Button component="label" startIcon={<UploadFileIcon />} variant="outlined">
             {studio.transcribeFile ? studio.transcribeFile.name : "Choose media file"}
@@ -108,7 +108,13 @@ export default function TranscriptionPage() {
         </Stack>
         <Stack spacing={2} sx={{ minWidth: 0 }}>
           <Paper variant="outlined" sx={{ bgcolor: "#252526", overflow: "hidden" }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 1.5, py: 1 }}>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              justifyContent="space-between"
+              alignItems={{ xs: "stretch", sm: "center" }}
+              spacing={1}
+              sx={{ px: 1.5, py: 1 }}
+            >
               <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}>
                 Subtitle Segments
               </Typography>
@@ -116,8 +122,8 @@ export default function TranscriptionPage() {
                 Add
               </Button>
             </Stack>
-            <TableContainer sx={{ maxHeight: 420 }}>
-              <Table stickyHeader size="small">
+            <TableContainer sx={{ maxHeight: 420, overflowX: "auto" }}>
+              <Table stickyHeader size="small" sx={{ minWidth: 620 }}>
                 <TableHead>
                   <TableRow>
                     <TableCell sx={{ width: 88 }}>Start</TableCell>

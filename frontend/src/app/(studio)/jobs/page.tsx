@@ -55,8 +55,8 @@ export default function JobsPage() {
     >
       <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 2 }}>
         <Paper variant="outlined" sx={{ bgcolor: "#252526", overflow: "hidden", minWidth: 0 }}>
-          <TableContainer sx={{ maxHeight: 620 }}>
-            <Table stickyHeader size="small">
+          <TableContainer sx={{ maxHeight: 620, overflowX: "auto" }}>
+            <Table stickyHeader size="small" sx={{ minWidth: 720 }}>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ width: 150 }}>Job</TableCell>

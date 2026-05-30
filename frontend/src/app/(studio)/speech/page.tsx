@@ -159,12 +159,12 @@ export default function SpeechPage() {
         </Button>
       }
     >
-      <Tabs value={studio.mode} onChange={(_, value) => studio.setMode(value)}>
+      <Tabs value={studio.mode} onChange={(_, value) => studio.setMode(value)} variant="scrollable" scrollButtons="auto">
         <Tab value="emotion" icon={<AutoAwesomeIcon fontSize="small" />} iconPosition="start" label="Emotion Script" />
         <Tab value="clone" label="Reference Clone" />
         <Tab value="design" icon={<AutoAwesomeIcon fontSize="small" />} iconPosition="start" label="Voice Design" />
       </Tabs>
-      <Box sx={{ display: "grid", gridTemplateColumns: "minmax(360px, 1fr) 320px", gap: 2, mt: 2 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(360px, 1fr) 320px" }, gap: 2, mt: 2 }}>
         <Stack spacing={2}>
           <Box sx={{ position: "relative" }}>
             <TextField
@@ -242,7 +242,7 @@ export default function SpeechPage() {
           )}
           {studio.audioUrl && (
             <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#252526" }}>
-              <Stack direction="row" spacing={1} alignItems="center">
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }}>
                 <audio controls src={studio.audioUrl} style={{ width: "100%" }} />
                 <Tooltip title="Download WAV">
                   <span>

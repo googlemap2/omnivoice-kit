@@ -14,7 +14,16 @@ export function BottomPanel({ error, message, history }: BottomPanelProps) {
       <Tabs value="output" sx={{ minHeight: 32, "& .MuiTab-root": { minHeight: 32, py: 0 } }}>
         <Tab value="output" icon={<HistoryIcon fontSize="small" />} iconPosition="start" label="Output" />
       </Tabs>
-      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, px: 2, pb: 1, height: 132 }}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+          gap: 2,
+          px: 2,
+          pb: 1,
+          height: { xs: 220, md: 132 },
+        }}
+      >
         <Box sx={{ overflow: "auto" }}>
           {error ? <Alert severity="error">{error}</Alert> : <Alert severity="info">{message}</Alert>}
         </Box>

@@ -100,6 +100,7 @@ API liên quan model:
 - `frontend/src/lib/api.ts`: helper `apiJson`, `apiForm`, `apiAudio`, `apiWebSocketUrl`, tự thêm header `ngrok-skip-browser-warning`.
 - `frontend/src/components/studio/StudioContext.tsx`: state chính và action gọi backend cho Speech, Transcription, Translation, Dubbing, Jobs, Voices, Settings.
 - `frontend/src/components/layout/Explorer.tsx`: sidebar Explorer có nút collapse/expand; width được điều khiển bởi state trong `StudioFrame`.
+- Layout frontend responsive: trên mobile `ActivityBar` chuyển xuống dưới như bottom navigation, `Explorer` bị ẩn, các workspace grid chuyển về một cột; desktop giữ layout sidebar/explorer/editor.
 - `frontend/src/app/(studio)/speech/page.tsx`: UI tạo speech, gồm các mode:
   - `emotion`: kịch bản cảm xúc bằng tag inline; đây là tab đầu tiên trên UI Speech, thay cho tab `Saved Voice`.
   - `clone`: upload reference audio.

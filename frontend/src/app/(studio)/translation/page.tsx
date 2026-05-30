@@ -20,9 +20,9 @@ export default function TranslationPage() {
         </Button>
       }
     >
-      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, gap: 2 }}>
         <Stack spacing={2}>
-          <Stack direction="row" spacing={1}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <SelectField
               label="Provider"
               value={studio.provider}

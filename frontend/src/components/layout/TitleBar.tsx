@@ -28,12 +28,16 @@ export function TitleBar({ busy, onRefresh }: TitleBarProps) {
         borderColor: "divider",
         bgcolor: "#2d2d30",
       }}>
-      <Typography sx={{ fontSize: 13, fontWeight: 600, mr: 2 }}>
+      <Typography sx={{ fontSize: 13, fontWeight: 600, mr: { xs: 1, sm: 2 }, whiteSpace: "nowrap" }}>
         OmniVoice Studio
       </Typography>
-      <Chip size="small" label={`FastAPI ${maskedApiBaseUrl || "not configured"}`} sx={{ height: 22 }} />
+      <Chip
+        size="small"
+        label={`FastAPI ${maskedApiBaseUrl || "not configured"}`}
+        sx={{ display: { xs: "none", sm: "inline-flex" }, height: 22, maxWidth: 320 }}
+      />
       <Box sx={{ flex: 1 }} />
-      {busy && <LinearProgress sx={{ width: 160, mr: 1 }} />}
+      {busy && <LinearProgress sx={{ width: { xs: 72, sm: 160 }, mr: 1 }} />}
       <Tooltip title="Refresh workspace data">
         <IconButton size="small" onClick={onRefresh}>
           <RefreshIcon fontSize="small" />

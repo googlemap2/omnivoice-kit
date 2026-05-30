@@ -23,7 +23,7 @@ export default function DubbingPage() {
         </Button>
       }
     >
-      <Box sx={{ display: "grid", gridTemplateColumns: "360px minmax(0, 1fr)", gap: 2 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "360px minmax(0, 1fr)" }, gap: 2 }}>
         <Stack spacing={2}>
           <Button component="label" startIcon={<UploadFileIcon />} variant="outlined">
             {studio.dubbingFile ? studio.dubbingFile.name : "Choose audio or video"}
@@ -86,7 +86,13 @@ export default function DubbingPage() {
           />
           {studio.dubbingDiarize && (
             <Paper variant="outlined" sx={{ p: 1.25, bgcolor: "#252526" }}>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                alignItems={{ xs: "stretch", sm: "center" }}
+                justifyContent="space-between"
+                spacing={1}
+                sx={{ mb: 1 }}
+              >
                 <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}>
                   Speaker voices
                 </Typography>
@@ -96,7 +102,7 @@ export default function DubbingPage() {
               </Stack>
               <Stack spacing={1}>
                 {Object.entries(studio.dubbingSpeakerVoiceMap).map(([speaker, mappedVoice]) => (
-                  <Stack key={speaker} direction="row" spacing={1} alignItems="center">
+                  <Stack key={speaker} direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }}>
                     <TextField
                       size="small"
                       label="Speaker"
@@ -105,7 +111,7 @@ export default function DubbingPage() {
                         studio.deleteDubbingSpeakerVoice(speaker);
                         studio.setDubbingSpeakerVoice(event.target.value, mappedVoice);
                       }}
-                      sx={{ width: 130 }}
+                      sx={{ width: { xs: "100%", sm: 130 } }}
                     />
                     <Box sx={{ flex: 1 }}>
                       <SelectField

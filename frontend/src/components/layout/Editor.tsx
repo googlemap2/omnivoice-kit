@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 export function Editor({ children }: { children: ReactNode }) {
   return (
-    <Box sx={{ minWidth: 0, minHeight: 0, overflow: "auto", bgcolor: "#1e1e1e" }}>
+    <Box sx={{ minWidth: 0, minHeight: 0, height: "100%", overflow: "auto", bgcolor: "#1e1e1e" }}>
       {children}
     </Box>
   );

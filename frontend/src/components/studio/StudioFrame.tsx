@@ -23,17 +23,28 @@ export function StudioFrame({ children }: { children: ReactNode }) {
         sx={{
           minHeight: 0,
           display: "grid",
-          gridTemplateColumns: `48px ${explorerCollapsed ? "44px" : "280px"} 1fr`,
+          gridTemplateColumns: { xs: "1fr", md: `48px ${explorerCollapsed ? "44px" : "280px"} 1fr` },
+          gridTemplateRows: { xs: "1fr 56px", md: "1fr" },
+          gridTemplateAreas: {
+            xs: '"editor" "activity"',
+            md: '"activity explorer editor"',
+          },
           transition: "grid-template-columns 160ms ease",
         }}
       >
-        <ActivityBar workspace={workspace} />
-        <Explorer
-          workspace={workspace}
-          collapsed={explorerCollapsed}
-          onToggleCollapsed={() => setExplorerCollapsed((current) => !current)}
-        />
-        <Editor>{children}</Editor>
+        <Box sx={{ gridArea: "activity", minWidth: 0, minHeight: 0 }}>
+          <ActivityBar workspace={workspace} />
+        </Box>
+        <Box sx={{ gridArea: "explorer", minWidth: 0, minHeight: 0, display: { xs: "none", md: "block" } }}>
+          <Explorer
+            workspace={workspace}
+            collapsed={explorerCollapsed}
+            onToggleCollapsed={() => setExplorerCollapsed((current) => !current)}
+          />
+        </Box>
+        <Box sx={{ gridArea: "editor", minWidth: 0, minHeight: 0 }}>
+          <Editor>{children}</Editor>
+        </Box>
       </Box>
     </Box>
   );

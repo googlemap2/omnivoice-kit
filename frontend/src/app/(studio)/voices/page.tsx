@@ -21,7 +21,7 @@ export default function VoicesPage() {
         </Button>
       }
     >
-      <Box sx={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: 2 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "360px 1fr" }, gap: 2 }}>
         <Stack spacing={2}>
           <TextField
             label="Speaker ID"
@@ -49,10 +49,10 @@ export default function VoicesPage() {
         <Stack spacing={1}>
           {studio.voices.map((voice) => (
             <Paper key={voice.id} variant="outlined" sx={{ p: 1.25, bgcolor: "#252526" }}>
-              <Stack direction="row" justifyContent="space-between" spacing={2}>
-                <Box>
+              <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2}>
+                <Box sx={{ minWidth: 0 }}>
                   <Typography sx={{ fontWeight: 600 }}>{voice.name || voice.id}</Typography>
-                  <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{voice.prompt_path}</Typography>
+                  <Typography sx={{ fontSize: 12, color: "text.secondary", overflowWrap: "anywhere" }}>{voice.prompt_path}</Typography>
                 </Box>
                 <Chip size="small" label={voice.language || "auto"} />
               </Stack>
