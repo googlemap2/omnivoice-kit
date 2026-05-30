@@ -213,7 +213,8 @@ Tính năng này cho phép người dùng viết text có tag cảm xúc inline,
 
 Frontend UX:
 
-- Tab: `Kịch bản cảm xúc` trong `frontend/src/app/(studio)/speech/page.tsx`.
+- Tab: `Emotion Script` trong `frontend/src/app/(studio)/speech/page.tsx`.
+- Trang Speech dùng tiếng Anh cho UI copy; riêng label trong emotion tag picker và option label của `Voice instruct` vẫn dùng tiếng Việt có dấu để người dùng chọn cảm xúc/chỉ dẫn dễ hơn.
 - Người dùng gõ `@` để mở list tag tiếng Việt.
 - UI hiển thị label tiếng Việt nhưng chèn value kỹ thuật vào text:
   - `Suy tư` -> `[thoughtful]`
@@ -222,7 +223,7 @@ Frontend UX:
   - `Ngạc nhiên` -> `[surprised]`
   - `Hào hứng` -> `[excited]`
   - `Đang cười` -> `[laughing]`
-- Lưu ý quan trọng: tiếng Việt chỉ là label hiển thị; backend nhận tag tiếng Anh trong dấu `[]`.
+- Lưu ý quan trọng: tiếng Việt chỉ là label hiển thị; backend nhận tag tiếng Anh trong dấu `[]` và instruct value gốc như `female`, `high pitch`, `whisper`.
 
 Frontend flow:
 

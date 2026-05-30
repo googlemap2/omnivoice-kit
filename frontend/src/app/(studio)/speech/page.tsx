@@ -152,36 +152,36 @@ export default function SpeechPage() {
   return (
     <WorkspaceShell
       icon={<MicIcon />}
-      title="Xưởng giọng nói"
+      title="Speech Studio"
       action={
         <Button startIcon={<PlayArrowIcon />} variant="contained" onClick={studio.generateSpeech}>
-          Tạo giọng
+          Generate
         </Button>
       }
     >
       <Tabs value={studio.mode} onChange={(_, value) => studio.setMode(value)}>
-        <Tab value="speaker" label="Giọng đã lưu" />
-        <Tab value="clone" label="Clone từ audio" />
-        <Tab value="design" icon={<AutoAwesomeIcon fontSize="small" />} iconPosition="start" label="Thiết kế giọng" />
-        <Tab value="emotion" icon={<AutoAwesomeIcon fontSize="small" />} iconPosition="start" label="Kịch bản cảm xúc" />
+        <Tab value="speaker" label="Saved Voice" />
+        <Tab value="clone" label="Reference Clone" />
+        <Tab value="design" icon={<AutoAwesomeIcon fontSize="small" />} iconPosition="start" label="Voice Design" />
+        <Tab value="emotion" icon={<AutoAwesomeIcon fontSize="small" />} iconPosition="start" label="Emotion Script" />
       </Tabs>
       <Box sx={{ display: "grid", gridTemplateColumns: "minmax(360px, 1fr) 320px", gap: 2, mt: 2 }}>
         <Stack spacing={2}>
           <Box sx={{ position: "relative" }}>
             <TextField
-              label={studio.mode === "emotion" ? "Kịch bản cảm xúc" : "Nội dung nói"}
+              label={studio.mode === "emotion" ? "Emotion script" : "Input text"}
               multiline
               fullWidth
               minRows={8}
               inputRef={scriptInputRef}
               placeholder={
                 studio.mode === "emotion"
-                  ? "@thoughtful Chọn xong mấy em soạn kịch bản nhé. @whisper Các vợ kéo xuống cuối. @excited Bấm vào cho anh nha."
+                  ? "@thoughtful Write the first line here. @whisper Add a quieter line. @excited Finish with energy."
                   : undefined
               }
               helperText={
                 studio.mode === "emotion"
-                  ? "Gõ @ để chọn tag cảm xúc bằng tiếng Việt. UI sẽ chèn thành [tag] trước câu."
+                  ? "Type @ to choose a Vietnamese emotion label. The UI inserts the backend tag before the line."
                   : undefined
               }
               value={studio.speechText}
@@ -226,7 +226,7 @@ export default function SpeechPage() {
           {studio.mode === "clone" && (
             <Stack spacing={1.5}>
               <Button component="label" startIcon={<UploadFileIcon />} variant="outlined">
-                {studio.refAudio ? studio.refAudio.name : "Chọn audio tham chiếu"}
+                {studio.refAudio ? studio.refAudio.name : "Choose reference audio"}
                 <input
                   hidden
                   type="file"
@@ -235,7 +235,7 @@ export default function SpeechPage() {
                 />
               </Button>
               <TextField
-                label="Lời thoại trong audio tham chiếu"
+                label="Reference transcript"
                 value={studio.refText}
                 onChange={(event) => studio.setRefText(event.target.value)}
               />
@@ -245,7 +245,7 @@ export default function SpeechPage() {
             <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#252526" }}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <audio controls src={studio.audioUrl} style={{ width: "100%" }} />
-                <Tooltip title="Tải WAV">
+                <Tooltip title="Download WAV">
                   <span>
                     <IconButton
                       disabled={!studio.lastAudio}
@@ -262,9 +262,9 @@ export default function SpeechPage() {
         <Stack spacing={2}>
           {(studio.mode === "speaker" || studio.mode === "emotion") && (
             <FormControl size="small">
-              <InputLabel>Giọng</InputLabel>
+              <InputLabel>Voice</InputLabel>
               <Select
-                label="Giọng"
+                label="Voice"
                 value={studio.selectedVoice}
                 onChange={(event) => studio.setSelectedVoice(event.target.value)}
               >
@@ -276,18 +276,18 @@ export default function SpeechPage() {
               </Select>
             </FormControl>
           )}
-          <SelectField label="Ngôn ngữ" value={studio.language} onChange={studio.setLanguage} options={studio.meta.languages} />
+          <SelectField label="Language" value={studio.language} onChange={studio.setLanguage} options={studio.meta.languages} />
           <SelectField
-            label="Hiệu ứng"
+            label="Effect"
             value={studio.effectPreset}
             onChange={(value) => studio.setEffectPreset(value as "raw" | "normalize" | "broadcast")}
             options={studio.meta.effect_presets.map((id) => ({ id, label: id }))}
           />
           <FormControl size="small">
-            <InputLabel>{studio.mode === "emotion" ? "Chỉ dẫn mặc định" : "Chỉ dẫn giọng"}</InputLabel>
+            <InputLabel>{studio.mode === "emotion" ? "Default instruct" : "Voice instruct"}</InputLabel>
             <Select
               multiple
-              label={studio.mode === "emotion" ? "Chỉ dẫn mặc định" : "Chỉ dẫn giọng"}
+              label={studio.mode === "emotion" ? "Default instruct" : "Voice instruct"}
               value={studio.instructs}
               onChange={(event) => studio.setInstructs(event.target.value as string[])}
             >
@@ -298,18 +298,18 @@ export default function SpeechPage() {
               ))}
             </Select>
           </FormControl>
-          <SliderField label="Số bước" value={studio.numStep} min={4} max={64} step={1} onChange={studio.setNumStep} />
+          <SliderField label="Steps" value={studio.numStep} min={4} max={64} step={1} onChange={studio.setNumStep} />
           <SliderField
-            label="Độ bám chỉ dẫn"
+            label="Guidance"
             value={studio.guidanceScale}
             min={0.5}
             max={5}
             step={0.1}
             onChange={studio.setGuidanceScale}
           />
-          <SliderField label="Tốc độ" value={studio.speed} min={0.5} max={2} step={0.05} onChange={studio.setSpeed} />
+          <SliderField label="Speed" value={studio.speed} min={0.5} max={2} step={0.05} onChange={studio.setSpeed} />
           <TextField
-            label="Thời lượng (giây)"
+            label="Duration seconds"
             type="number"
             value={studio.duration}
             onChange={(event) => studio.setDuration(event.target.value)}
@@ -321,7 +321,7 @@ export default function SpeechPage() {
           />
           <FormControlLabel
             control={<Switch checked={studio.denoise} onChange={(event) => studio.setDenoise(event.target.checked)} />}
-            label="Khử nhiễu"
+            label="Denoise"
           />
           {studio.mode !== "design" && (
             <FormControlLabel
@@ -331,7 +331,7 @@ export default function SpeechPage() {
                   onChange={(event) => studio.setPreprocessPrompt(event.target.checked)}
                 />
               }
-              label="Tiền xử lý giọng mẫu"
+              label="Preprocess prompt"
             />
           )}
           <FormControlLabel
@@ -341,7 +341,7 @@ export default function SpeechPage() {
                 onChange={(event) => studio.setPostprocessOutput(event.target.checked)}
               />
             }
-            label="Hậu xử lý audio"
+            label="Postprocess output"
           />
           {studio.mode !== "emotion" && (
             <FormControlLabel
@@ -351,7 +351,7 @@ export default function SpeechPage() {
                   onChange={(event) => studio.setSpeechQueued(event.target.checked)}
                 />
               }
-              label="Gửi vào hàng đợi"
+              label="Send to queue"
             />
           )}
         </Stack>
