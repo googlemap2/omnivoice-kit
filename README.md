@@ -215,6 +215,22 @@ Gợi ý:
 - Không mix item tiếng Anh và tiếng Trung trong cùng 1 lệnh.
 - Các tham số chung: `--num_step`, `--guidance_scale`, `--speed`, `--duration`, `--denoise`, `--postprocess_output`, `--device`.
 
+### 3.3.1 Emotion script theo từng đoạn (inline tag)
+
+Bạn có thể gắn tag cảm xúc trực tiếp trong text rồi render thành 1 file WAV duy nhất:
+
+```bash
+uv run voicekit emotion-script \
+  --speaker_id yen \
+  --script "[thoughtful] Chon xong may em soan kich ban nhe. [chuckles] Roi den khuc nay la khuc quan trong. [whisper] Cac vo keo xuong cuoi. [surprised] Thay cac dong nay khong. [excited] Ban vao cho anh nha. [laughing] Muon anh cuoi hay tho dai thi cu them dau cham than." \
+  --output out_emotion.wav \
+  --language vi
+```
+
+Tag hỗ trợ mặc định (có thể custom): `whisper`, `excited`, `surprised`, `thoughtful`, `laughing`, `chuckles`.
+Bạn cũng có thể dùng `--script-file path/to/script.txt` và `--tag-map path/to/tag_map.json`
+để override mapping `tag -> instruct`.
+
 ### 3.4 Transcribe audio/video
 
 ```bash

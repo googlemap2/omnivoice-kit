@@ -19,6 +19,7 @@ from voicekit.core import (
 )
 from voicekit.diarization import DEFAULT_DIARIZATION_MODEL_ID, diarize_file
 from voicekit.dubbing import dub_file
+from voicekit.emotion_tts import load_tag_aliases, run_emotion_tts_speaker_id
 from voicekit.history import try_record_generation
 from voicekit.model_store import DEFAULT_MODEL_ID
 from voicekit.settings import load_settings
@@ -285,9 +286,40 @@ def run_transcribe(args: argparse.Namespace) -> None:
         print(output)
 
 
-def add_common_args(parser: argparse.ArgumentParser) -> None:
+def run_emotion_script(args: argparse.Namespace) -> None:
+    if bool(args.script) == bool(args.script_file):
+        raise ValueError("Provide exactly one of --script or --script-file.")
+    script_text = args.script
+    if args.script_file:
+        script_text = Path(args.script_file).read_text(encoding="utf-8")
+    assert script_text is not None
+
+    result = run_emotion_tts_speaker_id(
+        script_text=script_text,
+        output_path=args.output,
+        speaker_id=args.speaker_id,
+        speakers_path=args.speakers,
+        model_id=args.model,
+        language=args.language,
+        default_instruct=args.default_instruct,
+        tag_aliases=load_tag_aliases(args.tag_map),
+        num_step=args.num_step,
+        guidance_scale=args.guidance_scale,
+        speed=args.speed,
+        duration=args.duration,
+        denoise=args.denoise,
+        preprocess_prompt=args.preprocess_prompt,
+        postprocess_output=args.postprocess_output,
+        effect_preset=args.effect_preset,
+        device=args.device,
+        gap_ms=args.gap_ms,
+    )
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+def add_common_args(parser: argparse.ArgumentParser, *, text_required: bool = True) -> None:
     settings = load_settings()
-    parser.add_argument("--text", required=True, help="Target text")
+    parser.add_argument("--text", required=text_required, help="Target text")
     parser.add_argument("--output", default="out.wav", help="Output wav path")
     parser.add_argument("--model", default=settings.default_model, help="HF model id or local model path")
     parser.add_argument("--language", default=None, help="Language id/name, e.g. vi or en")
@@ -409,6 +441,25 @@ def main() -> None:
     diarize.add_argument("--model", default=DEFAULT_DIARIZATION_MODEL_ID)
     diarize.add_argument("--hf-token", default=None, help="Hugging Face token for pyannote")
     diarize.set_defaults(func=run_diarize)
+
+    emotion_script = subparsers.add_parser(
+        "emotion-script",
+        help="Generate one wav from a script with inline emotion tags using one speaker_id",
+    )
+    add_common_args(emotion_script, text_required=False)
+    emotion_script.add_argument("--speaker_id", required=True, help="speaker_id key in speakers.json")
+    emotion_script.add_argument("--speakers", default="speakers.json", help="Path to speakers registry json")
+    emotion_script.add_argument("--script", default=None, help="Inline script text with tags like [whisper] or (excited)")
+    emotion_script.add_argument("--script-file", default=None, help="Path to script text file with inline tags")
+    emotion_script.add_argument("--default-instruct", default=None, help="Fallback instruct when no tag is present")
+    emotion_script.add_argument(
+        "--tag-map",
+        default=None,
+        help="Optional JSON file mapping tag->instruct, e.g. {\"excited\":\"high pitch\"}",
+    )
+    emotion_script.add_argument("--gap-ms", type=int, default=120, help="Silence inserted between rendered segments")
+    emotion_script.add_argument("--preprocess_prompt", type=str2bool, default=True, help="Preprocess reference prompt")
+    emotion_script.set_defaults(func=run_emotion_script)
 
     args = parser.parse_args()
     args.func(args)
