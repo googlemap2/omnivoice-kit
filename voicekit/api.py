@@ -205,6 +205,7 @@ class EmotionSpeechRequest(BaseModel):
     postprocess_output: bool = True
     effect_preset: Literal["raw", "normalize", "broadcast"] = "raw"
     gap_ms: int = 120
+    queued: bool = False
 
 
 class VoiceRenameRequest(BaseModel):
@@ -936,6 +937,31 @@ def create_emotion_script_speech(request: EmotionSpeechRequest) -> Response:
     try:
         tag_aliases = load_tag_aliases(None)
         tag_aliases.update({key.strip().lower(): value.strip() for key, value in request.tag_aliases.items()})
+        if request.queued:
+            job = get_job_store().create_job(
+                "speech",
+                {
+                    "mode": "emotion",
+                    "script_text": request.input,
+                    "speaker_id": request.voice,
+                    "speakers_path": "speakers.json",
+                    "model_id": request.model,
+                    "language": request.language,
+                    "default_instruct": request.default_instruct,
+                    "tag_aliases": tag_aliases,
+                    "num_step": request.num_step,
+                    "guidance_scale": request.guidance_scale,
+                    "speed": request.speed,
+                    "duration": request.duration,
+                    "denoise": request.denoise,
+                    "preprocess_prompt": request.preprocess_prompt,
+                    "postprocess_output": request.postprocess_output,
+                    "effect_preset": request.effect_preset,
+                    "device": load_settings().default_device,
+                    "gap_ms": request.gap_ms,
+                },
+            )
+            return JSONResponse({"object": "job", "data": job.to_dict()})
         result = render_emotion_tts_speaker_id(
             script_text=request.input,
             speaker_id=request.voice,

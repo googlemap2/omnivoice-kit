@@ -160,10 +160,9 @@ export default function SpeechPage() {
       }
     >
       <Tabs value={studio.mode} onChange={(_, value) => studio.setMode(value)}>
-        <Tab value="speaker" label="Saved Voice" />
+        <Tab value="emotion" icon={<AutoAwesomeIcon fontSize="small" />} iconPosition="start" label="Emotion Script" />
         <Tab value="clone" label="Reference Clone" />
         <Tab value="design" icon={<AutoAwesomeIcon fontSize="small" />} iconPosition="start" label="Voice Design" />
-        <Tab value="emotion" icon={<AutoAwesomeIcon fontSize="small" />} iconPosition="start" label="Emotion Script" />
       </Tabs>
       <Box sx={{ display: "grid", gridTemplateColumns: "minmax(360px, 1fr) 320px", gap: 2, mt: 2 }}>
         <Stack spacing={2}>
@@ -343,17 +342,15 @@ export default function SpeechPage() {
             }
             label="Postprocess output"
           />
-          {studio.mode !== "emotion" && (
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={studio.speechQueued}
-                  onChange={(event) => studio.setSpeechQueued(event.target.checked)}
-                />
-              }
-              label="Send to queue"
-            />
-          )}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={studio.speechQueued}
+                onChange={(event) => studio.setSpeechQueued(event.target.checked)}
+              />
+            }
+            label="Send to queue"
+          />
         </Stack>
       </Box>
     </WorkspaceShell>

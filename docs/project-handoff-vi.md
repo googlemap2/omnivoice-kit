@@ -100,10 +100,10 @@ API liên quan model:
 - `frontend/src/lib/api.ts`: helper `apiJson`, `apiForm`, `apiAudio`, `apiWebSocketUrl`, tự thêm header `ngrok-skip-browser-warning`.
 - `frontend/src/components/studio/StudioContext.tsx`: state chính và action gọi backend cho Speech, Transcription, Translation, Dubbing, Jobs, Voices, Settings.
 - `frontend/src/app/(studio)/speech/page.tsx`: UI tạo speech, gồm các mode:
-  - `speaker`: dùng voice profile/speaker id.
+  - `emotion`: kịch bản cảm xúc bằng tag inline; đây là tab đầu tiên trên UI Speech, thay cho tab `Saved Voice`.
   - `clone`: upload reference audio.
   - `design`: voice design bằng instruct items.
-  - `emotion`: kịch bản cảm xúc bằng tag inline.
+  - `speaker`: vẫn là mode/API/CLI nội bộ dùng voice profile/speaker id, nhưng không còn tab riêng trên UI Speech.
 - `frontend/src/app/(studio)/transcription/page.tsx`: upload audio/video, ASR, subtitle editor/import/export, dictation.
 - `frontend/src/app/(studio)/translation/page.tsx`: dịch text/segments.
 - `frontend/src/app/(studio)/dubbing/page.tsx`: dubbing audio/video, diarization, speaker voice map.
@@ -236,10 +236,13 @@ Frontend flow:
 POST /v1/audio/speech/emotion-script
 ```
 
+- Nếu bật `Send to queue`, frontend gửi `queued: true`; backend tạo job `speech` với `mode: "emotion"` và worker ghi WAV vào `outputs/jobs`.
+
 Backend flow:
 
 - API model: `EmotionSpeechRequest` trong `voicekit/api.py`.
 - Endpoint: `create_emotion_script_speech()`.
+- Queue worker: `voicekit/jobs.py` xử lý `speech` job mode `emotion` bằng `render_emotion_tts_speaker_id()`.
 - Render: `render_emotion_tts_speaker_id()` trong `voicekit/emotion_tts.py`.
 - Parser nhận tag dạng `[tag]` hoặc `(tag)`.
 - Mapping mặc định trong `DEFAULT_TAG_ALIASES`:
@@ -267,7 +270,6 @@ Giới hạn hiện tại:
 - Đây là v1, chưa phải emotion embedding native của model.
 - Tag cảm xúc được map thành OmniVoice `instruct`.
 - Các tag như `laughing/chuckles` hiện map sang `high pitch`; nếu cần cười thật tự nhiên hơn, cần model/prompt strategy tốt hơn hoặc thêm audio cue/postprocess.
-- Chưa có queue mode cho emotion script trên FE.
 
 ## 9. Voice profiles và speaker_id
 

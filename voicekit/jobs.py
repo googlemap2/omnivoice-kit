@@ -313,6 +313,7 @@ def execute_job(job_type: str, params: dict[str, Any]) -> dict[str, Any]:
             generate_clone_with_speaker_id,
             generate_voice_design,
         )
+        from voicekit.emotion_tts import render_emotion_tts_speaker_id
 
         params = dict(params)
         mode = params.pop("mode", "speaker")
@@ -322,6 +323,9 @@ def execute_job(job_type: str, params: dict[str, Any]) -> dict[str, Any]:
             audio, status = generate_clone_with_ref_audio(**params)
         elif mode == "design":
             audio, status = generate_voice_design(**params)
+        elif mode == "emotion":
+            result = render_emotion_tts_speaker_id(**params)
+            audio, status = (result["sample_rate"], result["audio"]), "Done."
         else:
             audio, status = generate_clone_with_speaker_id(**params)
         if audio is None:

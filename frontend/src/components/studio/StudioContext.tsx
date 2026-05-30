@@ -163,7 +163,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [lastAudio, setLastAudio] = useState<Blob | null>(null);
   const [speechQueued, setSpeechQueued] = useState(false);
 
-  const [mode, setMode] = useState<GenerationMode>("speaker");
+  const [mode, setMode] = useState<GenerationMode>("emotion");
   const [speechText, setSpeechText] = useState("Xin chao, day la ban clone giong tu OmniVoice Kit.");
   const [selectedVoice, setSelectedVoice] = useState("");
   const [language, setLanguage] = useState("vi");
@@ -318,9 +318,15 @@ export function StudioProvider({ children }: { children: ReactNode }) {
               voice: selectedVoice,
               default_instruct: instructs.length > 0 ? instructs.join(", ") : null,
               gap_ms: 120,
+              queued: speechQueued,
             }),
           ),
         };
+        if (speechQueued) {
+          const result = await apiJson<{ data: JobRecord }>("/v1/audio/speech/emotion-script", init);
+          trackQueuedJob(result.data, "speech");
+          return;
+        }
         blob = await apiAudio("/v1/audio/speech/emotion-script", init);
       } else {
         const init = {
