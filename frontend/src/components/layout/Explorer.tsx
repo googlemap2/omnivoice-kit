@@ -1,58 +1,42 @@
-import { Box, Divider, List, ListItemButton, ListItemText, Typography } from "@mui/material";
-import type { Voice } from "../../types/api";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import type { Workspace } from "../../types/studio";
-import { SectionTitle } from "../ui/SectionTitle";
 
 type ExplorerProps = {
   workspace: Workspace;
-  voices: Voice[];
-  selectedVoice: string;
-  setSelectedVoice: (voice: string) => void;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 };
 
-export function Explorer({
-  workspace,
-  voices,
-  selectedVoice,
-  setSelectedVoice,
-}: ExplorerProps) {
+export function Explorer({ workspace, collapsed, onToggleCollapsed }: ExplorerProps) {
   return (
-    <Box sx={{ bgcolor: "#252526", borderRight: "1px solid", borderColor: "divider", minHeight: 0 }}>
-      <Box sx={{ px: 2, py: 1.25 }}>
-        <Typography sx={{ fontSize: 11, textTransform: "uppercase", color: "text.secondary" }}>
-          Explorer
-        </Typography>
-        <Typography variant="h2" sx={{ mt: 0.5 }}>
-          {workspaceLabel(workspace)}
-        </Typography>
-      </Box>
-      {workspace === "tts" && (
-        <>
-          <Divider />
-          <SectionTitle title="Voices" />
-          <List dense disablePadding>
-            {voices.map((voice) => (
-              <ListItemButton
-                key={voice.id}
-                selected={selectedVoice === voice.id}
-                onClick={() => setSelectedVoice(voice.id)}
-              >
-                <ListItemText
-                  primary={voice.name || voice.id}
-                  secondary={`${voice.language || "auto"} - ${voice.type}`}
-                  primaryTypographyProps={{ fontSize: 13 }}
-                  secondaryTypographyProps={{ fontSize: 11 }}
-                />
-              </ListItemButton>
-            ))}
-            {voices.length === 0 && (
-              <Typography sx={{ px: 2, py: 1, fontSize: 12, color: "text.secondary" }}>
-                No voice profiles found.
+    <Box sx={{ bgcolor: "#252526", borderRight: "1px solid", borderColor: "divider", minHeight: 0, overflow: "hidden" }}>
+      <Box sx={{ px: collapsed ? 0.5 : 2, py: 1.25 }}>
+        {collapsed ? (
+          <Tooltip title="Expand Explorer" placement="right">
+            <IconButton size="small" onClick={onToggleCollapsed} sx={{ width: 32, height: 32 }}>
+              <ChevronRightIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        ) : (
+          <Stack direction="row" spacing={1} alignItems="flex-start" justifyContent="space-between">
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontSize: 11, textTransform: "uppercase", color: "text.secondary" }}>
+                Explorer
               </Typography>
-            )}
-          </List>
-        </>
-      )}
+              <Typography variant="h2" sx={{ mt: 0.5 }}>
+                {workspaceLabel(workspace)}
+              </Typography>
+            </Box>
+            <Tooltip title="Collapse Explorer" placement="left">
+              <IconButton size="small" onClick={onToggleCollapsed} sx={{ mt: -0.25 }}>
+                <ChevronLeftIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        )}
+      </Box>
     </Box>
   );
 }

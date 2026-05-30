@@ -99,6 +99,7 @@ API liên quan model:
 
 - `frontend/src/lib/api.ts`: helper `apiJson`, `apiForm`, `apiAudio`, `apiWebSocketUrl`, tự thêm header `ngrok-skip-browser-warning`.
 - `frontend/src/components/studio/StudioContext.tsx`: state chính và action gọi backend cho Speech, Transcription, Translation, Dubbing, Jobs, Voices, Settings.
+- `frontend/src/components/layout/Explorer.tsx`: sidebar Explorer có nút collapse/expand; width được điều khiển bởi state trong `StudioFrame`.
 - `frontend/src/app/(studio)/speech/page.tsx`: UI tạo speech, gồm các mode:
   - `emotion`: kịch bản cảm xúc bằng tag inline; đây là tab đầu tiên trên UI Speech, thay cho tab `Saved Voice`.
   - `clone`: upload reference audio.
@@ -214,6 +215,7 @@ Tính năng này cho phép người dùng viết text có tag cảm xúc inline,
 Frontend UX:
 
 - Tab: `Emotion Script` trong `frontend/src/app/(studio)/speech/page.tsx`.
+- Speech workspace không còn hiển thị section `Voices` trong `Explorer`; chọn voice vẫn nằm trong panel bên phải của Speech page.
 - Trang Speech dùng tiếng Anh cho UI copy; riêng label trong emotion tag picker và option label của `Voice instruct` vẫn dùng tiếng Việt có dấu để người dùng chọn cảm xúc/chỉ dẫn dễ hơn.
 - Người dùng gõ `@` để mở list tag tiếng Việt.
 - UI hiển thị label tiếng Việt nhưng chèn value kỹ thuật vào text:
