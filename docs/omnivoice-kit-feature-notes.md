@@ -760,30 +760,6 @@ No model required.
 - Tauri log reading.
 - Token redaction filter.
 
-## Feature: Watermarking
-
-### User Value
-
-Users can mark AI-generated audio/video for provenance and detect whether an
-audio file contains an OmniVoice watermark.
-
-### Core Behavior
-
-- Embed invisible audio watermark in generated speech.
-- Detect watermark in uploaded audio.
-- Optionally add visible logo overlay to exported video.
-- Return detection confidence/source.
-
-### Models
-
-- AudioSeal.
-
-### Tech Stack Used
-
-- AudioSeal watermarking.
-- FFmpeg video overlay.
-- FastAPI upload/detect endpoint.
-
 ## Feature: OpenAI-Compatible Audio API
 
 ### User Value
@@ -928,7 +904,6 @@ generation after install.
 - Speaker diarization.
 - Batch queue.
 - Voice gallery.
-- Watermarking.
 - MCP server.
 - Marketplace/import/export.
 
@@ -938,4 +913,3 @@ generation after install.
 - Auto-updater.
 - Hosted/server deployment.
 - Plugin marketplace.
-

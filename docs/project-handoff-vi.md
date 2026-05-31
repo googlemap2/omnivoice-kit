@@ -789,7 +789,6 @@ pnpm build
 
 Đang còn hạn chế hoặc pending:
 
-- Watermarking thật sự trên waveform/audio samples.
 - MCP server.
 - Marketplace/import/export voice package.
 - Desktop packaging.

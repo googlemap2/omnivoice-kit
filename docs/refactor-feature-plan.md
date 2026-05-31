@@ -153,7 +153,6 @@ Use this overview to see which feature group is done, in progress, or still pend
 | Realtime dictation | Phase 15 | Mostly done |
 | Batch queue | Phase 16 | Mostly done |
 | Voice gallery | Phase 17 | Done |
-| Watermarking | Phase 18 | Pending |
 | Logs and diagnostics | Phase 19 | Done |
 | MCP server | Phase 20 | Pending |
 | Marketplace/import/export | Phase 21 | Pending |
@@ -277,20 +276,6 @@ Related feature: Voice gallery.
 - [x] Add gallery UI with search/favorite/delete.
 - [x] Add tests for profile metadata migration.
 - [x] Update README.
-
-## Phase 18: Watermarking
-
-Related feature: Watermarking.
-
-- [ ] Choose real waveform/audio-sample watermark backend.
-- [ ] Add optional watermark settings.
-- [ ] Embed watermark after TTS generation.
-- [ ] Detect watermark from uploaded audio.
-- [ ] Record watermark metadata in generation history.
-- [ ] Add API endpoint for watermark detection.
-- [ ] Add UI controls for watermark on/off and detection.
-- [ ] Add tests with mocked watermark backend.
-- [ ] Update README.
 
 ## Phase 19: Logs and Diagnostics
 
