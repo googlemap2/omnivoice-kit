@@ -2,7 +2,9 @@
 
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import DeleteIcon from "@mui/icons-material/Delete";
+import DownloadIcon from "@mui/icons-material/Download";
 import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -75,7 +77,8 @@ export default function VoicesPage() {
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
               <TextField
                 size="small"
-                label="Search voices"
+                placeholder="Search voices"
+                slotProps={{ htmlInput: { "aria-label": "Search voices" } }}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 sx={{ flex: 1 }}
@@ -90,53 +93,7 @@ export default function VoicesPage() {
             </Stack>
           </Paper>
           {filteredVoices.map((voice) => (
-            <Paper key={voice.id} variant="outlined" sx={{ p: 1.25, bgcolor: "#252526" }}>
-              <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2}>
-                <Box sx={{ minWidth: 0 }}>
-                  <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
-                    <Typography sx={{ fontWeight: 600 }}>{voice.name || voice.id}</Typography>
-                    <Chip size="small" label={voice.language || "auto"} />
-                    {voice.favorite && <Chip size="small" color="warning" variant="outlined" label="Favorite" />}
-                  </Stack>
-                  <Typography sx={{ mt: 0.5, fontSize: 12, color: "text.secondary", overflowWrap: "anywhere" }}>
-                    {voice.prompt_path}
-                  </Typography>
-                  {voice.notes && (
-                    <Typography sx={{ mt: 0.5, fontSize: 12, color: "text.secondary" }}>{voice.notes}</Typography>
-                  )}
-                  {voice.tags.length > 0 && (
-                    <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
-                      {voice.tags.map((tag) => (
-                        <Chip key={tag} size="small" variant="outlined" label={tag} />
-                      ))}
-                    </Stack>
-                  )}
-                </Box>
-                <Stack direction="row" spacing={0.5} alignSelf={{ xs: "flex-start", sm: "center" }}>
-                  <Tooltip title={voice.favorite ? "Remove favorite" : "Mark favorite"}>
-                    <IconButton
-                      size="small"
-                      onClick={() => void studio.updateVoiceProfile(voice.id, { favorite: !voice.favorite })}
-                    >
-                      {voice.favorite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete voice profile">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => {
-                        if (window.confirm(`Delete voice profile "${voice.id}"?`)) {
-                          void studio.deleteVoiceProfile(voice.id);
-                        }
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-              </Stack>
-            </Paper>
+            <VoiceProfileCard key={voice.id} voice={voice} studio={studio} />
           ))}
           {filteredVoices.length === 0 && (
             <Typography sx={{ color: "text.secondary", fontSize: 13 }}>No voice profiles match this view.</Typography>
@@ -144,5 +101,66 @@ export default function VoicesPage() {
         </Stack>
       </Box>
     </WorkspaceShell>
+  );
+}
+
+function VoiceProfileCard({ voice, studio }: { voice: ReturnType<typeof useStudio>["voices"][number]; studio: ReturnType<typeof useStudio> }) {
+  const tags = voice.tags || [];
+
+  return (
+    <Paper variant="outlined" sx={{ p: 1.25, bgcolor: "#252526" }}>
+      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2}>
+        <Box sx={{ minWidth: 0 }}>
+          <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
+            <Typography sx={{ fontWeight: 600 }}>{voice.name || voice.id}</Typography>
+            <Chip size="small" label={voice.language || "auto"} />
+            {voice.favorite && <Chip size="small" color="warning" variant="outlined" label="Favorite" />}
+          </Stack>
+          <Typography sx={{ mt: 0.5, fontSize: 12, color: "text.secondary", overflowWrap: "anywhere" }}>
+            {voice.prompt_path}
+          </Typography>
+          {voice.notes && (
+            <Typography sx={{ mt: 0.5, fontSize: 12, color: "text.secondary" }}>{voice.notes}</Typography>
+          )}
+          {tags.length > 0 && (
+            <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
+              {tags.map((tag) => (
+                <Chip key={tag} size="small" variant="outlined" label={tag} />
+              ))}
+            </Stack>
+          )}
+        </Box>
+        <Stack direction="row" spacing={0.5} alignSelf={{ xs: "flex-start", sm: "center" }}>
+          <Tooltip title="Generate preview">
+            <IconButton size="small" onClick={() => void studio.generateVoicePreview(voice.id)}>
+              <PlayArrowIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Export metadata">
+            <IconButton size="small" onClick={() => void studio.exportVoiceProfile(voice.id)}>
+              <DownloadIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={voice.favorite ? "Remove favorite" : "Mark favorite"}>
+            <IconButton size="small" onClick={() => void studio.updateVoiceProfile(voice.id, { favorite: !voice.favorite })}>
+              {voice.favorite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete voice profile">
+            <IconButton
+              size="small"
+              color="error"
+              onClick={() => {
+                if (window.confirm(`Delete voice profile "${voice.id}"?`)) {
+                  void studio.deleteVoiceProfile(voice.id);
+                }
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      </Stack>
+    </Paper>
   );
 }

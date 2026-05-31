@@ -321,8 +321,8 @@ Voice Gallery v1:
 
 - Helper backend: `VoiceProfileStore.search_profiles()`.
 - API mới: `GET /v1/voice-profiles`, `GET /v1/voice-profiles/{voice_id}`, `POST /v1/voice-profiles`, `PATCH /v1/voice-profiles/{voice_id}`, `DELETE /v1/voice-profiles/{voice_id}`.
-- UI `frontend/src/app/(studio)/voices/page.tsx` có search local, filter favorites, toggle favorite, delete profile.
-- Preview generation và import/export package vẫn là task pending của Phase 17.
+- Preview/export: `POST /v1/voice-profiles/{voice_id}/preview`, `GET /v1/voice-profiles/{voice_id}/export`.
+- UI `frontend/src/app/(studio)/voices/page.tsx` có search local, filter favorites, toggle favorite, delete profile, generate preview, export metadata.
 
 ## 10. ASR transcription
 

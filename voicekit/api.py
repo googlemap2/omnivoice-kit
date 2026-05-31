@@ -240,6 +240,15 @@ class VoiceProfileUpdateRequest(BaseModel):
     preview_path: str | None = None
 
 
+class VoicePreviewRequest(BaseModel):
+    text: str | None = None
+    language: str | None = None
+    effect_preset: Literal["raw", "normalize", "broadcast"] = "raw"
+    num_step: int = 16
+    guidance_scale: float = 2.0
+    speed: float = 1.0
+
+
 class TranslationProviderSettingsRequest(BaseModel):
     google_api_key: str | None = None
     google_disabled: bool | None = None
@@ -469,6 +478,22 @@ def get_voice_profile(voice_id: str) -> dict:
     return {"object": "voice", "data": _voice_profile_dict(profile)}
 
 
+@app.get("/v1/voice-profiles/{voice_id}/export")
+def export_voice_profile_metadata(voice_id: str) -> JSONResponse:
+    profile = get_profile_store().get_profile(voice_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail=f"speaker_id '{voice_id}' not found.")
+    payload = {
+        "object": "voice_profile_export",
+        "format_version": 1,
+        "data": _voice_profile_dict(profile),
+    }
+    return JSONResponse(
+        payload,
+        headers={"Content-Disposition": f'attachment; filename="{voice_id}.voice-profile.json"'},
+    )
+
+
 @app.post("/v1/voice-profiles")
 @app.post("/v1/voices")
 async def create_voice(
@@ -495,6 +520,42 @@ async def create_voice(
     if message.startswith("Error") or message.startswith("Please"):
         raise _generation_error(message)
     return {"object": "voice", "message": message}
+
+
+@app.post("/v1/voice-profiles/{voice_id}/preview")
+def generate_voice_profile_preview(voice_id: str, request: VoicePreviewRequest) -> dict:
+    store = get_profile_store()
+    profile = store.get_profile(voice_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail=f"speaker_id '{voice_id}' not found.")
+    text = (request.text or profile.ref_text or f"This is a preview for {profile.name}.").strip()
+    audio, status = generate_clone_with_speaker_id(
+        text=text,
+        speaker_id=voice_id,
+        model_id=DEFAULT_MODEL_ID,
+        language=request.language or profile.language,
+        instruct_items=[],
+        num_step=request.num_step,
+        guidance_scale=request.guidance_scale,
+        speed=request.speed,
+        duration=None,
+        denoise=True,
+        preprocess_prompt=True,
+        postprocess_output=True,
+        effect_preset=request.effect_preset,
+    )
+    if audio is None:
+        raise _generation_error(status)
+    asset_dir = Path(profile.asset_dir or f"assets/voices/{voice_id}")
+    asset_dir.mkdir(parents=True, exist_ok=True)
+    preview_path = asset_dir / "preview.wav"
+    sample_rate, samples = audio
+    sf.write(preview_path, samples, sample_rate)
+    updated = store.update_profile_metadata(
+        profile_id=voice_id,
+        preview_path=str(preview_path).replace("\\", "/"),
+    )
+    return {"object": "voice_preview", "data": _voice_profile_dict(updated), "message": status}
 
 
 @app.patch("/v1/voice-profiles/{voice_id}")

@@ -455,6 +455,10 @@ curl "http://127.0.0.1:8000/v1/voice-profiles?query=narrator&favorite=true"
 curl -X PATCH http://127.0.0.1:8000/v1/voice-profiles/my_voice \
   -H "Content-Type: application/json" \
   -d '{"favorite": true, "tags": ["warm", "narrator"]}'
+curl -X POST http://127.0.0.1:8000/v1/voice-profiles/my_voice/preview \
+  -H "Content-Type: application/json" \
+  -d '{"text": "This is my preview voice."}'
+curl -OJ http://127.0.0.1:8000/v1/voice-profiles/my_voice/export
 ```
 
 Kiểm tra trạng thái model local:

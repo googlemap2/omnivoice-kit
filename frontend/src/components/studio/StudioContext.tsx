@@ -16,6 +16,7 @@ import {
   apiForm,
   apiJson,
   apiWebSocketUrl,
+  downloadBlob,
 } from "../../lib/api";
 import { emptyMeta } from "../../types/api";
 import type { GenerationMode } from "../../types/studio";
@@ -148,6 +149,8 @@ type StudioContextValue = {
     updates: Partial<Pick<Voice, "name" | "language" | "tags" | "favorite" | "notes" | "preview_path">>,
   ) => Promise<void>;
   deleteVoiceProfile: (voiceId: string) => Promise<void>;
+  generateVoicePreview: (voiceId: string) => Promise<void>;
+  exportVoiceProfile: (voiceId: string) => Promise<void>;
   saveSettings: () => Promise<void>;
 };
 
@@ -243,7 +246,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       if (!asrModel && nextMeta.asr_models[0]?.id) {
         setAsrModel(nextMeta.asr_models[0].id);
       }
-      setVoices(voiceData.data);
+      setVoices(voiceData.data.map(normalizeVoice));
       setStatuses(statusData.data);
       setProviders(providerData.data);
       setSettings(settingsData.data);
@@ -769,7 +772,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       form.set("ref_audio", newVoiceFile);
       form.set("ref_text", newVoiceText);
       form.set("language", language);
-      await apiForm("/v1/voices", form);
+      await apiForm("/v1/voice-profiles", form);
       setNewVoiceId("");
       setNewVoiceFile(null);
       setNewVoiceText("");
@@ -813,6 +816,44 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       if (dubbingVoice === voiceId) setDubbingVoice("");
       setMessage("Voice profile deleted.");
       await refreshAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function generateVoicePreview(voiceId: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiJson<{ data: Voice }>(`/v1/voice-profiles/${encodeURIComponent(voiceId)}/preview`, {
+        method: "POST",
+        body: JSON.stringify({
+          text: speechText || undefined,
+          language,
+          effect_preset: effectPreset,
+          num_step: numStep,
+          guidance_scale: guidanceScale,
+          speed,
+        }),
+      });
+      setMessage("Voice preview generated.");
+      await refreshAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function exportVoiceProfile(voiceId: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      const blob = await apiAudio(`/v1/voice-profiles/${encodeURIComponent(voiceId)}/export`);
+      downloadBlob(blob, `${voiceId}.voice-profile.json`);
+      setMessage("Voice profile metadata exported.");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -1087,12 +1128,25 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         createVoice,
         updateVoiceProfile,
         deleteVoiceProfile,
+        generateVoicePreview,
+        exportVoiceProfile,
         saveSettings,
       }}
     >
       {children}
     </StudioContext.Provider>
   );
+}
+
+function normalizeVoice(voice: Voice): Voice {
+  return {
+    ...voice,
+    tags: Array.isArray(voice.tags) ? voice.tags : [],
+    favorite: Boolean(voice.favorite),
+    notes: voice.notes ?? null,
+    preview_path: voice.preview_path ?? null,
+    asset_dir: voice.asset_dir ?? null,
+  };
 }
 
 export function useStudio() {
