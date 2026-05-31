@@ -143,6 +143,11 @@ type StudioContextValue = {
   newVoiceText: string;
   setNewVoiceText: (text: string) => void;
   createVoice: () => Promise<void>;
+  updateVoiceProfile: (
+    voiceId: string,
+    updates: Partial<Pick<Voice, "name" | "language" | "tags" | "favorite" | "notes" | "preview_path">>,
+  ) => Promise<void>;
+  deleteVoiceProfile: (voiceId: string) => Promise<void>;
   saveSettings: () => Promise<void>;
 };
 
@@ -777,6 +782,44 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function updateVoiceProfile(
+    voiceId: string,
+    updates: Partial<Pick<Voice, "name" | "language" | "tags" | "favorite" | "notes" | "preview_path">>,
+  ) {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiJson<{ data: Voice }>(`/v1/voice-profiles/${encodeURIComponent(voiceId)}`, {
+        method: "PATCH",
+        body: JSON.stringify(updates),
+      });
+      setMessage("Voice profile updated.");
+      await refreshAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteVoiceProfile(voiceId: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiJson(`/v1/voice-profiles/${encodeURIComponent(voiceId)}`, {
+        method: "DELETE",
+      });
+      if (selectedVoice === voiceId) setSelectedVoice("");
+      if (dubbingVoice === voiceId) setDubbingVoice("");
+      setMessage("Voice profile deleted.");
+      await refreshAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function saveSettings() {
     if (!settings) return;
     setBusy(true);
@@ -1042,6 +1085,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         newVoiceText,
         setNewVoiceText,
         createVoice,
+        updateVoiceProfile,
+        deleteVoiceProfile,
         saveSettings,
       }}
     >

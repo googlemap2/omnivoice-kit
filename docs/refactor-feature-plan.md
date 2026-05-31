@@ -152,7 +152,7 @@ Use this overview to see which feature group is done, in progress, or still pend
 | Speaker diarization | Phase 14 | Done |
 | Realtime dictation | Phase 15 | Mostly done |
 | Batch queue | Phase 16 | Mostly done |
-| Voice gallery | Phase 17 | Pending |
+| Voice gallery | Phase 17 | In progress |
 | Watermarking | Phase 18 | Pending |
 | Logs and diagnostics | Phase 19 | Pending |
 | MCP server | Phase 20 | Pending |
@@ -267,16 +267,16 @@ Related feature: Batch queue.
 
 Related feature: Voice gallery.
 
-- [ ] Extend profile metadata with tags, favorite flag, notes, preview path.
-- [ ] Add filesystem storage convention for voice assets.
-- [ ] Add profile search/filter helpers.
+- [x] Extend profile metadata with tags, favorite flag, notes, preview path.
+- [x] Add filesystem storage convention for voice assets.
+- [x] Add profile search/filter helpers.
 - [ ] Add voice preview generation.
 - [ ] Add profile import from local audio.
 - [ ] Add profile export metadata.
-- [ ] Add `/v1/voice-profiles` CRUD endpoints.
-- [ ] Add gallery UI with search/favorite/delete.
-- [ ] Add tests for profile metadata migration.
-- [ ] Update README.
+- [x] Add `/v1/voice-profiles` CRUD endpoints.
+- [x] Add gallery UI with search/favorite/delete.
+- [x] Add tests for profile metadata migration.
+- [x] Update README.
 
 ## Phase 18: Watermarking
 
@@ -377,3 +377,4 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Completed Phase 14 speaker diarization v1 with optional pyannote backend, Hugging Face token setting/env fallback, diarization API/CLI, speaker-label merge helpers, speaker-to-voice assignment structure, Dubbing UI toggle, and mocked merge tests.
 - [x] Implemented Phase 15 realtime dictation v1 with WebSocket audio chunks, ready/partial/final/done/error events, browser microphone capture in Transcription, fake protocol test helpers, and README notes. Silence detection and CLI microphone mode remain pending.
 - [x] Implemented Phase 16 batch queue v1 with Supabase/PostgreSQL jobs, background worker, job lifecycle API, queued Speech/Transcription/Translation/Dubbing modes, Jobs UI, and lifecycle tests. Fine-grained progress/cancel for already-running inference remains pending.
+- [x] Started Phase 17 voice gallery with backward-compatible profile metadata migration, asset directory convention, profile search/filter helpers, `/v1/voice-profiles` CRUD endpoints, gallery search/favorite/delete UI, and metadata migration tests. Preview generation and import/export remain pending.

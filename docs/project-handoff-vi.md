@@ -291,8 +291,15 @@ Field profile chuẩn:
 - `prompt_path`
 - `language`
 - `ref_text`
+- `tags`
+- `favorite`
+- `notes`
+- `preview_path`
+- `asset_dir`
 - `created_at`
 - `updated_at`
+
+Profile cũ trong `speakers.json` được normalize tự động khi đọc. Nếu thiếu metadata gallery, `VoiceProfileStore` sẽ dùng default an toàn: `tags=[]`, `favorite=false`, `asset_dir=assets/voices/{voice_id}`.
 
 Tạo prompt từ audio:
 
@@ -309,6 +316,13 @@ Tạo/list/delete/rename qua API:
 - `POST /v1/voices`
 - `DELETE /v1/voices/{voice_id}`
 - `POST /v1/voices/{voice_id}/rename`
+
+Voice Gallery v1:
+
+- Helper backend: `VoiceProfileStore.search_profiles()`.
+- API mới: `GET /v1/voice-profiles`, `GET /v1/voice-profiles/{voice_id}`, `POST /v1/voice-profiles`, `PATCH /v1/voice-profiles/{voice_id}`, `DELETE /v1/voice-profiles/{voice_id}`.
+- UI `frontend/src/app/(studio)/voices/page.tsx` có search local, filter favorites, toggle favorite, delete profile.
+- Preview generation và import/export package vẫn là task pending của Phase 17.
 
 ## 10. ASR transcription
 

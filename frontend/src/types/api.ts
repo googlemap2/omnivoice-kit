@@ -10,6 +10,11 @@ export type Voice = {
   language: string | null;
   prompt_path: string;
   ref_text: string | null;
+  tags: string[];
+  favorite: boolean;
+  notes: string | null;
+  preview_path: string | null;
+  asset_dir: string | null;
   created_at: string | null;
   updated_at: string | null;
 };

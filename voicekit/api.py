@@ -128,6 +128,25 @@ def _output_file_response(path: str) -> FileResponse:
     return FileResponse(resolved)
 
 
+def _voice_profile_dict(profile: Any) -> dict[str, Any]:
+    return {
+        "id": profile.id,
+        "object": "voice",
+        "name": profile.name,
+        "type": profile.type,
+        "language": profile.language,
+        "prompt_path": profile.prompt_path,
+        "ref_text": profile.ref_text,
+        "tags": profile.tags or [],
+        "favorite": profile.favorite,
+        "notes": profile.notes,
+        "preview_path": profile.preview_path,
+        "asset_dir": profile.asset_dir,
+        "created_at": profile.created_at,
+        "updated_at": profile.updated_at,
+    }
+
+
 def parse_speaker_voice_map(raw: str | None) -> dict[str, str]:
     if not raw:
         return {}
@@ -210,6 +229,15 @@ class EmotionSpeechRequest(BaseModel):
 
 class VoiceRenameRequest(BaseModel):
     new_id: str = Field(min_length=1)
+
+
+class VoiceProfileUpdateRequest(BaseModel):
+    name: str | None = None
+    language: str | None = None
+    tags: list[str] | None = None
+    favorite: bool | None = None
+    notes: str | None = None
+    preview_path: str | None = None
 
 
 class TranslationProviderSettingsRequest(BaseModel):
@@ -417,23 +445,31 @@ def install_model_endpoint(request: ModelInstallRequest) -> dict:
 def list_voices() -> dict:
     return {
         "object": "list",
-        "data": [
-            {
-                "id": profile.id,
-                "object": "voice",
-                "name": profile.name,
-                "type": profile.type,
-                "language": profile.language,
-                "prompt_path": profile.prompt_path,
-                "ref_text": profile.ref_text,
-                "created_at": profile.created_at,
-                "updated_at": profile.updated_at,
-            }
-            for profile in get_profile_store().list_profiles()
-        ],
+        "data": [_voice_profile_dict(profile) for profile in get_profile_store().list_profiles()],
     }
 
 
+@app.get("/v1/voice-profiles")
+def list_voice_profiles(
+    query: str | None = None,
+    language: str | None = None,
+    favorite: bool | None = None,
+    tags: str | None = None,
+) -> dict:
+    tag_list = [tag.strip() for tag in (tags or "").split(",") if tag.strip()]
+    profiles = get_profile_store().search_profiles(query=query, language=language, favorite=favorite, tags=tag_list)
+    return {"object": "list", "data": [_voice_profile_dict(profile) for profile in profiles]}
+
+
+@app.get("/v1/voice-profiles/{voice_id}")
+def get_voice_profile(voice_id: str) -> dict:
+    profile = get_profile_store().get_profile(voice_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail=f"speaker_id '{voice_id}' not found.")
+    return {"object": "voice", "data": _voice_profile_dict(profile)}
+
+
+@app.post("/v1/voice-profiles")
 @app.post("/v1/voices")
 async def create_voice(
     speaker_id: str = Form(...),
@@ -461,6 +497,25 @@ async def create_voice(
     return {"object": "voice", "message": message}
 
 
+@app.patch("/v1/voice-profiles/{voice_id}")
+def update_voice_profile(voice_id: str, request: VoiceProfileUpdateRequest) -> dict:
+    try:
+        profile = get_profile_store().update_profile_metadata(
+            profile_id=voice_id,
+            name=request.name,
+            language=request.language,
+            tags=request.tags,
+            favorite=request.favorite,
+            notes=request.notes,
+            preview_path=request.preview_path,
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise _server_error(e) from e
+    return {"object": "voice", "data": _voice_profile_dict(profile)}
+
+
 @app.delete("/v1/voices/{voice_id}")
 def delete_voice(voice_id: str) -> dict:
     message = delete_speaker_id(voice_id)
@@ -469,6 +524,11 @@ def delete_voice(voice_id: str) -> dict:
     if message.startswith("Error") or message.startswith("Please"):
         raise _generation_error(message)
     return {"object": "voice", "message": message}
+
+
+@app.delete("/v1/voice-profiles/{voice_id}")
+def delete_voice_profile(voice_id: str) -> dict:
+    return delete_voice(voice_id)
 
 
 @app.post("/v1/voices/{voice_id}/rename")
