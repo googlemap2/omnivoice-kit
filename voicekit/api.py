@@ -13,6 +13,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket, W
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from voicekit.audio import EFFECT_PRESETS
 from voicekit.asr import (
@@ -886,7 +887,8 @@ async def create_dubbing_job_from_upload(
                 },
             )
             return {"object": "job", "data": job.to_dict()}
-        result = dub_file(
+        result = await run_in_threadpool(
+            dub_file,
             input_path=upload_path,
             voice=voice,
             target_language=target_language,

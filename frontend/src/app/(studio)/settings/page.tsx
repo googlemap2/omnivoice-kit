@@ -29,6 +29,13 @@ export default function SettingsPage() {
   const studio = useStudio();
   const [tab, setTab] = useState<SettingsTab>("tts");
 
+  function handleTabChange(value: SettingsTab) {
+    setTab(value);
+    if (value === "diagnostics" && !studio.diagnostics) {
+      void studio.refreshDiagnostics();
+    }
+  }
+
   if (!studio.settings) {
     return (
       <WorkspaceShell icon={<SettingsIcon />} title="Settings">
@@ -77,7 +84,7 @@ export default function SettingsPage() {
         </Button>
       }
     >
-      <Tabs value={tab} onChange={(_, value) => setTab(value)} variant="scrollable" scrollButtons="auto" sx={{ mb: 2 }}>
+      <Tabs value={tab} onChange={(_, value) => handleTabChange(value)} variant="scrollable" scrollButtons="auto" sx={{ mb: 2 }}>
         <Tab value="tts" label="TTS Config" />
         <Tab value="translation" label="Translation Providers" />
         <Tab value="diagnostics" label="Diagnostics" />
