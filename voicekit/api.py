@@ -512,6 +512,44 @@ def export_voice_profile_metadata(voice_id: str) -> JSONResponse:
     )
 
 
+@app.get("/v1/voice-profiles/{voice_id}/package")
+def export_voice_profile_package(voice_id: str) -> FileResponse:
+    store = get_profile_store()
+    try:
+        package_dir = Path("data") / "voice_packages"
+        package_path = store.export_package(voice_id, package_dir / f"{voice_id}.voicepkg.zip")
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise _server_error(e) from e
+    return FileResponse(
+        package_path,
+        media_type="application/zip",
+        filename=f"{voice_id}.voicepkg.zip",
+    )
+
+
+@app.post("/v1/voice-profiles/import-package")
+async def import_voice_profile_package(
+    file: UploadFile = File(...),
+    profile_id: str | None = Form(None),
+    overwrite: bool = Form(False),
+) -> dict:
+    suffix = Path(file.filename or "voicepkg.zip").suffix or ".zip"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
+    try:
+        profile = get_profile_store().import_package(tmp_path, profile_id=profile_id, overwrite=overwrite)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise _server_error(e) from e
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+    return {"object": "voice", "data": _voice_profile_dict(profile)}
+
+
 @app.post("/v1/voice-profiles")
 @app.post("/v1/voices")
 async def create_voice(

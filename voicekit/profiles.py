@@ -1,4 +1,6 @@
 import json
+import shutil
+import zipfile
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -7,10 +9,32 @@ from typing import Any
 
 DEFAULT_PROFILE_STORE_PATH = Path("speakers.json")
 DEFAULT_VOICE_ASSET_ROOT = Path("assets/voices")
+VOICE_PACKAGE_FORMAT_VERSION = 1
 
 
 def utc_now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat()
+
+
+def safe_profile_id(value: str) -> str:
+    normalized = "".join(char if char.isalnum() or char in "._-" else "-" for char in value).strip(".-_")
+    return normalized or "voice"
+
+
+def zip_path_for_file(label: str, path: Path) -> str:
+    suffix = path.suffix or ".bin"
+    return f"files/{label}{suffix}"
+
+
+def safe_zip_members(package: zipfile.ZipFile) -> set[str]:
+    names: set[str] = set()
+    for info in package.infolist():
+        name = info.filename.replace("\\", "/")
+        path = Path(name)
+        if path.is_absolute() or ".." in path.parts:
+            raise ValueError(f"Unsafe package path: {info.filename}")
+        names.add(name)
+    return names
 
 
 @dataclass(frozen=True)
@@ -52,8 +76,7 @@ class VoiceProfileStore:
         self.path.write_text(json.dumps(records, ensure_ascii=True, indent=2), encoding="utf-8")
 
     def _asset_dir_for_profile(self, profile_id: str) -> str:
-        safe_id = "".join(char if char.isalnum() or char in "._-" else "-" for char in profile_id).strip(".-_")
-        return str(DEFAULT_VOICE_ASSET_ROOT / (safe_id or "voice")).replace("\\", "/")
+        return str(DEFAULT_VOICE_ASSET_ROOT / safe_profile_id(profile_id)).replace("\\", "/")
 
     def _normalize_tags(self, value: Any) -> list[str]:
         if isinstance(value, str):
@@ -250,3 +273,131 @@ class VoiceProfileStore:
             record.pop("id", None)
             speakers[profile.id] = record
         return speakers
+
+    def export_package(self, profile_id: str, package_path: str | Path) -> Path:
+        profile = self.get_profile(profile_id)
+        if profile is None:
+            raise KeyError(f"speaker_id '{profile_id}' not found.")
+
+        package = Path(package_path)
+        package.parent.mkdir(parents=True, exist_ok=True)
+        file_map: dict[str, str] = {}
+        source_files: dict[str, Path] = {}
+
+        prompt_path = Path(profile.prompt_path)
+        if prompt_path.is_file():
+            archive_path = zip_path_for_file("prompt", prompt_path)
+            file_map["prompt_path"] = archive_path
+            source_files[archive_path] = prompt_path
+
+        preview_path = Path(profile.preview_path) if profile.preview_path else None
+        if preview_path and preview_path.is_file():
+            archive_path = zip_path_for_file("preview", preview_path)
+            file_map["preview_path"] = archive_path
+            source_files[archive_path] = preview_path
+
+        asset_dir = Path(profile.asset_dir) if profile.asset_dir else None
+        if asset_dir and asset_dir.is_dir():
+            for path in sorted(asset_dir.rglob("*")):
+                if not path.is_file():
+                    continue
+                archive_path = f"assets/{path.relative_to(asset_dir).as_posix()}"
+                source_files.setdefault(archive_path, path)
+
+        manifest = {
+            "object": "voice_profile_package",
+            "format_version": VOICE_PACKAGE_FORMAT_VERSION,
+            "profile": profile.to_record(),
+            "files": file_map,
+        }
+        with zipfile.ZipFile(package, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("manifest.json", json.dumps(manifest, ensure_ascii=True, indent=2))
+            for archive_path, source_path in source_files.items():
+                zf.write(source_path, archive_path)
+        return package
+
+    def import_package(
+        self,
+        package_path: str | Path,
+        profile_id: str | None = None,
+        overwrite: bool = False,
+    ) -> VoiceProfile:
+        package = Path(package_path)
+        if not package.is_file():
+            raise FileNotFoundError(f"Voice package not found: {package}")
+
+        with zipfile.ZipFile(package, "r") as zf:
+            names = safe_zip_members(zf)
+            if "manifest.json" not in names:
+                raise ValueError("Voice package is missing manifest.json.")
+            manifest = json.loads(zf.read("manifest.json").decode("utf-8"))
+            if manifest.get("object") != "voice_profile_package":
+                raise ValueError("Invalid voice package object.")
+            if int(manifest.get("format_version") or 0) != VOICE_PACKAGE_FORMAT_VERSION:
+                raise ValueError(f"Unsupported voice package version: {manifest.get('format_version')}")
+            raw_profile = manifest.get("profile")
+            if not isinstance(raw_profile, dict):
+                raise ValueError("Voice package manifest is missing profile metadata.")
+            files = manifest.get("files") if isinstance(manifest.get("files"), dict) else {}
+
+            imported_id = safe_profile_id(profile_id or str(raw_profile.get("id") or raw_profile.get("name") or "voice"))
+            records = self._read_records()
+            if imported_id in records and not overwrite:
+                raise ValueError(f"speaker_id '{imported_id}' already exists.")
+
+            asset_dir = Path(self._asset_dir_for_profile(imported_id))
+            if overwrite and asset_dir.exists():
+                shutil.rmtree(asset_dir)
+            asset_dir.mkdir(parents=True, exist_ok=True)
+
+            for name in names:
+                if not name.startswith("assets/") or name.endswith("/"):
+                    continue
+                relative = Path(name).relative_to("assets")
+                destination = asset_dir / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                with zf.open(name) as src, destination.open("wb") as dst:
+                    shutil.copyfileobj(src, dst)
+
+            def extract_named(field: str, default_name: str) -> str:
+                archive_name = str(files.get(field) or "")
+                if archive_name and archive_name in names:
+                    suffix = Path(archive_name).suffix
+                    destination = asset_dir / f"{default_name}{suffix}"
+                    with zf.open(archive_name) as src, destination.open("wb") as dst:
+                        shutil.copyfileobj(src, dst)
+                    return str(destination).replace("\\", "/")
+                return ""
+
+            prompt_path = extract_named("prompt_path", "prompt")
+            if not prompt_path:
+                raw_prompt = Path(str(raw_profile.get("prompt_path") or ""))
+                candidate = asset_dir / raw_prompt.name if raw_prompt.name else asset_dir / "prompt.pt"
+                if candidate.is_file():
+                    prompt_path = str(candidate).replace("\\", "/")
+            if not prompt_path:
+                raise ValueError("Voice package does not include a prompt file.")
+
+            preview_path = extract_named("preview_path", "preview") or None
+
+        now = utc_now_iso()
+        existing = self.get_profile(imported_id)
+        profile = VoiceProfile(
+            id=imported_id,
+            name=str(raw_profile.get("name") or imported_id),
+            type=str(raw_profile.get("type") or "clone"),
+            prompt_path=prompt_path,
+            language=raw_profile.get("language"),
+            ref_text=raw_profile.get("ref_text"),
+            tags=self._normalize_tags(raw_profile.get("tags")),
+            favorite=bool(raw_profile.get("favorite", False)),
+            notes=raw_profile.get("notes"),
+            preview_path=preview_path,
+            asset_dir=str(asset_dir).replace("\\", "/"),
+            created_at=existing.created_at if existing else raw_profile.get("created_at") or now,
+            updated_at=now,
+        )
+        records = self._read_records()
+        records[imported_id] = profile.to_record()
+        self._write_records(records)
+        return profile

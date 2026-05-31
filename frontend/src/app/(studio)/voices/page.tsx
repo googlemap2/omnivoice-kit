@@ -49,6 +49,19 @@ export default function VoicesPage() {
     >
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "360px 1fr" }, gap: 2 }}>
         <Stack spacing={2}>
+          <Button component="label" startIcon={<UploadFileIcon />} variant="outlined">
+            Import voice package
+            <input
+              hidden
+              type="file"
+              accept=".zip,.voicepkg.zip,application/zip"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void studio.importVoicePackage(file);
+                event.currentTarget.value = "";
+              }}
+            />
+          </Button>
           <TextField
             label="Speaker ID"
             value={studio.newVoiceId}
@@ -136,7 +149,7 @@ function VoiceProfileCard({ voice, studio }: { voice: ReturnType<typeof useStudi
               <PlayArrowIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Export metadata">
+          <Tooltip title="Export voice package">
             <IconButton size="small" onClick={() => void studio.exportVoiceProfile(voice.id)}>
               <DownloadIcon fontSize="small" />
             </IconButton>

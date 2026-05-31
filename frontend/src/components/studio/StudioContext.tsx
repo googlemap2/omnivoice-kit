@@ -156,6 +156,7 @@ type StudioContextValue = {
   deleteVoiceProfile: (voiceId: string) => Promise<void>;
   generateVoicePreview: (voiceId: string) => Promise<void>;
   exportVoiceProfile: (voiceId: string) => Promise<void>;
+  importVoicePackage: (file: File) => Promise<void>;
   saveSettings: () => Promise<void>;
 };
 
@@ -859,9 +860,25 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setBusy(true);
     setError(null);
     try {
-      const blob = await apiAudio(`/v1/voice-profiles/${encodeURIComponent(voiceId)}/export`);
-      downloadBlob(blob, `${voiceId}.voice-profile.json`);
-      setMessage("Voice profile metadata exported.");
+      const blob = await apiAudio(`/v1/voice-profiles/${encodeURIComponent(voiceId)}/package`);
+      downloadBlob(blob, `${voiceId}.voicepkg.zip`);
+      setMessage("Voice package exported.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function importVoicePackage(file: File) {
+    setBusy(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      await apiForm<{ data: Voice }>("/v1/voice-profiles/import-package", form);
+      setMessage("Voice package imported.");
+      await refreshAll();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -1174,6 +1191,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         deleteVoiceProfile,
         generateVoicePreview,
         exportVoiceProfile,
+        importVoicePackage,
         saveSettings,
       }}
     >

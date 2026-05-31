@@ -155,7 +155,7 @@ Use this overview to see which feature group is done, in progress, or still pend
 | Voice gallery | Phase 17 | Done |
 | Logs and diagnostics | Phase 19 | Done |
 | MCP server | Phase 20 | Done |
-| Marketplace/import/export | Phase 21 | Pending |
+| Marketplace/import/export | Phase 21 | Done |
 | Desktop packaging | Phase 22 | Pending |
 
 ## Phase 11: Translation Provider Registry
@@ -313,17 +313,17 @@ Related feature: MCP server.
 
 Related feature: Marketplace/import/export.
 
-- [ ] Define voice package format.
-- [ ] Export voice profile package as `.zip`.
-- [ ] Include metadata JSON.
-- [ ] Include reference/preview audio if available.
-- [ ] Validate package on import.
-- [ ] Import package as voice profile.
-- [ ] Add local package directory.
-- [ ] Add API endpoints for import/export.
-- [ ] Add UI import/export actions.
-- [ ] Add tests for package roundtrip.
-- [ ] Update README.
+- [x] Define voice package format.
+- [x] Export voice profile package as `.zip`.
+- [x] Include metadata JSON.
+- [x] Include reference/preview audio if available.
+- [x] Validate package on import.
+- [x] Import package as voice profile.
+- [x] Add local package directory.
+- [x] Add API endpoints for import/export.
+- [x] Add UI import/export actions.
+- [x] Add tests for package roundtrip.
+- [x] Update README.
 
 ## Phase 22: Desktop Packaging
 
@@ -366,3 +366,4 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Completed Phase 17 voice gallery with backward-compatible profile metadata migration, asset directory convention, profile search/filter helpers, `/v1/voice-profiles` CRUD endpoints, local-audio import, preview generation, metadata export, gallery search/favorite/delete UI, and metadata migration tests.
 - [x] Completed Phase 19 logs and diagnostics with rotating redacted logs, system/device/ffmpeg/model-cache diagnostics, `/v1/diagnostics`, `/v1/logs`, clear logs, Settings Diagnostics UI, and smoke tests.
 - [x] Implemented Phase 20 MCP stdio/HTTP server v1 with list/generate/transcribe tools, recent history resource, console script, README config, and handler/HTTP smoke tests.
+- [x] Completed Phase 21 voice package import/export with `.voicepkg.zip` manifest/assets, API endpoints, Voice Gallery UI import/export actions, local package export directory, and roundtrip tests.

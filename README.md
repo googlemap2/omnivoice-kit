@@ -526,6 +526,24 @@ curl -X POST http://127.0.0.1:8000/v1/voice-profiles/my_voice/preview \
 curl -OJ http://127.0.0.1:8000/v1/voice-profiles/my_voice/export
 ```
 
+Voice package import/export dùng `.voicepkg.zip`, gồm `manifest.json`, prompt
+file, preview audio nếu có, và các asset trong thư mục voice:
+
+```bash
+curl -OJ http://127.0.0.1:8000/v1/voice-profiles/my_voice/package
+curl -X POST http://127.0.0.1:8000/v1/voice-profiles/import-package \
+  -F "file=@my_voice.voicepkg.zip"
+```
+
+Nếu muốn import dưới id khác hoặc ghi đè profile đã tồn tại:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/voice-profiles/import-package \
+  -F "file=@my_voice.voicepkg.zip" \
+  -F "profile_id=my_voice_copy" \
+  -F "overwrite=false"
+```
+
 Kiểm tra trạng thái model local:
 
 ```bash

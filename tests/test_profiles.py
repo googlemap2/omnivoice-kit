@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from voicekit.profiles import VoiceProfileStore
 
@@ -51,6 +52,63 @@ class VoiceProfileStoreTests(unittest.TestCase):
             self.assertEqual(store.search_profiles(language="vi"), [updated])
             self.assertEqual(store.search_profiles(favorite=True), [updated])
             self.assertEqual(store.search_profiles(tags=["warm"]), [updated])
+
+    def test_voice_package_roundtrip(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            asset_root = root / "assets" / "voices"
+            with patch("voicekit.profiles.DEFAULT_VOICE_ASSET_ROOT", asset_root):
+                source_store = VoiceProfileStore(root / "source.json")
+                prompt_path = asset_root / "alice" / "prompt.pt"
+                prompt_path.parent.mkdir(parents=True)
+                prompt_path.write_bytes(b"prompt")
+                preview_path = asset_root / "alice" / "preview.wav"
+                preview_path.write_bytes(b"preview")
+                profile = source_store.create_profile(
+                    "alice",
+                    str(prompt_path),
+                    language="vi",
+                    ref_text="Xin chao",
+                    name="Alice",
+                )
+                profile = source_store.update_profile_metadata(
+                    profile.id,
+                    tags=["warm"],
+                    favorite=True,
+                    notes="Narrator",
+                    preview_path=str(preview_path),
+                )
+
+                package_path = source_store.export_package("alice", root / "alice.voicepkg.zip")
+
+                target_store = VoiceProfileStore(root / "target.json")
+                imported = target_store.import_package(package_path, profile_id="alice-import")
+
+            self.assertEqual(imported.id, "alice-import")
+            self.assertEqual(imported.name, "Alice")
+            self.assertEqual(imported.language, "vi")
+            self.assertEqual(imported.tags, ["warm"])
+            self.assertTrue(imported.favorite)
+            self.assertTrue(Path(imported.prompt_path).is_file())
+            self.assertTrue(Path(imported.preview_path or "").is_file())
+            self.assertEqual(Path(imported.prompt_path).read_bytes(), b"prompt")
+
+    def test_voice_package_import_rejects_existing_profile_without_overwrite(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            asset_root = root / "assets" / "voices"
+            with patch("voicekit.profiles.DEFAULT_VOICE_ASSET_ROOT", asset_root):
+                source_store = VoiceProfileStore(root / "source.json")
+                prompt_path = asset_root / "alice" / "prompt.pt"
+                prompt_path.parent.mkdir(parents=True)
+                prompt_path.write_bytes(b"prompt")
+                source_store.create_profile("alice", str(prompt_path))
+                package_path = source_store.export_package("alice", root / "alice.voicepkg.zip")
+
+                target_store = VoiceProfileStore(root / "target.json")
+                target_store.import_package(package_path)
+                with self.assertRaises(ValueError):
+                    target_store.import_package(package_path)
 
 
 if __name__ == "__main__":
