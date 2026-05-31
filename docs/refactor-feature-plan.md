@@ -154,7 +154,7 @@ Use this overview to see which feature group is done, in progress, or still pend
 | Batch queue | Phase 16 | Mostly done |
 | Voice gallery | Phase 17 | Done |
 | Logs and diagnostics | Phase 19 | Done |
-| MCP server | Phase 20 | Pending |
+| MCP server | Phase 20 | Done |
 | Marketplace/import/export | Phase 21 | Pending |
 | Desktop packaging | Phase 22 | Pending |
 
@@ -297,16 +297,17 @@ Related feature: Settings and diagnostics.
 
 Related feature: MCP server.
 
-- [ ] Decide MCP transport: stdio first, HTTP later.
-- [ ] Create `voicekit/mcp_server.py`.
-- [ ] Expose tool: generate speech.
-- [ ] Expose tool: transcribe audio.
-- [ ] Expose tool: list voices.
-- [ ] Expose tool: list languages.
-- [ ] Expose resource: recent generation history.
-- [ ] Add console script `voicekit-mcp`.
-- [ ] Add smoke tests for tool registration.
-- [ ] Update README with MCP config example.
+- [x] Decide MCP transport: stdio first, HTTP later.
+- [x] Add HTTP JSON-RPC transport.
+- [x] Create `voicekit/mcp_server.py`.
+- [x] Expose tool: generate speech.
+- [x] Expose tool: transcribe audio.
+- [x] Expose tool: list voices.
+- [x] Expose tool: list languages.
+- [x] Expose resource: recent generation history.
+- [x] Add console script `voicekit-mcp`.
+- [x] Add smoke tests for tool registration.
+- [x] Update README with MCP config example.
 
 ## Phase 21: Marketplace and Import/Export
 
@@ -364,3 +365,4 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Implemented Phase 16 batch queue v1 with Supabase/PostgreSQL jobs, background worker, job lifecycle API, queued Speech/Transcription/Translation/Dubbing modes, Jobs UI, and lifecycle tests. Fine-grained progress/cancel for already-running inference remains pending.
 - [x] Completed Phase 17 voice gallery with backward-compatible profile metadata migration, asset directory convention, profile search/filter helpers, `/v1/voice-profiles` CRUD endpoints, local-audio import, preview generation, metadata export, gallery search/favorite/delete UI, and metadata migration tests.
 - [x] Completed Phase 19 logs and diagnostics with rotating redacted logs, system/device/ffmpeg/model-cache diagnostics, `/v1/diagnostics`, `/v1/logs`, clear logs, Settings Diagnostics UI, and smoke tests.
+- [x] Implemented Phase 20 MCP stdio/HTTP server v1 with list/generate/transcribe tools, recent history resource, console script, README config, and handler/HTTP smoke tests.

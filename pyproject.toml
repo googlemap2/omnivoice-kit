@@ -33,3 +33,4 @@ py-modules = [
 [project.scripts]
 voicekit = "voicekit.cli:main"
 voicekit-ui = "voicekit.ui:main"
+voicekit-mcp = "voicekit.mcp_server:main"

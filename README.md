@@ -402,6 +402,71 @@ switch **Send to queue**. Khi bật, action chính sẽ tạo job thay vì chạ
 Các upload endpoint cũng nhận form field `queued=true` cho transcription,
 clone speech, và dubbing.
 
+### 3.9 MCP server v1
+
+OmniVoice Kit có MCP server để AI agent/client gọi tool local mà không cần đi
+qua frontend. Stdio là transport mặc định:
+
+```bash
+uv run voicekit-mcp
+```
+
+HTTP transport dùng khi muốn gọi từ máy khác hoặc đi qua reverse proxy/ngrok:
+
+```bash
+uv run voicekit-mcp --http --host 0.0.0.0 --port 8765
+```
+
+Endpoint:
+
+```text
+GET  /health
+POST /mcp
+```
+
+Tool v1:
+
+- `list_voices`: liệt kê voice profile local.
+- `list_languages`: liệt kê language ID.
+- `generate_speech`: tạo WAV từ text + voice profile và ghi ra `output_path`.
+- `transcribe_audio`: transcribe file audio/video local.
+
+Resource v1:
+
+- `voicekit://generation-history/recent`: đọc generation history gần đây nếu
+  PostgreSQL/Supabase đã được cấu hình.
+
+Ví dụ cấu hình MCP client:
+
+```json
+{
+  "mcpServers": {
+    "omnivoice-kit": {
+      "command": "uv",
+      "args": ["run", "voicekit-mcp"],
+      "cwd": "/absolute/path/to/omnivoice-kit"
+    }
+  }
+}
+```
+
+Ví dụ cấu hình MCP client HTTP nếu client hỗ trợ remote MCP URL:
+
+```json
+{
+  "mcpServers": {
+    "omnivoice-kit": {
+      "url": "http://127.0.0.1:8765/mcp"
+    }
+  }
+}
+```
+
+Khi gọi từ máy khác trong LAN, thay `127.0.0.1` bằng IP máy chạy OmniVoice
+Kit, ví dụ `http://192.168.1.10:8765/mcp`. Nếu expose public bằng ngrok, cần
+tự bảo vệ URL vì MCP tool có quyền đọc file input và ghi output trên máy chạy
+server.
+
 Provider có sẵn: `passthrough`, `google` (qua `deep-translator`, không cần API key), `nllb`
 (cần `transformers` + model trong `models/`), `deepl`, `microsoft`, `mymemory` (ba provider cuối
 cần API key trong settings, chưa implement đầy đủ).
