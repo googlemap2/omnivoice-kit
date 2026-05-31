@@ -91,6 +91,8 @@ type StudioContextValue = {
   transcribe: () => Promise<void>;
   transcribeQueued: boolean;
   setTranscribeQueued: (value: boolean) => void;
+  transcribeTranslate: boolean;
+  setTranscribeTranslate: (value: boolean) => void;
   dictationActive: boolean;
   dictationTranscript: string;
   startDictation: () => Promise<void>;
@@ -200,6 +202,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [transcribeFormat, setTranscribeFormat] = useState("verbose_json");
   const [transcription, setTranscription] = useState("");
   const [transcribeQueued, setTranscribeQueued] = useState(false);
+  const [transcribeTranslate, setTranscribeTranslate] = useState(false);
   const [dictationActive, setDictationActive] = useState(false);
   const [dictationTranscript, setDictationTranscript] = useState("");
   const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
@@ -401,6 +404,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       form.set("language", language);
       form.set("response_format", transcribeFormat);
       form.set("queued", String(transcribeQueued));
+      form.set("translate", String(transcribeTranslate));
+      if (transcribeTranslate) {
+        form.set("source_language", sourceLanguage);
+        form.set("target_language", targetLanguage);
+        form.set("translation_provider", provider);
+      }
       if (transcribeQueued) {
         const result = await apiForm<{ data: JobRecord }>("/v1/audio/transcriptions", form);
         trackQueuedJob(result.data, "transcription");
@@ -569,18 +578,36 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       if (!Array.isArray(segments)) {
         throw new Error("Subtitle editor must contain at least one segment.");
       }
-      const blob = await apiAudio("/v1/subtitles/export", {
+      const translatedBlob = await apiAudio("/v1/subtitles/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ format: subtitleFormat, segments }),
       });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `subtitles.${subtitleFormat}`;
-      anchor.click();
-      URL.revokeObjectURL(url);
-      setMessage(`Exported subtitles.${subtitleFormat}.`);
+      downloadBlob(translatedBlob, `subtitles.translated.${subtitleFormat}`);
+
+      const rawSegments = segments
+        .map((segment) => {
+          if (typeof segment !== "object" || segment === null) return segment;
+          const item = segment as SubtitleSegment;
+          const sourceText = typeof item.metadata?.source_text === "string" ? item.metadata.source_text : null;
+          return sourceText ? { ...item, text: sourceText } : item;
+        });
+      const hasRawSource = rawSegments.some((segment, index) => {
+        if (typeof segment !== "object" || segment === null) return false;
+        const original = segments[index] as SubtitleSegment | undefined;
+        return Boolean(original?.metadata?.source_text);
+      });
+      if (hasRawSource) {
+        const rawBlob = await apiAudio("/v1/subtitles/export", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ format: subtitleFormat, segments: rawSegments }),
+        });
+        downloadBlob(rawBlob, `subtitles.raw.${subtitleFormat}`);
+        setMessage(`Exported raw and translated subtitles.${subtitleFormat}.`);
+      } else {
+        setMessage(`Exported subtitles.translated.${subtitleFormat}.`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -1129,6 +1156,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         transcribe,
         transcribeQueued,
         setTranscribeQueued,
+        transcribeTranslate,
+        setTranscribeTranslate,
         dictationActive,
         dictationTranscript,
         startDictation,

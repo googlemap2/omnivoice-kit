@@ -5,6 +5,7 @@ from typing import Any
 from voicekit.core import pick_device
 from voicekit.model_store import ensure_local_model
 from voicekit.subtitles import export_subtitle, from_transcription_result
+from voicekit.translation import translate_segments
 
 
 DEFAULT_ASR_MODEL_ID = "Systran/faster-whisper-large-v3"
@@ -168,6 +169,51 @@ def format_transcription(result: TranscriptionResult, response_format: str) -> s
         return export_subtitle(from_transcription_result(result), "srt")
     if response_format == "vtt":
         return export_subtitle(from_transcription_result(result), "vtt")
+    raise ValueError(f"Unsupported transcription format: {response_format}")
+
+
+def format_transcription_with_translation(
+    result: TranscriptionResult,
+    response_format: str,
+    *,
+    source_language: str | None,
+    target_language: str | None,
+    provider_id: str | None,
+) -> str | dict[str, Any]:
+    if not target_language:
+        raise ValueError("target_language is required when translate is enabled.")
+    raw_segments = [segment.to_dict() for segment in from_transcription_result(result)]
+    translated = translate_segments(
+        segments=raw_segments,
+        source_language=source_language or result.language,
+        target_language=target_language,
+        provider_id=provider_id,
+    )
+    translated_segments = translated.segments or []
+    output_segments = []
+    for index, raw in enumerate(raw_segments):
+        translated_segment = translated_segments[index] if index < len(translated_segments) else None
+        translated_text = (translated_segment.translated_text if translated_segment else None) or raw["text"]
+        output_segments.append({**raw, "text": translated_text, "metadata": {"source_text": raw["text"]}})
+
+    if response_format == "text":
+        return translated.text
+    if response_format == "json":
+        return {"text": translated.text}
+    if response_format == "verbose_json":
+        return {
+            "text": translated.text,
+            "language": result.language,
+            "duration": result.duration,
+            "translation": {
+                "source_language": source_language or result.language,
+                "target_language": target_language,
+                "provider": translated.provider,
+            },
+            "segments": output_segments,
+        }
+    if response_format in {"srt", "vtt"}:
+        return export_subtitle(output_segments, response_format)
     raise ValueError(f"Unsupported transcription format: {response_format}")
 
 

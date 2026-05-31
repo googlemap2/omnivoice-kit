@@ -295,9 +295,23 @@ def execute_job(job_type: str, params: dict[str, Any]) -> dict[str, Any]:
         return result.to_dict()
 
     if job_type == "transcription":
-        from voicekit.asr import transcribe_file
+        from voicekit.asr import format_transcription_with_translation, transcribe_file
 
+        params = dict(params)
+        translate = bool(params.pop("translate", False))
+        source_language = params.pop("source_language", None)
+        target_language = params.pop("target_language", None)
+        translation_provider = params.pop("translation_provider", None)
         result = transcribe_file(**params)
+        if translate:
+            formatted = format_transcription_with_translation(
+                result,
+                "verbose_json",
+                source_language=source_language,
+                target_language=target_language,
+                provider_id=translation_provider,
+            )
+            return formatted if isinstance(formatted, dict) else {"text": formatted}
         return result.to_dict(verbose=True)
 
     if job_type == "dubbing":

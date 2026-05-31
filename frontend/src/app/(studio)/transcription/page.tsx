@@ -7,6 +7,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SaveAltIcon from "@mui/icons-material/SaveAlt";
 import StopIcon from "@mui/icons-material/Stop";
 import SubtitlesIcon from "@mui/icons-material/Subtitles";
+import TranslateIcon from "@mui/icons-material/Translate";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import {
   Box,
@@ -32,6 +33,22 @@ import { useStudio } from "../../../components/studio/StudioContext";
 
 export default function TranscriptionPage() {
   const studio = useStudio();
+  const availableProviders = studio.providers.filter((provider) => provider.available);
+  const activeProvider =
+    availableProviders.find((provider) => provider.id === studio.provider)?.id ||
+    availableProviders.find((provider) => provider.id !== "passthrough")?.id ||
+    availableProviders[0]?.id ||
+    studio.provider;
+
+  function toggleTranslate() {
+    const next = !studio.transcribeTranslate;
+    if (next) {
+      if (activeProvider !== studio.provider) {
+        studio.setProvider(activeProvider);
+      }
+    }
+    studio.setTranscribeTranslate(next);
+  }
 
   return (
     <WorkspaceShell
@@ -105,6 +122,40 @@ export default function TranscriptionPage() {
           <Button startIcon={<SaveAltIcon />} variant="outlined" onClick={studio.exportSubtitles}>
             Export
           </Button>
+          <Button
+            startIcon={<TranslateIcon />}
+            variant={studio.transcribeTranslate ? "contained" : "outlined"}
+            onClick={toggleTranslate}
+          >
+            Translate
+          </Button>
+          {studio.transcribeTranslate && (
+            <Paper variant="outlined" sx={{ p: 1.25, bgcolor: "#252526" }}>
+              <Stack spacing={1}>
+                <SelectField
+                  label="Provider"
+                  value={studio.provider}
+                  onChange={studio.setProvider}
+                  options={(availableProviders.length ? availableProviders : studio.providers).map((provider) => ({
+                    id: provider.id,
+                    label: provider.available ? provider.name : `${provider.name} (unavailable)`,
+                  }))}
+                />
+                <SelectField
+                  label="Source"
+                  value={studio.sourceLanguage}
+                  onChange={studio.setSourceLanguage}
+                  options={studio.meta.translation_languages}
+                />
+                <SelectField
+                  label="Target"
+                  value={studio.targetLanguage}
+                  onChange={studio.setTargetLanguage}
+                  options={studio.meta.translation_languages}
+                />
+              </Stack>
+            </Paper>
+          )}
         </Stack>
         <Stack spacing={2} sx={{ minWidth: 0 }}>
           <Paper variant="outlined" sx={{ bgcolor: "#252526", overflow: "hidden" }}>

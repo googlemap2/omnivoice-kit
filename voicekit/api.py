@@ -21,6 +21,7 @@ from voicekit.asr import (
     DEFAULT_ASR_MODEL_ID,
     TRANSCRIPTION_FORMATS,
     format_transcription,
+    format_transcription_with_translation,
     transcribe_file,
 )
 from voicekit.core import (
@@ -696,6 +697,8 @@ def translate(request: TranslateRequest) -> dict:
             )
     except HTTPException:
         raise
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=f"{type(e).__name__}: {e}") from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
     return {
@@ -1252,6 +1255,10 @@ async def create_transcription(
     compute_type: str | None = Form(None),
     word_timestamps: bool = Form(False),
     beam_size: int = Form(5),
+    translate: bool = Form(False),
+    source_language: str | None = Form(None),
+    target_language: str | None = Form(None),
+    translation_provider: str | None = Form(None),
     queued: bool = Form(False),
 ):
     if response_format not in TRANSCRIPTION_FORMATS:
@@ -1274,6 +1281,10 @@ async def create_transcription(
                     "compute_type": compute_type,
                     "word_timestamps": word_timestamps,
                     "beam_size": beam_size,
+                    "translate": translate,
+                    "source_language": source_language,
+                    "target_language": target_language,
+                    "translation_provider": translation_provider,
                 },
             )
             return JSONResponse({"object": "job", "data": job.to_dict()})
@@ -1286,7 +1297,19 @@ async def create_transcription(
             word_timestamps=word_timestamps,
             beam_size=beam_size,
         )
-        formatted = format_transcription(result, response_format)
+        formatted = (
+            format_transcription_with_translation(
+                result,
+                response_format,
+                source_language=source_language,
+                target_language=target_language,
+                provider_id=translation_provider,
+            )
+            if translate
+            else format_transcription(result, response_format)
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=f"{type(e).__name__}: {e}") from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
     finally:

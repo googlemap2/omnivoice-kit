@@ -59,6 +59,29 @@ class TranslationPassthroughTests(unittest.TestCase):
         self.assertTrue(available)
         self.assertIsNone(message)
 
+    def test_format_transcription_with_translation_keeps_source_text(self) -> None:
+        from voicekit.asr import TranscriptionResult, TranscriptionSegment, format_transcription_with_translation
+
+        result = TranscriptionResult(
+            text="Hello world",
+            language="en",
+            duration=1.0,
+            segments=[TranscriptionSegment(id=0, start=0.0, end=1.0, text="Hello world")],
+        )
+
+        payload = format_transcription_with_translation(
+            result,
+            "verbose_json",
+            source_language="en",
+            target_language="vi",
+            provider_id="passthrough",
+        )
+
+        self.assertIsInstance(payload, dict)
+        assert isinstance(payload, dict)
+        self.assertEqual(payload["translation"]["target_language"], "vi")
+        self.assertEqual(payload["segments"][0]["metadata"]["source_text"], "Hello world")
+
 
 if __name__ == "__main__":
     unittest.main()

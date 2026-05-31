@@ -358,7 +358,7 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Completed Phase 9 ASR transcription with lazy `faster-whisper` backend, CLI command, and Gradio Transcription tab.
 - [x] Completed Phase 10 OpenAI-compatible transcription endpoint at `/v1/audio/transcriptions`.
 - [x] Completed Phase 11 translation provider registry with `voicekit/translation.py`, passthrough/NLLB/online placeholders, settings fields, API/CLI/UI, and unittest smoke tests.
-- [x] Completed Phase 12 subtitle import/export with SRT/VTT parsing, JSON segment conversion, API/CLI hooks, basic Transcription UI import/export, and roundtrip tests.
+- [x] Completed Phase 12 subtitle import/export with SRT/VTT parsing, JSON segment conversion, API/CLI hooks, Transcription UI import/export plus integrated ASR+translate options and raw/translated subtitle downloads, and roundtrip tests.
 - [x] Completed Phase 13 video dubbing v1 with ffmpeg media helpers, synchronous ASR/translation/TTS pipeline, dubbed WAV/SRT/VTT/video outputs, API/CLI hooks, Dubbing UI, timing unit tests, and a short-audio smoke test with mocked heavy backends.
 - [x] Completed Phase 14 speaker diarization v1 with optional pyannote backend, Hugging Face token setting/env fallback, diarization API/CLI, speaker-label merge helpers, speaker-to-voice assignment structure, Dubbing UI toggle, and mocked merge tests.
 - [x] Implemented Phase 15 realtime dictation v1 with WebSocket audio chunks, ready/partial/final/done/error events, browser microphone capture in Transcription, fake protocol test helpers, and README notes. Silence detection and CLI microphone mode remain pending.
