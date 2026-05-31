@@ -110,6 +110,22 @@ export type JobRecord = {
   progress: number;
 };
 
+export type Diagnostics = {
+  system: Record<string, unknown>;
+  device: Record<string, unknown>;
+  ffmpeg: Record<string, unknown>;
+  models: {
+    base_dir: string;
+    cache_dir: string;
+    base_dir_exists: boolean;
+    cache_dir_exists: boolean;
+    cache_size_bytes: number;
+    installed_count: number;
+    statuses: ModelStatus[];
+  };
+  logs: Record<string, unknown>;
+};
+
 export const emptyMeta: Meta = {
   omnivoice_models: [],
   asr_models: [],

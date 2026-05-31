@@ -5,6 +5,7 @@ import {
   API_BASE_URL,
   type AppSettings,
   type DubbingResult,
+  type Diagnostics,
   type HistoryEntry,
   type JobRecord,
   type Meta,
@@ -30,12 +31,16 @@ type StudioContextValue = {
   setSettings: (settings: AppSettings) => void;
   history: HistoryEntry[];
   jobs: JobRecord[];
+  diagnostics: Diagnostics | null;
+  logs: string[];
   busy: boolean;
   message: string;
   error: string | null;
   installedCount: number;
   refreshAll: () => Promise<void>;
   refreshJobs: () => Promise<void>;
+  refreshDiagnostics: () => Promise<void>;
+  clearLogs: () => Promise<void>;
   createTranslationJob: () => Promise<void>;
   cancelJob: (jobId: string) => Promise<void>;
   deleteJob: (jobId: string) => Promise<void>;
@@ -164,6 +169,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [jobs, setJobs] = useState<JobRecord[]>([]);
+  const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("Ready.");
   const [error, setError] = useState<string | null>(null);
@@ -889,6 +896,38 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setMessage(`Queued ${label} job ${job.id}.`);
   }
 
+  async function refreshDiagnostics() {
+    setBusy(true);
+    setError(null);
+    try {
+      const [diagnosticsResult, logsResult] = await Promise.all([
+        apiJson<{ data: Diagnostics }>("/v1/diagnostics"),
+        apiJson<{ data: string[] }>("/v1/logs?limit=200"),
+      ]);
+      setDiagnostics(diagnosticsResult.data);
+      setLogs(logsResult.data);
+      setMessage("Diagnostics refreshed.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clearLogs() {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiJson("/v1/logs", { method: "DELETE" });
+      setLogs([]);
+      setMessage("Logs cleared.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function refreshJobs() {
     try {
       const result = await apiJson<{ data: JobRecord[] }>("/v1/jobs?limit=50");
@@ -1012,12 +1051,16 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         setSettings,
         history,
         jobs,
+        diagnostics,
+        logs,
         busy,
         message,
         error,
         installedCount,
         refreshAll,
         refreshJobs,
+        refreshDiagnostics,
+        clearLogs,
         createTranslationJob,
         cancelJob,
         deleteJob,

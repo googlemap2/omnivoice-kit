@@ -490,6 +490,14 @@ curl -X PUT http://127.0.0.1:8000/v1/settings \
   }'
 ```
 
+Diagnostics và logs:
+
+```bash
+curl http://127.0.0.1:8000/v1/diagnostics
+curl "http://127.0.0.1:8000/v1/logs?limit=200"
+curl -X DELETE http://127.0.0.1:8000/v1/logs
+```
+
 Cài model mặc định nếu còn thiếu:
 
 ```bash

@@ -342,6 +342,18 @@ Input:
 - `response_format`
 - `queued`
 
+## 10.1 Logs và diagnostics
+
+- Module: `voicekit/diagnostics.py`.
+- Log file mặc định: `data/logs/voicekit.log`.
+- Có `RotatingFileHandler` và redaction cho token/API key/secret/password.
+- API:
+  - `GET /v1/diagnostics`
+  - `GET /v1/logs?limit=200`
+  - `DELETE /v1/logs`
+- Diagnostics gồm system info, Python executable, torch/CUDA/MPS status, ffmpeg/ffprobe, model cache path/status/size.
+- UI: tab `Diagnostics` trong `frontend/src/app/(studio)/settings/page.tsx`.
+
 Output formats:
 
 - `json`
@@ -772,12 +784,12 @@ pnpm build
 - Realtime dictation v1.
 - Batch queue v1.
 - Emotion script TTS v1.
+- Voice Gallery v1.
+- Logs/diagnostics UI/API.
 
 Đang còn hạn chế hoặc pending:
 
-- Voice Gallery đầy đủ.
-- Watermarking.
-- Logs/diagnostics UI/API hoàn chỉnh.
+- Watermarking thật sự trên waveform/audio samples.
 - MCP server.
 - Marketplace/import/export voice package.
 - Desktop packaging.

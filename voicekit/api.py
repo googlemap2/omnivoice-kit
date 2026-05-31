@@ -41,6 +41,7 @@ from voicekit.diarization import (
     diarize_file,
 )
 from voicekit.dictation import fake_result_event, partial_event, result_event, transcribe_audio_bytes
+from voicekit.diagnostics import clear_logs, diagnostics_snapshot, read_logs, setup_logging
 from voicekit.dubbing import dub_file
 from voicekit.emotion_tts import load_tag_aliases, render_emotion_tts_speaker_id
 from voicekit.history import list_history
@@ -57,7 +58,7 @@ from voicekit.subtitles import SUBTITLE_FORMATS, export_subtitle, parse_subtitle
 from voicekit.translation import TRANSLATION_LANGUAGE_CHOICES, list_providers, translate_segments, translate_text
 
 
-logging.basicConfig(level=logging.INFO)
+setup_logging()
 logger = logging.getLogger("voicekit.api")
 
 
@@ -408,6 +409,22 @@ def update_settings(request: SettingsRequest) -> dict:
         "object": "settings",
         "data": saved.to_dict(),
     }
+
+
+@app.get("/v1/diagnostics")
+def get_diagnostics() -> dict:
+    return {"object": "diagnostics", "data": diagnostics_snapshot()}
+
+
+@app.get("/v1/logs")
+def get_logs(limit: int = 300) -> dict:
+    return {"object": "logs", "data": read_logs(limit=limit)}
+
+
+@app.delete("/v1/logs")
+def clear_logs_endpoint() -> dict:
+    clear_logs()
+    return {"object": "logs", "message": "Logs cleared."}
 
 
 @app.patch("/v1/settings/translation-providers")

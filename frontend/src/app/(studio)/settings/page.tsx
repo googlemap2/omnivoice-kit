@@ -1,5 +1,7 @@
 "use client";
 
+import DeleteIcon from "@mui/icons-material/Delete";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import SaveAltIcon from "@mui/icons-material/SaveAlt";
 import SettingsIcon from "@mui/icons-material/Settings";
 import {
@@ -21,7 +23,7 @@ import { useStudio } from "../../../components/studio/StudioContext";
 import { SelectField } from "../../../components/ui/SelectField";
 import type { AppSettings } from "../../../types/api";
 
-type SettingsTab = "tts" | "translation" | "models";
+type SettingsTab = "tts" | "translation" | "diagnostics" | "models";
 
 export default function SettingsPage() {
   const studio = useStudio();
@@ -78,6 +80,7 @@ export default function SettingsPage() {
       <Tabs value={tab} onChange={(_, value) => setTab(value)} variant="scrollable" scrollButtons="auto" sx={{ mb: 2 }}>
         <Tab value="tts" label="TTS Config" />
         <Tab value="translation" label="Translation Providers" />
+        <Tab value="diagnostics" label="Diagnostics" />
         <Tab value="models" label="Models" />
       </Tabs>
 
@@ -210,6 +213,63 @@ export default function SettingsPage() {
                 onChange={(event) => updateProviderConfig("nllb", "model_id", event.target.value)}
               />
             </ProviderConfig>
+          </Stack>
+        </Box>
+      )}
+
+      {tab === "diagnostics" && (
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(320px, 420px) 1fr" }, gap: 2 }}>
+          <Stack spacing={2}>
+            <Button startIcon={<RefreshIcon />} variant="contained" onClick={studio.refreshDiagnostics}>
+              Refresh Diagnostics
+            </Button>
+            <Button startIcon={<DeleteIcon />} variant="outlined" color="error" onClick={studio.clearLogs}>
+              Clear Logs
+            </Button>
+            <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#252526" }}>
+              <Typography sx={{ mb: 1, fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}>
+                Quick Status
+              </Typography>
+              <Stack spacing={0.75}>
+                <Chip
+                  size="small"
+                  color={studio.diagnostics?.ffmpeg?.available ? "success" : "warning"}
+                  label={`ffmpeg: ${studio.diagnostics?.ffmpeg?.available ? "available" : "missing"}`}
+                />
+                <Chip
+                  size="small"
+                  color={studio.diagnostics?.device?.cuda_available ? "success" : "default"}
+                  label={`cuda: ${studio.diagnostics?.device?.cuda_available ? "available" : "not available"}`}
+                />
+                <Chip
+                  size="small"
+                  color={studio.diagnostics?.device?.mps_available ? "success" : "default"}
+                  label={`mps: ${studio.diagnostics?.device?.mps_available ? "available" : "not available"}`}
+                />
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`models installed: ${studio.diagnostics?.models?.installed_count ?? 0}`}
+                />
+              </Stack>
+            </Paper>
+          </Stack>
+
+          <Stack spacing={2}>
+            <TextField
+              label="Diagnostics JSON"
+              multiline
+              minRows={12}
+              value={studio.diagnostics ? JSON.stringify(studio.diagnostics, null, 2) : ""}
+              InputProps={{ readOnly: true }}
+            />
+            <TextField
+              label="Logs"
+              multiline
+              minRows={12}
+              value={studio.logs.join("\n")}
+              InputProps={{ readOnly: true }}
+            />
           </Stack>
         </Box>
       )}

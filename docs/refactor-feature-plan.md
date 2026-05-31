@@ -154,7 +154,7 @@ Use this overview to see which feature group is done, in progress, or still pend
 | Batch queue | Phase 16 | Mostly done |
 | Voice gallery | Phase 17 | Done |
 | Watermarking | Phase 18 | Pending |
-| Logs and diagnostics | Phase 19 | Pending |
+| Logs and diagnostics | Phase 19 | Done |
 | MCP server | Phase 20 | Pending |
 | Marketplace/import/export | Phase 21 | Pending |
 | Desktop packaging | Phase 22 | Pending |
@@ -282,7 +282,7 @@ Related feature: Voice gallery.
 
 Related feature: Watermarking.
 
-- [ ] Choose watermark backend or define placeholder interface.
+- [ ] Choose real waveform/audio-sample watermark backend.
 - [ ] Add optional watermark settings.
 - [ ] Embed watermark after TTS generation.
 - [ ] Detect watermark from uploaded audio.
@@ -296,17 +296,17 @@ Related feature: Watermarking.
 
 Related feature: Settings and diagnostics.
 
-- [ ] Add Python logging config with rotating file handler.
-- [ ] Add log redaction for tokens/API keys.
-- [ ] Add system info helper: OS, Python, device, CUDA/MPS status.
-- [ ] Add ffmpeg availability diagnostic.
-- [ ] Add model cache diagnostic.
-- [ ] Add `/v1/diagnostics`.
-- [ ] Add `/v1/logs`.
-- [ ] Add UI Diagnostics tab.
-- [ ] Add clear logs action.
-- [ ] Add smoke tests for redaction and diagnostics.
-- [ ] Update README.
+- [x] Add Python logging config with rotating file handler.
+- [x] Add log redaction for tokens/API keys.
+- [x] Add system info helper: OS, Python, device, CUDA/MPS status.
+- [x] Add ffmpeg availability diagnostic.
+- [x] Add model cache diagnostic.
+- [x] Add `/v1/diagnostics`.
+- [x] Add `/v1/logs`.
+- [x] Add UI Diagnostics tab.
+- [x] Add clear logs action.
+- [x] Add smoke tests for redaction and diagnostics.
+- [x] Update README.
 
 ## Phase 20: MCP Server
 
@@ -378,3 +378,4 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Implemented Phase 15 realtime dictation v1 with WebSocket audio chunks, ready/partial/final/done/error events, browser microphone capture in Transcription, fake protocol test helpers, and README notes. Silence detection and CLI microphone mode remain pending.
 - [x] Implemented Phase 16 batch queue v1 with Supabase/PostgreSQL jobs, background worker, job lifecycle API, queued Speech/Transcription/Translation/Dubbing modes, Jobs UI, and lifecycle tests. Fine-grained progress/cancel for already-running inference remains pending.
 - [x] Completed Phase 17 voice gallery with backward-compatible profile metadata migration, asset directory convention, profile search/filter helpers, `/v1/voice-profiles` CRUD endpoints, local-audio import, preview generation, metadata export, gallery search/favorite/delete UI, and metadata migration tests.
+- [x] Completed Phase 19 logs and diagnostics with rotating redacted logs, system/device/ffmpeg/model-cache diagnostics, `/v1/diagnostics`, `/v1/logs`, clear logs, Settings Diagnostics UI, and smoke tests.
