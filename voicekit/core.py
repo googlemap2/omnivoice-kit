@@ -205,6 +205,7 @@ def generate_clone_with_speaker_id(
     preprocess_prompt,
     postprocess_output,
     effect_preset="raw",
+    record_history=True,
 ):
     if not text or not text.strip():
         return None, "Please input target text."
@@ -235,7 +236,7 @@ def generate_clone_with_speaker_id(
         postprocess_output=bool(postprocess_output),
     )
     audio, status = run_generate(model_arg=model_id, effect_preset=effect_preset, **kwargs)
-    if audio is not None:
+    if audio is not None and record_history:
         try_record_generation(
             mode="speaker-id",
             model=model_id,

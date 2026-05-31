@@ -202,6 +202,7 @@ def dub_file(
             preprocess_prompt=True,
             postprocess_output=True,
             effect_preset=effect_preset,
+            record_history=False,
         )
         if audio is None:
             raise RuntimeError(status)

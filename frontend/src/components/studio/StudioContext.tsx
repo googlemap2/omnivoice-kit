@@ -599,6 +599,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setBusy(true);
     setError(null);
     try {
+      setMessage(dubbingQueued ? "Submitting dubbing job to queue..." : "Dubbing media synchronously. Waiting for API response...");
       const form = new FormData();
       form.set("file", dubbingFile);
       form.set("folder_name", dubbingFolderName);

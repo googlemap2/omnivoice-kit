@@ -18,8 +18,8 @@ export default function DubbingPage() {
       icon={<MovieIcon />}
       title="Dubbing"
       action={
-        <Button startIcon={<PlayArrowIcon />} variant="contained" onClick={studio.runDubbing}>
-          Dub Media
+        <Button startIcon={<PlayArrowIcon />} variant="contained" onClick={studio.runDubbing} disabled={studio.busy}>
+          {studio.busy ? "Dubbing..." : "Dub Media"}
         </Button>
       }
     >
