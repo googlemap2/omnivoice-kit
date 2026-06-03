@@ -61,7 +61,6 @@ Model chính:
 
 Model store:
 
-- Module: `voicekit/model_store.py`
 - Model được tải vào thư mục `models/` của project.
 - Ví dụ:
   - `models/models--k2-fsa--OmniVoice/`
@@ -77,24 +76,20 @@ API liên quan model:
 
 ## 4. Cấu trúc backend quan trọng
 
-- `voicekit/core.py`: core TTS, load model, build instruct, generate theo `speaker_id`, ref audio, voice design.
-- `voicekit/emotion_tts.py`: parse kịch bản có tag cảm xúc, render từng đoạn bằng một voice profile, ghép WAV.
-- `voicekit/api.py`: FastAPI app, OpenAI-compatible endpoints, upload, jobs, settings, subtitles, dubbing, dictation.
-- `voicekit/cli.py`: CLI entrypoint cho speaker-id, ref-audio, voice-design, transcribe, translate, subtitle, dub, diarize, emotion-script.
-- `voicekit/profiles.py`: `VoiceProfileStore`, đọc/ghi voice profile, tương thích `speakers.json`.
-- `voicekit/model_store.py`: kiểm tra/tải model vào local `models/`.
-- `voicekit/audio.py`: effect preset `raw`, `normalize`, `broadcast`.
-- `voicekit/asr.py`: transcribe bằng faster-whisper, format output.
-- `voicekit/subtitles.py`: parse/export SRT/VTT, normalize segment.
-- `voicekit/translation.py`: provider registry, passthrough, google, nllb, deepl/microsoft/mymemory placeholder/config.
-- `voicekit/dubbing.py`: pipeline dubbing audio/video.
-- `voicekit/diarization.py`: pyannote availability, run diarization, merge speaker label vào subtitles.
-- `voicekit/dictation.py`: realtime dictation helper, lưu chunk/upload tạm.
-- `voicekit/jobs.py`: job store/worker cho speech, transcription, translation, dubbing.
-- `voicekit/stores/`: database-backed stores cho generation history, jobs và provider models.
-- `voicekit/settings.py`: load/save settings JSON.
-- `voicekit/history.py`: generation history.
-- `voicekit/ui.py`: Gradio legacy UI.
+- `voicekit/app/main.py`: FastAPI app shell, CORS, startup/shutdown worker hooks, router registration. Public entrypoint `voicekit.api:app` remains stable.
+- `voicekit/app/routers/`: API routers. Low-risk endpoints are split by topic; core workflow endpoints currently live in `routers/workflows.py` before optional finer splitting.
+- `voicekit/app/schemas/`: Pydantic request schemas grouped by feature.
+- `voicekit/services/`: real service implementations for speech, emotion TTS, transcription, subtitles, translation, dubbing, diarization, dictation, voice profiles, models, and diagnostics.
+- `voicekit/infrastructure/`: real infrastructure implementations for Hugging Face/model store, database, media, logging, and database-backed stores.
+- `voicekit/domain/`: domain-level primitives/config such as audio presets and local settings.
+- `voicekit/api.py`: compatibility shim exporting the FastAPI app.
+- `voicekit/core.py`, `voicekit/asr.py`, `voicekit/subtitles.py`, `voicekit/translation.py`, `voicekit/dubbing.py`, `voicekit/diarization.py`, `voicekit/dictation.py`, `voicekit/emotion_tts.py`, `voicekit/profiles.py`, `voicekit/diagnostics.py`: compatibility aliases to `voicekit/services/*`.
+- `voicekit/model_store.py`, `voicekit/database.py`, `voicekit/media.py`, `voicekit/stores/*`: compatibility aliases to `voicekit/infrastructure/*`.
+- `voicekit/audio.py`, `voicekit/settings.py`: compatibility aliases to `voicekit/domain/*`.
+- `voicekit/cli/`: CLI package shell; legacy command implementation remains in `voicekit/cli_legacy.py`.
+- `voicekit/mcp/`: MCP server package; `voicekit/mcp_server.py` remains a compatibility alias.
+- `voicekit/legacy/ui.py`: Gradio legacy UI; `voicekit/ui.py` remains a compatibility alias.
+- `voicekit/scripts/`: standalone utility scripts.
 
 ## 5. Cấu trúc frontend quan trọng
 
@@ -247,7 +242,6 @@ Backend flow:
 - API model: `EmotionSpeechRequest` trong `voicekit/api.py`.
 - Endpoint: `create_emotion_script_speech()`.
 - Queue worker: `voicekit/jobs.py` xử lý `speech` job mode `emotion` bằng `render_emotion_tts_speaker_id()`.
-- Render: `render_emotion_tts_speaker_id()` trong `voicekit/emotion_tts.py`.
 - Parser nhận tag dạng `[tag]` hoặc `(tag)`.
 - Mapping mặc định trong `DEFAULT_TAG_ALIASES`:
   - `whisper` -> `whisper`
@@ -281,7 +275,6 @@ Voice profile là cách lưu một giọng để dùng lại.
 
 File/module:
 
-- `voicekit/profiles.py`
 - `speakers.json` ở root vẫn được hỗ trợ để tương thích cũ.
 
 Field profile chuẩn:
@@ -329,7 +322,6 @@ Voice Gallery v1:
 
 Module:
 
-- `voicekit/asr.py`
 
 Endpoint:
 
@@ -493,7 +485,6 @@ Frontend:
 
 Module:
 
-- `voicekit/diarization.py`
 
 Model:
 
@@ -521,7 +512,6 @@ uv run voicekit diarize --input path/to/audio.wav --output speakers.json
 
 Module:
 
-- `voicekit/dictation.py`
 
 Endpoint:
 
@@ -752,7 +742,6 @@ Nếu đổi label, không được đổi id/value trừ khi backend mapping c�
 Backend syntax:
 
 ```bash
-python -m py_compile voicekit/api.py voicekit/emotion_tts.py
 ```
 
 CLI smoke:

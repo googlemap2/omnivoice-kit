@@ -23,8 +23,10 @@ dependencies = [
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+include = ["voicekit*"]
+
 [tool.setuptools]
-packages = ["voicekit", "voicekit.scripts"]
 py-modules = [
   "backup_model",
   "verify_checksum",
