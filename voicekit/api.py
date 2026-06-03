@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import requests
 import tempfile
 import traceback
 from io import BytesIO
@@ -299,6 +300,14 @@ class TranslationProviderSettingsRequest(BaseModel):
     nllb_model_id: str | None = None
 
 
+class CloudProviderModelsRequest(BaseModel):
+    provider_name: str | None = None
+    base_url: str | None = None
+    api_key: str | None = None
+    speech_model: str | None = None
+    transcription_model: str | None = None
+
+
 class TranslationSegmentRequest(BaseModel):
     id: int = 0
     start: float | None = None
@@ -469,6 +478,60 @@ def get_logs(limit: int = 300) -> dict:
 def clear_logs_endpoint() -> dict:
     clear_logs()
     return {"object": "logs", "message": "Logs cleared."}
+
+
+@app.post("/v1/provider-models/cloud/models")
+def load_cloud_provider_models(request: CloudProviderModelsRequest) -> dict:
+    settings = _settings_with_provider_models(load_settings())
+    cloud = dict((settings.model_provider_config or {}).get("cloud") or {})
+    if request.provider_name is not None:
+        cloud["provider_name"] = request.provider_name
+    if request.base_url is not None:
+        cloud["base_url"] = request.base_url
+    if request.api_key is not None:
+        cloud["api_key"] = request.api_key
+    if request.speech_model is not None:
+        cloud["speech_model"] = request.speech_model
+    if request.transcription_model is not None:
+        cloud["transcription_model"] = request.transcription_model
+
+    base_url = str(cloud.get("base_url") or "").strip().rstrip("/")
+    if not base_url:
+        raise HTTPException(status_code=400, detail="Cloud provider base_url is required.")
+
+    headers = {"Accept": "application/json"}
+    api_key = str(cloud.get("api_key") or "").strip()
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    try:
+        response = requests.get(f"{base_url}/models", headers=headers, timeout=20)
+        response.raise_for_status()
+        payload = response.json()
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Cloud provider request failed: {e}") from e
+    except ValueError as e:
+        raise HTTPException(status_code=502, detail="Cloud provider returned non-JSON response.") from e
+
+    raw_models = payload.get("data") if isinstance(payload, dict) else payload
+    if not isinstance(raw_models, list):
+        raise HTTPException(status_code=502, detail="Cloud provider response does not contain a model list.")
+
+    models: list[dict[str, Any]] = []
+    for item in raw_models:
+        if isinstance(item, dict):
+            model_id = item.get("id")
+            if isinstance(model_id, str) and model_id.strip():
+                models.append(item)
+        elif isinstance(item, str) and item.strip():
+            models.append({"id": item.strip()})
+
+    cloud["available_models"] = [model["id"] for model in models]
+    _try_save_provider_models({"cloud": cloud})
+    return {
+        "object": "list",
+        "data": models,
+    }
 
 
 @app.patch("/v1/settings/translation-providers")

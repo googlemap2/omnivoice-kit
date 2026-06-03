@@ -21,6 +21,7 @@ import { useState } from "react";
 import { WorkspaceShell } from "../../../components/layout/WorkspaceShell";
 import { useStudio } from "../../../components/studio/StudioContext";
 import { SelectField } from "../../../components/ui/SelectField";
+import { apiJson } from "../../../lib/api";
 import type { AppSettings } from "../../../types/api";
 
 type SettingsTab =
@@ -33,6 +34,9 @@ type SettingsTab =
 export default function SettingsPage() {
   const studio = useStudio();
   const [tab, setTab] = useState<SettingsTab>("tts");
+  const [cloudModels, setCloudModels] = useState<string[]>([]);
+  const [cloudModelsError, setCloudModelsError] = useState<string | null>(null);
+  const [cloudModelsLoading, setCloudModelsLoading] = useState(false);
 
   function handleTabChange(value: SettingsTab) {
     setTab(value);
@@ -108,6 +112,56 @@ export default function SettingsPage() {
     return typeof value === "string" ? value : "";
   }
 
+  function modelProviderStringArray(provider: string, field: string) {
+    const providerConfig = studio.settings?.model_provider_config?.[provider];
+    if (
+      !providerConfig ||
+      typeof providerConfig !== "object" ||
+      Array.isArray(providerConfig)
+    )
+      return [];
+    const value = (providerConfig as Record<string, unknown>)[field];
+    return Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string")
+      : [];
+  }
+
+  async function loadCloudModels() {
+    if (!studio.settings) return;
+    setCloudModelsLoading(true);
+    setCloudModelsError(null);
+    try {
+      const result = await apiJson<{ data: Array<{ id?: string }> }>("/v1/provider-models/cloud/models", {
+        method: "POST",
+        body: JSON.stringify({
+          provider_name: modelProviderValue("cloud", "provider_name"),
+          base_url: modelProviderValue("cloud", "base_url"),
+          api_key: modelProviderValue("cloud", "api_key"),
+          speech_model: modelProviderValue("cloud", "speech_model"),
+          transcription_model: modelProviderValue("cloud", "transcription_model"),
+        }),
+      });
+      const modelIds = result.data.map((model) => model.id).filter((id): id is string => Boolean(id));
+      setCloudModels(modelIds);
+      studio.setSettings({
+        ...studio.settings,
+        model_provider_config: {
+          ...(studio.settings.model_provider_config || {}),
+          default_provider: "cloud",
+          cloud: {
+            ...(((studio.settings.model_provider_config || {}).cloud as Record<string, unknown> | undefined) || {}),
+            available_models: modelIds,
+          },
+        },
+      });
+    } catch (err) {
+      setCloudModels([]);
+      setCloudModelsError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setCloudModelsLoading(false);
+    }
+  }
+
   function providerValue(provider: string, field: string) {
     const providerConfig =
       studio.settings?.translation_provider_config?.[provider];
@@ -132,6 +186,10 @@ export default function SettingsPage() {
       return false;
     return Boolean((providerConfig as Record<string, unknown>)[field]);
   }
+
+  const displayedCloudModels = cloudModels.length
+    ? cloudModels
+    : modelProviderStringArray("cloud", "available_models");
 
   return (
     <WorkspaceShell
@@ -295,6 +353,40 @@ export default function SettingsPage() {
                 }
                 placeholder="whisper-1"
               />
+              <Button
+                variant="contained"
+                onClick={loadCloudModels}
+                disabled={cloudModelsLoading}>
+                {cloudModelsLoading ? "Loading..." : "Execute"}
+              </Button>
+              {cloudModelsError && (
+                <Typography sx={{ color: "error.main", fontSize: 13 }}>
+                  {cloudModelsError}
+                </Typography>
+              )}
+              {displayedCloudModels.length > 0 && (
+                <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#1e1e1e" }}>
+                  <Typography
+                    sx={{
+                      mb: 1,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                    }}>
+                    Cloud Models
+                  </Typography>
+                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                    {displayedCloudModels.map((modelId) => (
+                      <Chip
+                        key={modelId}
+                        size="small"
+                        variant="outlined"
+                        label={modelId}
+                      />
+                    ))}
+                  </Stack>
+                </Paper>
+              )}
             </ProviderConfig>
           </Stack>
         </Box>
