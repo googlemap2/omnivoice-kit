@@ -131,6 +131,7 @@ def ensure_local_model(repo_id: str, local_dir: Path | None = None, token: str |
 
     from huggingface_hub import snapshot_download
 
+    token = token or huggingface_token_from_settings_or_env()
     download_kwargs: dict[str, Any] = {
         "repo_id": repo_id,
         "local_dir": str(local_dir),
@@ -150,6 +151,16 @@ def ensure_local_model(repo_id: str, local_dir: Path | None = None, token: str |
             **fallback_kwargs,
         )
     return str(local_dir.resolve())
+
+
+def huggingface_token_from_settings_or_env() -> str | None:
+    try:
+        from voicekit.settings import load_settings
+
+        settings_token = load_settings().huggingface_token
+    except Exception:
+        settings_token = None
+    return (settings_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN") or "").strip() or None
 
 
 # Configure cache as soon as this module is imported (before any HF download).

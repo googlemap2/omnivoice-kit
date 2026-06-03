@@ -293,6 +293,18 @@ export default function SettingsPage() {
                 })
               }
             />
+            <TextField
+              label="Hugging Face token"
+              type="password"
+              value={studio.settings.huggingface_token || ""}
+              onChange={(event) =>
+                studio.setSettings({
+                  ...studio.settings!,
+                  huggingface_token: event.target.value || null,
+                })
+              }
+              helperText="Used for Hugging Face model downloads and gated models."
+            />
           </Stack>
         </Box>
       )}
