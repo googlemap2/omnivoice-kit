@@ -91,6 +91,7 @@ API liên quan model:
 - `voicekit/diarization.py`: pyannote availability, run diarization, merge speaker label vào subtitles.
 - `voicekit/dictation.py`: realtime dictation helper, lưu chunk/upload tạm.
 - `voicekit/jobs.py`: job store/worker cho speech, transcription, translation, dubbing.
+- `voicekit/stores/`: database-backed stores cho generation history, jobs và provider models.
 - `voicekit/settings.py`: load/save settings JSON.
 - `voicekit/history.py`: generation history.
 - `voicekit/ui.py`: Gradio legacy UI.
@@ -619,10 +620,16 @@ Endpoints:
 - `GET /v1/settings`
 - `PUT /v1/settings`
 - `PATCH /v1/settings/translation-providers`
+- `GET /v1/provider-models`
+- `POST /v1/provider-models`
+- `PATCH /v1/provider-models/{provider_id}`
+- `DELETE /v1/provider-models/{provider_id}`
+- `POST /v1/provider-models/{provider_id}/models`
 
 Frontend:
 
 - `frontend/src/app/(studio)/settings/page.tsx`
+- Tab `Model Providers` chỉ dùng để cấu hình cloud OpenAI-compatible `base_url` như `https://ai.digipaysolution.com/v1`. UI đọc/ghi trực tiếp từ table `provider_models`, không lưu trong `data/settings.json`. UI luôn hiển thị list provider; nút `Add Provider` mở modal thêm provider, còn `Edit` và `Execute` nằm trong provider item. Modal nhập provider name/base URL/API key và lưu bằng nút `Save`. Nút `Execute` gọi backend `POST /v1/provider-models/{provider_id}/models`, backend gọi `GET {base_url}/models` và hiển thị danh sách model cloud. Provider `id` là UUID. Runtime local hiện vẫn dùng OmniVoice/Hugging Face cache trừ khi flow gọi model cloud được tích hợp.
 
 ## 19. API endpoints chính
 
