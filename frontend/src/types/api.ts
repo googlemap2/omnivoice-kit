@@ -34,6 +34,7 @@ export type AppSettings = {
   output_dir: string;
   default_translation_provider: string;
   translation_provider_config: Record<string, unknown>;
+  model_provider_config: Record<string, unknown>;
   huggingface_token?: string | null;
 };
 

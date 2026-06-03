@@ -49,6 +49,7 @@ from voicekit.emotion_tts import load_tag_aliases, render_emotion_tts_speaker_id
 from voicekit.history import list_history
 from voicekit.jobs import JOB_STATUSES, JobType, get_job_store, get_job_worker
 from voicekit.model_store import DEFAULT_MODEL_ID, install_model, list_model_statuses
+from voicekit.provider_models import cloud_provider_to_settings_config, get_provider_model_store
 from voicekit.settings import (
     DEFAULT_NLLB_MODEL_ID,
     AppSettings,
@@ -71,6 +72,41 @@ CORS_ORIGINS = [
     # Add your frontend/ngrok domains here, for example:
     # "https://your-frontend-domain.ngrok-free.dev",
 ]
+
+
+def _settings_with_provider_models(settings: AppSettings) -> AppSettings:
+    try:
+        record = get_provider_model_store().get_cloud_provider()
+    except Exception as e:
+        logger.debug("Skipping provider_models load: %s: %s", type(e).__name__, e)
+        return settings
+    if record is None:
+        return settings
+    model_provider_config = dict(settings.model_provider_config or {})
+    model_provider_config["default_provider"] = "cloud"
+    model_provider_config["cloud"] = cloud_provider_to_settings_config(record)
+    return AppSettings(
+        default_model=settings.default_model,
+        default_device=settings.default_device,
+        default_effect_preset=settings.default_effect_preset,
+        output_dir=settings.output_dir,
+        default_translation_provider=settings.default_translation_provider,
+        translation_provider_config=settings.translation_provider_config,
+        model_provider_config=model_provider_config,
+        huggingface_token=settings.huggingface_token,
+    )
+
+
+def _try_save_provider_models(model_provider_config: dict[str, Any] | None) -> None:
+    if not isinstance(model_provider_config, dict):
+        return
+    cloud = model_provider_config.get("cloud")
+    if not isinstance(cloud, dict):
+        return
+    try:
+        get_provider_model_store().upsert_cloud_provider(cloud)
+    except Exception as e:
+        logger.warning("Failed to save provider_models config: %s: %s", type(e).__name__, e)
 
 
 def _cors_origins() -> list[str]:
@@ -192,6 +228,7 @@ class SettingsRequest(BaseModel):
     output_dir: str = "outputs"
     default_translation_provider: str | None = None
     translation_provider_config: dict | None = None
+    model_provider_config: dict | None = None
     huggingface_token: str | None = None
 
 
@@ -385,7 +422,7 @@ def list_model_status() -> dict:
 def get_settings() -> dict:
     return {
         "object": "settings",
-        "data": load_settings().to_dict(),
+        "data": _settings_with_provider_models(load_settings()).to_dict(),
     }
 
 
@@ -395,6 +432,9 @@ def update_settings(request: SettingsRequest) -> dict:
     provider_config = current.translation_provider_config
     if request.translation_provider_config is not None:
         provider_config = request.translation_provider_config
+    model_provider_config = current.model_provider_config
+    if request.model_provider_config is not None:
+        model_provider_config = request.model_provider_config
     settings = AppSettings(
         default_model=request.default_model,
         default_device=request.default_device or None,
@@ -404,12 +444,14 @@ def update_settings(request: SettingsRequest) -> dict:
             request.default_translation_provider or current.default_translation_provider
         ),
         translation_provider_config=provider_config,
+        model_provider_config=model_provider_config,
         huggingface_token=request.huggingface_token if request.huggingface_token is not None else current.huggingface_token,
     )
     saved = save_settings(settings)
+    _try_save_provider_models(saved.model_provider_config)
     return {
         "object": "settings",
-        "data": saved.to_dict(),
+        "data": _settings_with_provider_models(saved).to_dict(),
     }
 
 
@@ -450,6 +492,8 @@ def update_translation_provider_settings(request: TranslationProviderSettingsReq
             output_dir=current.output_dir,
             default_translation_provider=current.default_translation_provider,
             translation_provider_config=provider_config,
+            model_provider_config=current.model_provider_config,
+            huggingface_token=current.huggingface_token,
         )
     )
     return {"object": "settings", "data": saved.to_dict()}

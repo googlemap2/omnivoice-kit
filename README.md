@@ -569,9 +569,21 @@ curl -X PUT http://127.0.0.1:8000/v1/settings \
     "default_model": "k2-fsa/OmniVoice",
     "default_device": "",
     "default_effect_preset": "raw",
-    "output_dir": "outputs"
+    "output_dir": "outputs",
+    "model_provider_config": {
+      "default_provider": "cloud",
+      "cloud": {
+        "provider_name": "DigiPay AI",
+        "base_url": "https://ai.digipaysolution.com/v1",
+        "api_key": "YOUR_KEY",
+        "speech_model": "tts-1",
+        "transcription_model": "whisper-1"
+      }
+    }
   }'
 ```
+
+Trong UI, cấu hình này nằm ở **Settings** → **Model Providers** và chỉ dành cho OpenAI-compatible cloud endpoint như `https://ai.digipaysolution.com/v1`. Khi có `VOICEKIT_DATABASE_URL`/`SUPABASE_DATABASE_URL`/`DATABASE_URL`, cloud provider được upsert vào table `provider_models`; nếu DB chưa cấu hình, settings vẫn lưu vào `data/settings.json`. Runtime local hiện vẫn dùng OmniVoice/Hugging Face cache trừ khi flow gọi model cloud được tích hợp.
 
 Diagnostics và logs:
 

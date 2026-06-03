@@ -31,6 +31,7 @@ class AppSettings:
     output_dir: str = "outputs"
     default_translation_provider: str = DEFAULT_TRANSLATION_PROVIDER
     translation_provider_config: dict[str, Any] = field(default_factory=dict)
+    model_provider_config: dict[str, Any] = field(default_factory=dict)
     huggingface_token: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -92,6 +93,10 @@ class SettingsStore:
         if not isinstance(provider_config, dict):
             provider_config = {}
 
+        model_provider_config = raw.get("model_provider_config")
+        if not isinstance(model_provider_config, dict):
+            model_provider_config = {}
+
         huggingface_token = raw.get("huggingface_token")
         if huggingface_token is not None:
             huggingface_token = str(huggingface_token).strip() or None
@@ -103,6 +108,7 @@ class SettingsStore:
             output_dir=output_dir,
             default_translation_provider=translation_provider,
             translation_provider_config=provider_config,
+            model_provider_config=model_provider_config,
             huggingface_token=huggingface_token,
         )
 
