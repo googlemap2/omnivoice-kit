@@ -75,17 +75,7 @@ CORS_ORIGINS = [
 ]
 
 
-def _settings_with_provider_models(settings: AppSettings) -> AppSettings:
-    try:
-        record = get_provider_model_store().get_cloud_provider()
-    except Exception as e:
-        logger.debug("Skipping provider_models load: %s: %s", type(e).__name__, e)
-        return settings
-    if record is None:
-        return settings
-    model_provider_config = dict(settings.model_provider_config or {})
-    model_provider_config["default_provider"] = "cloud"
-    model_provider_config["cloud"] = cloud_provider_to_settings_config(record)
+def _settings_without_provider_models(settings: AppSettings) -> AppSettings:
     return AppSettings(
         default_model=settings.default_model,
         default_device=settings.default_device,
@@ -93,21 +83,8 @@ def _settings_with_provider_models(settings: AppSettings) -> AppSettings:
         output_dir=settings.output_dir,
         default_translation_provider=settings.default_translation_provider,
         translation_provider_config=settings.translation_provider_config,
-        model_provider_config=model_provider_config,
         huggingface_token=settings.huggingface_token,
     )
-
-
-def _try_save_provider_models(model_provider_config: dict[str, Any] | None) -> None:
-    if not isinstance(model_provider_config, dict):
-        return
-    cloud = model_provider_config.get("cloud")
-    if not isinstance(cloud, dict):
-        return
-    try:
-        get_provider_model_store().upsert_cloud_provider(cloud)
-    except Exception as e:
-        logger.warning("Failed to save provider_models config: %s: %s", type(e).__name__, e)
 
 
 def _cors_origins() -> list[str]:
@@ -229,7 +206,6 @@ class SettingsRequest(BaseModel):
     output_dir: str = "outputs"
     default_translation_provider: str | None = None
     translation_provider_config: dict | None = None
-    model_provider_config: dict | None = None
     huggingface_token: str | None = None
 
 
@@ -300,9 +276,9 @@ class TranslationProviderSettingsRequest(BaseModel):
     nllb_model_id: str | None = None
 
 
-class CloudProviderModelsRequest(BaseModel):
-    provider_name: str | None = None
-    base_url: str | None = None
+class ProviderModelRequest(BaseModel):
+    provider_name: str = Field(min_length=1)
+    base_url: str = Field(min_length=1)
     api_key: str | None = None
 
 
@@ -429,7 +405,7 @@ def list_model_status() -> dict:
 def get_settings() -> dict:
     return {
         "object": "settings",
-        "data": _settings_with_provider_models(load_settings()).to_dict(),
+        "data": _settings_without_provider_models(load_settings()).to_dict(),
     }
 
 
@@ -439,9 +415,6 @@ def update_settings(request: SettingsRequest) -> dict:
     provider_config = current.translation_provider_config
     if request.translation_provider_config is not None:
         provider_config = request.translation_provider_config
-    model_provider_config = current.model_provider_config
-    if request.model_provider_config is not None:
-        model_provider_config = request.model_provider_config
     settings = AppSettings(
         default_model=request.default_model,
         default_device=request.default_device or None,
@@ -451,14 +424,12 @@ def update_settings(request: SettingsRequest) -> dict:
             request.default_translation_provider or current.default_translation_provider
         ),
         translation_provider_config=provider_config,
-        model_provider_config=model_provider_config,
         huggingface_token=request.huggingface_token if request.huggingface_token is not None else current.huggingface_token,
     )
     saved = save_settings(settings)
-    _try_save_provider_models(saved.model_provider_config)
     return {
         "object": "settings",
-        "data": _settings_with_provider_models(saved).to_dict(),
+        "data": _settings_without_provider_models(saved).to_dict(),
     }
 
 
@@ -478,17 +449,7 @@ def clear_logs_endpoint() -> dict:
     return {"object": "logs", "message": "Logs cleared."}
 
 
-@app.post("/v1/provider-models/cloud/models")
-def load_cloud_provider_models(request: CloudProviderModelsRequest) -> dict:
-    settings = _settings_with_provider_models(load_settings())
-    cloud = dict((settings.model_provider_config or {}).get("cloud") or {})
-    if request.provider_name is not None:
-        cloud["provider_name"] = request.provider_name
-    if request.base_url is not None:
-        cloud["base_url"] = request.base_url
-    if request.api_key is not None:
-        cloud["api_key"] = request.api_key
-
+def _load_cloud_models_from_config(cloud: dict[str, Any]) -> list[dict[str, Any]]:
     base_url = str(cloud.get("base_url") or "").strip().rstrip("/")
     if not base_url:
         raise HTTPException(status_code=400, detail="Cloud provider base_url is required.")
@@ -519,9 +480,83 @@ def load_cloud_provider_models(request: CloudProviderModelsRequest) -> dict:
                 models.append(item)
         elif isinstance(item, str) and item.strip():
             models.append({"id": item.strip()})
+    return models
 
+
+@app.get("/v1/provider-models")
+def list_provider_models() -> dict:
+    try:
+        records = get_provider_model_store().list_provider_models()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+    return {
+        "object": "list",
+        "data": [record.to_dict() for record in records],
+    }
+
+
+@app.post("/v1/provider-models")
+def create_provider_model(request: ProviderModelRequest) -> dict:
+    try:
+        record = get_provider_model_store().save_cloud_provider(
+            {
+                "provider_name": request.provider_name,
+                "base_url": request.base_url,
+                "api_key": request.api_key or "",
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+    return {"object": "provider_model", "data": record.to_dict()}
+
+
+@app.patch("/v1/provider-models/{provider_id}")
+def update_provider_model(provider_id: str, request: ProviderModelRequest) -> dict:
+    try:
+        if get_provider_model_store().get_provider_model(provider_id) is None:
+            raise HTTPException(status_code=404, detail="Provider model not found.")
+        record = get_provider_model_store().save_cloud_provider(
+            {
+                "provider_name": request.provider_name,
+                "base_url": request.base_url,
+                "api_key": request.api_key or "",
+            },
+            provider_id=provider_id,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+    return {"object": "provider_model", "data": record.to_dict()}
+
+
+@app.delete("/v1/provider-models/{provider_id}")
+def delete_provider_model(provider_id: str) -> dict:
+    try:
+        deleted = get_provider_model_store().delete_provider_model(provider_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Provider model not found.")
+    return {"object": "provider_model", "deleted": True}
+
+
+@app.post("/v1/provider-models/{provider_id}/models")
+def load_provider_model_models(provider_id: str) -> dict:
+    try:
+        record = get_provider_model_store().get_provider_model(provider_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+    if record is None:
+        raise HTTPException(status_code=404, detail="Provider model not found.")
+
+    cloud = cloud_provider_to_settings_config(record)
+    models = _load_cloud_models_from_config(cloud)
     cloud["available_models"] = [model["id"] for model in models]
-    _try_save_provider_models({"cloud": cloud})
+    try:
+        get_provider_model_store().save_cloud_provider(cloud, provider_id=provider_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
     return {
         "object": "list",
         "data": models,
@@ -549,11 +584,10 @@ def update_translation_provider_settings(request: TranslationProviderSettingsReq
             output_dir=current.output_dir,
             default_translation_provider=current.default_translation_provider,
             translation_provider_config=provider_config,
-            model_provider_config=current.model_provider_config,
             huggingface_token=current.huggingface_token,
         )
     )
-    return {"object": "settings", "data": saved.to_dict()}
+    return {"object": "settings", "data": _settings_without_provider_models(saved).to_dict()}
 
 
 @app.post("/v1/model-status/install")

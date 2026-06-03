@@ -54,13 +54,15 @@ class ProviderModelStore:
             """
         )
 
-    def upsert_cloud_provider(self, config: dict[str, Any] | None) -> ProviderModelRecord | None:
+    def save_cloud_provider(
+        self,
+        config: dict[str, Any] | None,
+        provider_id: str | None = None,
+    ) -> ProviderModelRecord:
         from psycopg.types.json import Jsonb
 
         cloud = config if isinstance(config, dict) else {}
-        provider_id = str(cloud.get("id") or "").strip()
-        if not provider_id or provider_id == "cloud":
-            provider_id = str(uuid.uuid4())
+        provider_id = str(provider_id or cloud.get("id") or uuid.uuid4()).strip()
         base_url = str(cloud.get("base_url") or "").strip()
 
         now = utc_now_iso()
@@ -79,6 +81,11 @@ class ProviderModelStore:
         )
         with postgres_connection() as conn:
             self._ensure_table(conn)
+            existing = conn.execute(
+                f"SELECT created_at FROM {self.table_name} WHERE id = %s",
+                (record.id,),
+            ).fetchone()
+            created_at = iso_value(existing["created_at"]) if existing else record.created_at
             conn.execute(
                 f"""
                 INSERT INTO {self.table_name} (
@@ -97,7 +104,7 @@ class ProviderModelStore:
                 """,
                 (
                     record.id,
-                    record.created_at,
+                    created_at,
                     record.updated_at,
                     record.provider_name,
                     record.provider_type,
@@ -108,9 +115,30 @@ class ProviderModelStore:
                     Jsonb(record.config or {}),
                 ),
             )
-        return record
+        return ProviderModelRecord(
+            **{
+                **record.to_dict(),
+                "created_at": created_at,
+            }
+        )
 
-    def get_cloud_provider(self) -> ProviderModelRecord | None:
+    def list_provider_models(self, limit: int = 100) -> list[ProviderModelRecord]:
+        with postgres_connection() as conn:
+            self._ensure_table(conn)
+            rows = conn.execute(
+                f"""
+                SELECT id, created_at, updated_at, provider_name, provider_type, base_url,
+                       api_key, speech_model, transcription_model, config
+                FROM {self.table_name}
+                WHERE provider_type = %s
+                ORDER BY updated_at DESC
+                LIMIT %s
+                """,
+                ("openai-compatible", max(1, int(limit))),
+            ).fetchall()
+        return [self._row_to_record(row) for row in rows]
+
+    def get_provider_model(self, provider_id: str) -> ProviderModelRecord | None:
         with postgres_connection() as conn:
             self._ensure_table(conn)
             row = conn.execute(
@@ -118,20 +146,27 @@ class ProviderModelStore:
                 SELECT id, created_at, updated_at, provider_name, provider_type, base_url,
                        api_key, speech_model, transcription_model, config
                 FROM {self.table_name}
-                WHERE provider_type = %s
-                ORDER BY updated_at DESC
-                LIMIT 1
+                WHERE id = %s
                 """,
-                ("openai-compatible",),
+                (provider_id,),
             ).fetchone()
         if row is None:
             return None
         return self._row_to_record(row)
 
+    def delete_provider_model(self, provider_id: str) -> bool:
+        with postgres_connection() as conn:
+            self._ensure_table(conn)
+            result = conn.execute(
+                f"DELETE FROM {self.table_name} WHERE id = %s",
+                (provider_id,),
+            )
+        return bool(result.rowcount)
+
     @staticmethod
     def _row_to_record(row: dict[str, Any]) -> ProviderModelRecord:
         return ProviderModelRecord(
-            id=row["id"],
+            id=str(row["id"]),
             created_at=iso_value(row["created_at"]),
             updated_at=iso_value(row["updated_at"]),
             provider_name=row["provider_name"],

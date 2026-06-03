@@ -39,17 +39,27 @@ type CloudProviderDraft = {
   base_url: string;
   api_key: string;
 };
+type ProviderModelRecord = {
+  id: string;
+  provider_name: string;
+  provider_type: string;
+  base_url: string;
+  api_key: string | null;
+  config: Record<string, unknown> | null;
+};
 
 export default function SettingsPage() {
   const studio = useStudio();
   const [tab, setTab] = useState<SettingsTab>("tts");
-  const [cloudModels, setCloudModels] = useState<string[]>([]);
-  const [cloudModelsError, setCloudModelsError] = useState<string | null>(null);
-  const [cloudModelsLoading, setCloudModelsLoading] = useState(false);
+  const [providerModels, setProviderModels] = useState<ProviderModelRecord[]>([]);
+  const [providerModelsError, setProviderModelsError] = useState<string | null>(null);
+  const [providerModelsLoading, setProviderModelsLoading] = useState(false);
+  const [executingProviderId, setExecutingProviderId] = useState<string | null>(null);
   const [providerDialogOpen, setProviderDialogOpen] = useState(false);
   const [providerDialogMode, setProviderDialogMode] = useState<"add" | "edit">(
     "add",
   );
+  const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
   const [providerDraft, setProviderDraft] = useState<CloudProviderDraft>({
     provider_name: "",
     base_url: "",
@@ -64,6 +74,9 @@ export default function SettingsPage() {
     setTab(value);
     if (value === "diagnostics" && !studio.diagnostics) {
       void studio.refreshDiagnostics();
+    }
+    if (value === "modelProviders") {
+      void refreshProviderModels();
     }
   }
 
@@ -98,15 +111,29 @@ export default function SettingsPage() {
     });
   }
 
-  function openProviderDialog(mode: "add" | "edit") {
+  async function refreshProviderModels() {
+    setProviderModelsLoading(true);
+    setProviderModelsError(null);
+    try {
+      const result = await apiJson<{ data: ProviderModelRecord[] }>("/v1/provider-models");
+      setProviderModels(result.data);
+    } catch (err) {
+      setProviderModelsError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setProviderModelsLoading(false);
+    }
+  }
+
+  function openProviderDialog(mode: "add" | "edit", provider?: ProviderModelRecord) {
     setProviderDialogMode(mode);
+    setEditingProviderId(mode === "edit" && provider ? provider.id : null);
     setProviderSaveError(null);
     setProviderDraft(
-      mode === "edit"
+      mode === "edit" && provider
         ? {
-            provider_name: modelProviderValue("cloud", "provider_name"),
-            base_url: modelProviderValue("cloud", "base_url"),
-            api_key: modelProviderValue("cloud", "api_key"),
+            provider_name: provider.provider_name,
+            base_url: provider.base_url,
+            api_key: provider.api_key || "",
           }
         : {
             provider_name: "",
@@ -118,34 +145,19 @@ export default function SettingsPage() {
   }
 
   async function saveProviderDraft() {
-    if (!studio.settings) return;
     setProviderSaving(true);
     setProviderSaveError(null);
     try {
-      const currentCloud =
-        providerDialogMode === "edit"
-          ? (((studio.settings.model_provider_config || {}).cloud as
-              | Record<string, unknown>
-              | undefined) || {})
-          : {};
-      const nextSettings: AppSettings = {
-        ...studio.settings,
-        model_provider_config: {
-          ...(studio.settings.model_provider_config || {}),
-          default_provider: "cloud",
-          cloud: {
-            ...currentCloud,
-            provider_name: providerDraft.provider_name,
-            base_url: providerDraft.base_url,
-            api_key: providerDraft.api_key,
-          },
-        },
-      };
-      const saved = await apiJson<{ data: AppSettings }>("/v1/settings", {
-        method: "PUT",
-        body: JSON.stringify(nextSettings),
+      const path =
+        providerDialogMode === "edit" && editingProviderId
+          ? `/v1/provider-models/${encodeURIComponent(editingProviderId)}`
+          : "/v1/provider-models";
+      const method = providerDialogMode === "edit" ? "PATCH" : "POST";
+      await apiJson<{ data: ProviderModelRecord }>(path, {
+        method,
+        body: JSON.stringify(providerDraft),
       });
-      studio.setSettings(saved.data);
+      await refreshProviderModels();
       setProviderDialogOpen(false);
     } catch (err) {
       setProviderSaveError(err instanceof Error ? err.message : String(err));
@@ -154,63 +166,25 @@ export default function SettingsPage() {
     }
   }
 
-  function modelProviderValue(provider: string, field: string) {
-    const providerConfig = studio.settings?.model_provider_config?.[provider];
-    if (
-      !providerConfig ||
-      typeof providerConfig !== "object" ||
-      Array.isArray(providerConfig)
-    )
-      return "";
-    const value = (providerConfig as Record<string, unknown>)[field];
-    return typeof value === "string" ? value : "";
-  }
-
-  function modelProviderStringArray(provider: string, field: string) {
-    const providerConfig = studio.settings?.model_provider_config?.[provider];
-    if (
-      !providerConfig ||
-      typeof providerConfig !== "object" ||
-      Array.isArray(providerConfig)
-    )
-      return [];
-    const value = (providerConfig as Record<string, unknown>)[field];
+  function providerModelStringArray(provider: ProviderModelRecord, field: string) {
+    const value = provider.config?.[field];
     return Array.isArray(value)
       ? value.filter((item): item is string => typeof item === "string")
       : [];
   }
 
-  async function loadCloudModels() {
-    if (!studio.settings) return;
-    setCloudModelsLoading(true);
-    setCloudModelsError(null);
+  async function loadCloudModels(provider: ProviderModelRecord) {
+    setExecutingProviderId(provider.id);
+    setProviderModelsError(null);
     try {
-      const result = await apiJson<{ data: Array<{ id?: string }> }>("/v1/provider-models/cloud/models", {
+      await apiJson<{ data: Array<{ id?: string }> }>(`/v1/provider-models/${encodeURIComponent(provider.id)}/models`, {
         method: "POST",
-        body: JSON.stringify({
-          provider_name: modelProviderValue("cloud", "provider_name"),
-          base_url: modelProviderValue("cloud", "base_url"),
-          api_key: modelProviderValue("cloud", "api_key"),
-        }),
       });
-      const modelIds = result.data.map((model) => model.id).filter((id): id is string => Boolean(id));
-      setCloudModels(modelIds);
-      studio.setSettings({
-        ...studio.settings,
-        model_provider_config: {
-          ...(studio.settings.model_provider_config || {}),
-          default_provider: "cloud",
-          cloud: {
-            ...(((studio.settings.model_provider_config || {}).cloud as Record<string, unknown> | undefined) || {}),
-            available_models: modelIds,
-          },
-        },
-      });
+      await refreshProviderModels();
     } catch (err) {
-      setCloudModels([]);
-      setCloudModelsError(err instanceof Error ? err.message : String(err));
+      setProviderModelsError(err instanceof Error ? err.message : String(err));
     } finally {
-      setCloudModelsLoading(false);
+      setExecutingProviderId(null);
     }
   }
 
@@ -238,10 +212,6 @@ export default function SettingsPage() {
       return false;
     return Boolean((providerConfig as Record<string, unknown>)[field]);
   }
-
-  const displayedCloudModels = cloudModels.length
-    ? cloudModels
-    : modelProviderStringArray("cloud", "available_models");
 
   return (
     <WorkspaceShell
@@ -334,106 +304,113 @@ export default function SettingsPage() {
               <Button variant="contained" onClick={() => openProviderDialog("add")}>
                 Add Provider
               </Button>
+              <Button variant="outlined" onClick={refreshProviderModels} disabled={providerModelsLoading}>
+                {providerModelsLoading ? "Refreshing..." : "Refresh"}
+              </Button>
             </Stack>
 
-            <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#252526" }}>
-              <Typography
-                sx={{
-                  mb: 1,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                }}>
-                Provider
-              </Typography>
-              <Stack spacing={1}>
-                <Typography sx={{ fontWeight: 600 }}>
-                  {modelProviderValue("cloud", "provider_name") ||
-                    "OpenAI-compatible Cloud"}
-                </Typography>
-                <Typography
-                  sx={{
-                    color: "text.secondary",
-                    fontSize: 13,
-                    overflowWrap: "anywhere",
-                  }}>
-                  {modelProviderValue("cloud", "base_url") ||
-                    "No base URL configured."}
-                </Typography>
-                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                  <Chip
-                    size="small"
-                    color={
-                      modelProviderValue("cloud", "base_url")
-                        ? "success"
-                        : "warning"
-                    }
-                    label={
-                      modelProviderValue("cloud", "base_url")
-                        ? "configured"
-                        : "missing base URL"
-                    }
-                  />
-                  <Chip
-                    size="small"
-                    variant="outlined"
-                    label={
-                      modelProviderValue("cloud", "api_key")
-                        ? "API key set"
-                        : "no API key"
-                    }
-                  />
-                </Stack>
-                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => openProviderDialog("edit")}>
-                    Edit
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    onClick={loadCloudModels}
-                    disabled={cloudModelsLoading}>
-                    {cloudModelsLoading ? "Loading..." : "Execute"}
-                  </Button>
-                </Stack>
-              </Stack>
-            </Paper>
-
-            {cloudModelsError && (
+            {providerModelsError && (
               <Typography sx={{ color: "error.main", fontSize: 13 }}>
-                {cloudModelsError}
+                {providerModelsError}
               </Typography>
             )}
-            <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#1e1e1e" }}>
-              <Typography
-                sx={{
-                  mb: 1,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                }}>
-                Cloud Models
-              </Typography>
-              {displayedCloudModels.length > 0 ? (
-                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                  {displayedCloudModels.map((modelId) => (
-                    <Chip
-                      key={modelId}
-                      size="small"
-                      variant="outlined"
-                      label={modelId}
-                    />
-                  ))}
-                </Stack>
-              ) : (
+            {providerModels.length === 0 ? (
+              <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#252526" }}>
                 <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
-                  Execute the provider request to load cloud models.
+                  No provider models found in database. Add a provider to continue.
                 </Typography>
-              )}
-            </Paper>
+              </Paper>
+            ) : (
+              providerModels.map((provider) => {
+                const availableModels = providerModelStringArray(provider, "available_models");
+                const isExecuting = executingProviderId === provider.id;
+                return (
+                  <Paper key={provider.id} variant="outlined" sx={{ p: 1.5, bgcolor: "#252526" }}>
+                    <Stack spacing={1.25}>
+                      <Typography
+                        sx={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                        }}>
+                        Provider
+                      </Typography>
+                      <Typography sx={{ fontWeight: 600 }}>{provider.provider_name}</Typography>
+                      <Typography
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: 13,
+                          overflowWrap: "anywhere",
+                        }}>
+                        {provider.base_url || "No base URL configured."}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: 11,
+                          overflowWrap: "anywhere",
+                        }}>
+                        ID: {provider.id}
+                      </Typography>
+                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                        <Chip
+                          size="small"
+                          color={provider.base_url ? "success" : "warning"}
+                          label={provider.base_url ? "configured" : "missing base URL"}
+                        />
+                        <Chip
+                          size="small"
+                          variant="outlined"
+                          label={provider.api_key ? "API key set" : "no API key"}
+                        />
+                      </Stack>
+                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => openProviderDialog("edit", provider)}>
+                          Edit
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={() => loadCloudModels(provider)}
+                          disabled={isExecuting}>
+                          {isExecuting ? "Loading..." : "Execute"}
+                        </Button>
+                      </Stack>
+                      <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#1e1e1e" }}>
+                        <Typography
+                          sx={{
+                            mb: 1,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                          }}>
+                          Cloud Models
+                        </Typography>
+                        {availableModels.length > 0 ? (
+                          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                            {availableModels.map((modelId) => (
+                              <Chip
+                                key={modelId}
+                                size="small"
+                                variant="outlined"
+                                label={modelId}
+                              />
+                            ))}
+                          </Stack>
+                        ) : (
+                          <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
+                            Execute the provider request to load cloud models.
+                          </Typography>
+                        )}
+                      </Paper>
+                    </Stack>
+                  </Paper>
+                );
+              })
+            )}
 
             <Dialog
               open={providerDialogOpen}

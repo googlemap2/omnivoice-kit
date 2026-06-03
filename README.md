@@ -569,19 +569,11 @@ curl -X PUT http://127.0.0.1:8000/v1/settings \
     "default_model": "k2-fsa/OmniVoice",
     "default_device": "",
     "default_effect_preset": "raw",
-    "output_dir": "outputs",
-    "model_provider_config": {
-      "default_provider": "cloud",
-      "cloud": {
-        "provider_name": "DigiPay AI",
-        "base_url": "https://ai.digipaysolution.com/v1",
-        "api_key": "YOUR_KEY"
-      }
-    }
+    "output_dir": "outputs"
   }'
 ```
 
-Trong UI, cấu hình này nằm ở **Settings** → **Model Providers**. Màn hình luôn hiển thị list provider; nút **Add Provider** mở modal thêm provider, còn nút **Edit** và **Execute** nằm trong provider item. Modal dùng để nhập provider name, base URL và API key, rồi lưu bằng nút **Save**. Nút **Execute** gọi `GET {base_url}/models` qua backend endpoint `POST /v1/provider-models/cloud/models` và hiển thị danh sách model cloud. Khi có `VOICEKIT_DATABASE_URL`/`SUPABASE_DATABASE_URL`/`DATABASE_URL`, cloud provider được upsert vào table `provider_models` với `id` dạng UUID; nếu DB chưa cấu hình, settings vẫn lưu vào `data/settings.json`. Runtime local hiện vẫn dùng OmniVoice/Hugging Face cache trừ khi flow gọi model cloud được tích hợp.
+Trong UI, cấu hình này nằm ở **Settings** → **Model Providers** và được đọc/ghi trực tiếp từ table `provider_models`, không lưu trong `data/settings.json`. Màn hình luôn hiển thị list provider; nút **Add Provider** mở modal thêm provider, còn nút **Edit** và **Execute** nằm trong provider item. Modal dùng để nhập provider name, base URL và API key, rồi lưu bằng nút **Save**. Nút **Execute** gọi `GET {base_url}/models` qua backend endpoint `POST /v1/provider-models/{provider_id}/models` và hiển thị danh sách model cloud. Provider `id` là UUID. Runtime local hiện vẫn dùng OmniVoice/Hugging Face cache trừ khi flow gọi model cloud được tích hợp.
 
 Diagnostics và logs:
 
