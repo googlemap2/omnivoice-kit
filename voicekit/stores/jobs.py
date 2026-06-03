@@ -276,33 +276,87 @@ class JobWorker:
 
 def execute_job(job_type: str, params: dict[str, Any]) -> dict[str, Any]:
     if job_type == "translation":
-        from voicekit.translation import translate_segments, translate_text
+        from voicekit.translation import (
+            translate_segments,
+            translate_segments_with_provider_model,
+            translate_text,
+            translate_text_with_provider_model,
+        )
 
         if params.get("segments"):
-            result = translate_segments(
-                segments=params["segments"],
-                source_language=params.get("source_language"),
-                target_language=params.get("target_language"),
-                provider_id=params.get("provider"),
-            )
+            if params.get("provider_model_id"):
+                result = translate_segments_with_provider_model(
+                    segments=params["segments"],
+                    source_language=params.get("source_language"),
+                    target_language=params.get("target_language"),
+                    provider_model_id=params.get("provider_model_id"),
+                    provider_model_name=params.get("provider_model_name"),
+                )
+            else:
+                result = translate_segments(
+                    segments=params["segments"],
+                    source_language=params.get("source_language"),
+                    target_language=params.get("target_language"),
+                    provider_id=params.get("provider"),
+                )
         else:
-            result = translate_text(
-                text=str(params.get("text") or ""),
-                source_language=params.get("source_language"),
-                target_language=params.get("target_language"),
-                provider_id=params.get("provider"),
-            )
+            if params.get("provider_model_id"):
+                result = translate_text_with_provider_model(
+                    text=str(params.get("text") or ""),
+                    source_language=params.get("source_language"),
+                    target_language=params.get("target_language"),
+                    provider_model_id=params.get("provider_model_id"),
+                    provider_model_name=params.get("provider_model_name"),
+                )
+            else:
+                result = translate_text(
+                    text=str(params.get("text") or ""),
+                    source_language=params.get("source_language"),
+                    target_language=params.get("target_language"),
+                    provider_id=params.get("provider"),
+                )
         return result.to_dict()
 
     if job_type == "transcription":
         from voicekit.asr import format_transcription_with_translation, transcribe_file
+        from voicekit.subtitles import export_subtitle
+        from voicekit.translation import translate_segments_with_provider_model
 
         params = dict(params)
         translate = bool(params.pop("translate", False))
         source_language = params.pop("source_language", None)
         target_language = params.pop("target_language", None)
         translation_provider = params.pop("translation_provider", None)
+        provider_model_id = params.pop("provider_model_id", None)
+        provider_model_name = params.pop("provider_model_name", None)
         result = transcribe_file(**params)
+        if translate and provider_model_id:
+            raw_segments = [segment.to_dict() for segment in result.segments]
+            translated = translate_segments_with_provider_model(
+                segments=raw_segments,
+                source_language=source_language or result.language,
+                target_language=target_language,
+                provider_model_id=provider_model_id,
+                provider_model_name=provider_model_name,
+            )
+            output_segments = []
+            for index, raw in enumerate(raw_segments):
+                translated_segment = translated.segments[index] if translated.segments and index < len(translated.segments) else None
+                translated_text = (translated_segment.translated_text if translated_segment else None) or raw["text"]
+                output_segments.append({**raw, "text": translated_text, "metadata": {"source_text": raw["text"]}})
+            return {
+                "text": translated.text,
+                "language": result.language,
+                "duration": result.duration,
+                "translation": {
+                    "source_language": source_language or result.language,
+                    "target_language": target_language,
+                    "provider": translated.provider,
+                },
+                "segments": output_segments,
+                "srt": export_subtitle(output_segments, "srt"),
+                "vtt": export_subtitle(output_segments, "vtt"),
+            }
         if translate:
             formatted = format_transcription_with_translation(
                 result,

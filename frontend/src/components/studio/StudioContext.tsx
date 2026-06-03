@@ -93,6 +93,12 @@ type StudioContextValue = {
   setTranscribeQueued: (value: boolean) => void;
   transcribeTranslate: boolean;
   setTranscribeTranslate: (value: boolean) => void;
+  transcribeTranslationMode: "provider" | "model";
+  setTranscribeTranslationMode: (value: "provider" | "model") => void;
+  transcribeProviderModelId: string;
+  setTranscribeProviderModelId: (value: string) => void;
+  transcribeProviderModelName: string;
+  setTranscribeProviderModelName: (value: string) => void;
   dictationActive: boolean;
   dictationTranscript: string;
   startDictation: () => Promise<void>;
@@ -203,6 +209,9 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [transcription, setTranscription] = useState("");
   const [transcribeQueued, setTranscribeQueued] = useState(false);
   const [transcribeTranslate, setTranscribeTranslate] = useState(false);
+  const [transcribeTranslationMode, setTranscribeTranslationMode] = useState<"provider" | "model">("provider");
+  const [transcribeProviderModelId, setTranscribeProviderModelId] = useState("");
+  const [transcribeProviderModelName, setTranscribeProviderModelName] = useState("");
   const [dictationActive, setDictationActive] = useState(false);
   const [dictationTranscript, setDictationTranscript] = useState("");
   const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
@@ -406,9 +415,20 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       form.set("queued", String(transcribeQueued));
       form.set("translate", String(transcribeTranslate));
       if (transcribeTranslate) {
+        if (!targetLanguage) {
+          throw new Error("Choose a target language before translating.");
+        }
+        if (transcribeTranslationMode === "model" && !transcribeProviderModelId) {
+          throw new Error("Choose a model provider before translating.");
+        }
         form.set("source_language", sourceLanguage);
         form.set("target_language", targetLanguage);
-        form.set("translation_provider", provider);
+        if (transcribeTranslationMode === "model") {
+          form.set("provider_model_id", transcribeProviderModelId);
+          form.set("provider_model_name", transcribeProviderModelName);
+        } else {
+          form.set("translation_provider", provider);
+        }
       }
       if (transcribeQueued) {
         const result = await apiForm<{ data: JobRecord }>("/v1/audio/transcriptions", form);
@@ -578,14 +598,18 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       if (!Array.isArray(segments)) {
         throw new Error("Subtitle editor must contain at least one segment.");
       }
+      let exportSegments: unknown[] = segments;
+      if (transcribeTranslate) {
+        exportSegments = await translateSubtitleSegments(exportSegments);
+      }
       const translatedBlob = await apiAudio("/v1/subtitles/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ format: subtitleFormat, segments }),
+        body: JSON.stringify({ format: subtitleFormat, segments: exportSegments }),
       });
       downloadBlob(translatedBlob, `subtitles.translated.${subtitleFormat}`);
 
-      const rawSegments = segments
+      const rawSegments = exportSegments
         .map((segment) => {
           if (typeof segment !== "object" || segment === null) return segment;
           const item = segment as SubtitleSegment;
@@ -594,7 +618,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         });
       const hasRawSource = rawSegments.some((segment, index) => {
         if (typeof segment !== "object" || segment === null) return false;
-        const original = segments[index] as SubtitleSegment | undefined;
+        const original = exportSegments[index] as SubtitleSegment | undefined;
         return Boolean(original?.metadata?.source_text);
       });
       if (hasRawSource) {
@@ -613,6 +637,58 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function translateSubtitleSegments(segments: unknown[]) {
+    const normalized = normalizeSubtitleSegments(
+      segments.filter((segment): segment is Record<string, unknown> => typeof segment === "object" && segment !== null),
+    );
+    if (normalized.length === 0) {
+      throw new Error("Subtitle editor must contain at least one segment.");
+    }
+    if (!targetLanguage) {
+      throw new Error("Choose a target language before translating subtitles.");
+    }
+    if (transcribeTranslationMode === "model" && !transcribeProviderModelId) {
+      throw new Error("Choose a model provider before translating subtitles.");
+    }
+    const result = await apiJson<{
+      data: {
+        segments?: Array<{ id: number; translated_text?: string | null }>;
+      };
+    }>("/v1/translation/translate", {
+      method: "POST",
+      body: JSON.stringify({
+        segments: normalized.map((segment) => ({
+          id: segment.id,
+          start: segment.start,
+          end: segment.end,
+          text: segment.text,
+        })),
+        source_language: sourceLanguage,
+        target_language: targetLanguage,
+        provider: transcribeTranslationMode === "provider" ? provider : null,
+        provider_model_id: transcribeTranslationMode === "model" ? transcribeProviderModelId : null,
+        provider_model_name: transcribeTranslationMode === "model" ? transcribeProviderModelName : null,
+      }),
+    });
+    const translatedById = new Map(
+      (result.data.segments || []).map((segment) => [segment.id, segment.translated_text || ""]),
+    );
+    const translated = normalized.map((segment) => {
+      const translatedText = translatedById.get(segment.id)?.trim();
+      return {
+        ...segment,
+        text: translatedText || segment.text,
+        metadata: {
+          ...(segment.metadata || {}),
+          source_text: typeof segment.metadata?.source_text === "string" ? segment.metadata.source_text : segment.text,
+        },
+      };
+    });
+    setSubtitleSegments(translated);
+    setTranscription(JSON.stringify({ segments: translated }, null, 2));
+    return translated;
   }
 
   async function runDubbing() {
@@ -1158,6 +1234,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         setTranscribeQueued,
         transcribeTranslate,
         setTranscribeTranslate,
+        transcribeTranslationMode,
+        setTranscribeTranslationMode,
+        transcribeProviderModelId,
+        setTranscribeProviderModelId,
+        transcribeProviderModelName,
+        setTranscribeProviderModelName,
         dictationActive,
         dictationTranscript,
         startDictation,

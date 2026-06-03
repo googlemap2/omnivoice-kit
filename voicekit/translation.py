@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+import requests
+
 from voicekit.model_store import ensure_local_model
+from voicekit.stores.provider_models import get_provider_model_store
 from voicekit.settings import DEFAULT_TRANSLATION_PROVIDER, AppSettings, load_settings
 
 TRANSLATION_LANGUAGE_CHOICES = [
@@ -486,6 +490,171 @@ def translate_segments(
         target_language=target_language or None,
         provider=provider.provider_id,
         segments=translated_segments,
+    )
+
+
+def _provider_model_chat_completion(
+    provider_model_id: str,
+    messages: list[dict[str, str]],
+    *,
+    model_name: str | None = None,
+) -> str:
+    record = get_provider_model_store().get_provider_model(provider_model_id)
+    if record is None:
+        raise ValueError(f"Provider model not found: {provider_model_id}")
+    base_url = record.base_url.strip().rstrip("/")
+    if not base_url:
+        raise ValueError("Provider model base_url is required.")
+
+    config = record.config or {}
+    available_models = config.get("available_models")
+    selected_model = (
+        (model_name or "").strip()
+        or str(config.get("translation_model") or "").strip()
+        or str(config.get("chat_model") or "").strip()
+        or (available_models[0] if isinstance(available_models, list) and available_models else "")
+        or (record.transcription_model or "")
+        or (record.speech_model or "")
+    )
+    if not selected_model:
+        raise ValueError("Provider model has no available chat model. Execute model discovery or choose a model.")
+
+    headers = {"Content-Type": "application/json"}
+    if record.api_key:
+        headers["Authorization"] = f"Bearer {record.api_key}"
+    response = requests.post(
+        f"{base_url}/chat/completions",
+        headers=headers,
+        json={
+            "model": selected_model,
+            "messages": messages,
+            "temperature": 0.2,
+        },
+        timeout=120,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
+    if not isinstance(content, str) or not content.strip():
+        raise RuntimeError("Provider model returned an empty translation.")
+    return content.strip()
+
+
+def translate_segments_with_provider_model(
+    segments: list[TranslationSegment] | list[dict[str, Any]],
+    source_language: str | None = None,
+    target_language: str | None = None,
+    provider_model_id: str | None = None,
+    provider_model_name: str | None = None,
+) -> TranslationResult:
+    if not provider_model_id:
+        raise ValueError("provider_model_id is required.")
+    if not target_language:
+        raise ValueError("target_language is required for model-provider translation.")
+
+    normalized = (
+        segments
+        if segments and isinstance(segments[0], TranslationSegment)
+        else normalize_segments(segments)  # type: ignore[arg-type]
+    )
+    if not normalized:
+        raise ValueError("segments must not be empty.")
+
+    payload = [
+        {
+            "id": segment.id,
+            "text": segment.text,
+        }
+        for segment in normalized
+    ]
+    content = _provider_model_chat_completion(
+        provider_model_id,
+        [
+            {
+                "role": "system",
+                "content": (
+                    "Translate subtitle segments. Return only a JSON array where each item has "
+                    "id and translated_text. Preserve item count, ids, meaning, names, numbers, "
+                    "and subtitle line brevity. Do not add commentary."
+                ),
+            },
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "source_language": source_language or "auto",
+                        "target_language": target_language,
+                        "segments": payload,
+                    },
+                    ensure_ascii=False,
+                ),
+            },
+        ],
+        model_name=provider_model_name,
+    )
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError:
+        start = content.find("[")
+        end = content.rfind("]")
+        if start < 0 or end < start:
+            raise
+        parsed = json.loads(content[start : end + 1])
+    if not isinstance(parsed, list):
+        raise ValueError("Provider model translation response must be a JSON array.")
+
+    by_id: dict[int, str] = {}
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        try:
+            item_id = int(item.get("id"))
+        except (TypeError, ValueError):
+            continue
+        translated_text = str(item.get("translated_text") or item.get("text") or "").strip()
+        if translated_text:
+            by_id[item_id] = translated_text
+
+    translated_segments = [
+        TranslationSegment(
+            id=segment.id,
+            text=segment.text,
+            start=segment.start,
+            end=segment.end,
+            translated_text=by_id.get(segment.id, segment.text),
+            metadata=dict(segment.metadata),
+        )
+        for segment in normalized
+    ]
+    combined = " ".join((segment.translated_text or "").strip() for segment in translated_segments).strip()
+    return TranslationResult(
+        text=combined,
+        source_language=source_language or None,
+        target_language=target_language or None,
+        provider=f"provider-model:{provider_model_id}",
+        segments=translated_segments,
+    )
+
+
+def translate_text_with_provider_model(
+    text: str,
+    source_language: str | None = None,
+    target_language: str | None = None,
+    provider_model_id: str | None = None,
+    provider_model_name: str | None = None,
+) -> TranslationResult:
+    result = translate_segments_with_provider_model(
+        [{"id": 0, "text": text}],
+        source_language=source_language,
+        target_language=target_language,
+        provider_model_id=provider_model_id,
+        provider_model_name=provider_model_name,
+    )
+    return TranslationResult(
+        text=result.segments[0].translated_text if result.segments else result.text,
+        source_language=result.source_language,
+        target_language=result.target_language,
+        provider=result.provider,
     )
 
 

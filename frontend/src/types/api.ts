@@ -58,6 +58,17 @@ export type TranslationProvider = {
   message?: string | null;
 };
 
+export type ProviderModel = {
+  id: string;
+  provider_name: string;
+  provider_type: string;
+  base_url: string;
+  api_key: string | null;
+  speech_model?: string | null;
+  transcription_model?: string | null;
+  config: Record<string, unknown> | null;
+};
+
 export type HistoryEntry = {
   id: string;
   created_at: string;

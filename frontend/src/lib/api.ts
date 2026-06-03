@@ -7,6 +7,7 @@ export type {
   Meta,
   ModelStatus,
   Option,
+  ProviderModel,
   SubtitleSegment,
   TranslationProvider,
   Voice,

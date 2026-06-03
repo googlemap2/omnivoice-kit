@@ -7,7 +7,6 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SaveAltIcon from "@mui/icons-material/SaveAlt";
 import StopIcon from "@mui/icons-material/Stop";
 import SubtitlesIcon from "@mui/icons-material/Subtitles";
-import TranslateIcon from "@mui/icons-material/Translate";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import {
   Box,
@@ -27,24 +26,59 @@ import {
   Typography,
   Switch,
 } from "@mui/material";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { WorkspaceShell } from "../../../components/layout/WorkspaceShell";
 import { SelectField } from "../../../components/ui/SelectField";
 import { useStudio } from "../../../components/studio/StudioContext";
+import { apiJson } from "../../../lib/api";
+import type { ProviderModel } from "../../../types/api";
 
 export default function TranscriptionPage() {
   const studio = useStudio();
+  const [providerModels, setProviderModels] = useState<ProviderModel[]>([]);
+  const transcribeProviderModelId = studio.transcribeProviderModelId;
+  const setTranscribeProviderModelId = studio.setTranscribeProviderModelId;
   const availableProviders = studio.providers.filter((provider) => provider.available);
   const activeProvider =
     availableProviders.find((provider) => provider.id === studio.provider)?.id ||
     availableProviders.find((provider) => provider.id !== "passthrough")?.id ||
     availableProviders[0]?.id ||
     studio.provider;
+  const activeProviderModel =
+    providerModels.find((provider) => provider.id === studio.transcribeProviderModelId) || providerModels[0] || null;
+  const activeProviderModelOptions = useMemo(() => {
+    const availableModels = activeProviderModel?.config?.available_models;
+    return Array.isArray(availableModels)
+      ? availableModels
+          .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+          .map((id) => ({ id, label: id }))
+      : [];
+  }, [activeProviderModel]);
+
+  const refreshProviderModels = useCallback(async () => {
+    try {
+      const result = await apiJson<{ data: ProviderModel[] }>("/v1/provider-models");
+      setProviderModels(result.data);
+      if (!transcribeProviderModelId && result.data[0]?.id) {
+        setTranscribeProviderModelId(result.data[0].id);
+      }
+    } catch {
+      setProviderModels([]);
+    }
+  }, [setTranscribeProviderModelId, transcribeProviderModelId]);
+
+  useEffect(() => {
+    void refreshProviderModels();
+  }, [refreshProviderModels]);
 
   function toggleTranslate() {
     const next = !studio.transcribeTranslate;
     if (next) {
-      if (activeProvider !== studio.provider) {
+      if (studio.transcribeTranslationMode === "provider" && activeProvider !== studio.provider) {
         studio.setProvider(activeProvider);
+      }
+      if (studio.transcribeTranslationMode === "model" && !studio.transcribeProviderModelId && providerModels[0]?.id) {
+        studio.setTranscribeProviderModelId(providerModels[0].id);
       }
     }
     studio.setTranscribeTranslate(next);
@@ -122,25 +156,57 @@ export default function TranscriptionPage() {
           <Button startIcon={<SaveAltIcon />} variant="outlined" onClick={studio.exportSubtitles}>
             Export
           </Button>
-          <Button
-            startIcon={<TranslateIcon />}
-            variant={studio.transcribeTranslate ? "contained" : "outlined"}
-            onClick={toggleTranslate}
-          >
-            Translate
-          </Button>
+          <FormControlLabel
+            control={<Switch checked={studio.transcribeTranslate} onChange={toggleTranslate} />}
+            label="Translate"
+          />
           {studio.transcribeTranslate && (
             <Paper variant="outlined" sx={{ p: 1.25, bgcolor: "#252526" }}>
               <Stack spacing={1}>
                 <SelectField
-                  label="Provider"
-                  value={studio.provider}
-                  onChange={studio.setProvider}
-                  options={(availableProviders.length ? availableProviders : studio.providers).map((provider) => ({
-                    id: provider.id,
-                    label: provider.available ? provider.name : `${provider.name} (unavailable)`,
-                  }))}
+                  label="Engine"
+                  value={studio.transcribeTranslationMode}
+                  onChange={(value) => studio.setTranscribeTranslationMode(value as "provider" | "model")}
+                  options={[
+                    { id: "provider", label: "Translation provider" },
+                    { id: "model", label: "Model provider" },
+                  ]}
                 />
+                {studio.transcribeTranslationMode === "provider" ? (
+                  <SelectField
+                    label="Provider"
+                    value={studio.provider}
+                    onChange={studio.setProvider}
+                    options={(availableProviders.length ? availableProviders : studio.providers).map((provider) => ({
+                      id: provider.id,
+                      label: provider.available ? provider.name : `${provider.name} (unavailable)`,
+                    }))}
+                  />
+                ) : (
+                  <>
+                    <SelectField
+                      label="Model provider"
+                      value={studio.transcribeProviderModelId}
+                      onChange={studio.setTranscribeProviderModelId}
+                      options={
+                        providerModels.length > 0
+                          ? providerModels.map((provider) => ({
+                              id: provider.id,
+                              label: provider.provider_name || provider.base_url || provider.id,
+                            }))
+                          : [{ id: "", label: "No model providers" }]
+                      }
+                    />
+                    {activeProviderModelOptions.length > 0 && (
+                      <SelectField
+                        label="Model"
+                        value={studio.transcribeProviderModelName}
+                        onChange={studio.setTranscribeProviderModelName}
+                        options={[{ id: "", label: "Auto" }, ...activeProviderModelOptions]}
+                      />
+                    )}
+                  </>
+                )}
                 <SelectField
                   label="Source"
                   value={studio.sourceLanguage}

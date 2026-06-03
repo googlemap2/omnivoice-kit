@@ -59,7 +59,14 @@ from voicekit.settings import (
     save_settings,
 )
 from voicekit.subtitles import SUBTITLE_FORMATS, export_subtitle, parse_subtitle
-from voicekit.translation import TRANSLATION_LANGUAGE_CHOICES, list_providers, translate_segments, translate_text
+from voicekit.translation import (
+    TRANSLATION_LANGUAGE_CHOICES,
+    list_providers,
+    translate_segments,
+    translate_segments_with_provider_model,
+    translate_text,
+    translate_text_with_provider_model,
+)
 
 
 setup_logging()
@@ -295,6 +302,8 @@ class TranslateRequest(BaseModel):
     source_language: str | None = None
     target_language: str | None = None
     provider: str | None = None
+    provider_model_id: str | None = None
+    provider_model_name: str | None = None
 
 
 class SubtitleSegmentRequest(BaseModel):
@@ -815,21 +824,39 @@ def translate(request: TranslateRequest) -> dict:
     try:
         if request.segments:
             segment_payload = [segment.model_dump() for segment in request.segments]
-            result = translate_segments(
-                segments=segment_payload,
-                source_language=request.source_language,
-                target_language=request.target_language,
-                provider_id=request.provider,
-            )
+            if request.provider_model_id:
+                result = translate_segments_with_provider_model(
+                    segments=segment_payload,
+                    source_language=request.source_language,
+                    target_language=request.target_language,
+                    provider_model_id=request.provider_model_id,
+                    provider_model_name=request.provider_model_name,
+                )
+            else:
+                result = translate_segments(
+                    segments=segment_payload,
+                    source_language=request.source_language,
+                    target_language=request.target_language,
+                    provider_id=request.provider,
+                )
         else:
             if not request.text or not request.text.strip():
                 raise HTTPException(status_code=400, detail="text or segments is required.")
-            result = translate_text(
-                text=request.text,
-                source_language=request.source_language,
-                target_language=request.target_language,
-                provider_id=request.provider,
-            )
+            if request.provider_model_id:
+                result = translate_text_with_provider_model(
+                    text=request.text,
+                    source_language=request.source_language,
+                    target_language=request.target_language,
+                    provider_model_id=request.provider_model_id,
+                    provider_model_name=request.provider_model_name,
+                )
+            else:
+                result = translate_text(
+                    text=request.text,
+                    source_language=request.source_language,
+                    target_language=request.target_language,
+                    provider_id=request.provider,
+                )
     except HTTPException:
         raise
     except RuntimeError as e:
@@ -1394,6 +1421,8 @@ async def create_transcription(
     source_language: str | None = Form(None),
     target_language: str | None = Form(None),
     translation_provider: str | None = Form(None),
+    provider_model_id: str | None = Form(None),
+    provider_model_name: str | None = Form(None),
     queued: bool = Form(False),
 ):
     if response_format not in TRANSCRIPTION_FORMATS:
@@ -1420,6 +1449,8 @@ async def create_transcription(
                     "source_language": source_language,
                     "target_language": target_language,
                     "translation_provider": translation_provider,
+                    "provider_model_id": provider_model_id,
+                    "provider_model_name": provider_model_name,
                 },
             )
             return JSONResponse({"object": "job", "data": job.to_dict()})
@@ -1432,17 +1463,55 @@ async def create_transcription(
             word_timestamps=word_timestamps,
             beam_size=beam_size,
         )
-        formatted = (
-            format_transcription_with_translation(
-                result,
-                response_format,
-                source_language=source_language,
+        if translate and provider_model_id:
+            if not target_language:
+                raise ValueError("target_language is required when translate is enabled.")
+            raw_segments = [segment.to_dict() for segment in result.segments]
+            translated = translate_segments_with_provider_model(
+                segments=raw_segments,
+                source_language=source_language or result.language,
                 target_language=target_language,
-                provider_id=translation_provider,
+                provider_model_id=provider_model_id,
+                provider_model_name=provider_model_name,
             )
-            if translate
-            else format_transcription(result, response_format)
-        )
+            output_segments = []
+            for index, raw in enumerate(raw_segments):
+                translated_segment = translated.segments[index] if translated.segments and index < len(translated.segments) else None
+                translated_text = (translated_segment.translated_text if translated_segment else None) or raw["text"]
+                output_segments.append({**raw, "text": translated_text, "metadata": {"source_text": raw["text"]}})
+            translated_result = {
+                "text": translated.text,
+                "language": result.language,
+                "duration": result.duration,
+                "translation": {
+                    "source_language": source_language or result.language,
+                    "target_language": target_language,
+                    "provider": translated.provider,
+                },
+                "segments": output_segments,
+            }
+            if response_format == "text":
+                formatted = translated.text
+            elif response_format == "json":
+                formatted = {"text": translated.text}
+            elif response_format == "verbose_json":
+                formatted = translated_result
+            elif response_format in {"srt", "vtt"}:
+                formatted = export_subtitle(output_segments, response_format)
+            else:
+                raise ValueError(f"Unsupported transcription format: {response_format}")
+        else:
+            formatted = (
+                format_transcription_with_translation(
+                    result,
+                    response_format,
+                    source_language=source_language,
+                    target_language=target_language,
+                    provider_id=translation_provider,
+                )
+                if translate
+                else format_transcription(result, response_format)
+            )
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=f"{type(e).__name__}: {e}") from e
     except Exception as e:
