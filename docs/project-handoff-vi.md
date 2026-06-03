@@ -624,7 +624,7 @@ Endpoints:
 Frontend:
 
 - `frontend/src/app/(studio)/settings/page.tsx`
-- Tab `Model Providers` chỉ dùng để cấu hình cloud OpenAI-compatible `base_url` như `https://ai.digipaysolution.com/v1`. Nút `Execute` gọi backend `POST /v1/provider-models/cloud/models`, backend gọi `GET {base_url}/models` và hiển thị danh sách model cloud. Khi DB được cấu hình, config cloud được upsert vào table `provider_models`; nếu DB chưa cấu hình thì vẫn lưu trong `data/settings.json`. Runtime local hiện vẫn dùng OmniVoice/Hugging Face cache trừ khi flow gọi model cloud được tích hợp.
+- Tab `Model Providers` chỉ dùng để cấu hình cloud OpenAI-compatible `base_url` như `https://ai.digipaysolution.com/v1`. UI luôn hiển thị list provider; nút `Add Provider` mở modal thêm provider, còn `Edit` và `Execute` nằm trong provider item. Modal nhập provider name/base URL/API key và lưu bằng nút `Save`. Nút `Execute` gọi backend `POST /v1/provider-models/cloud/models`, backend gọi `GET {base_url}/models` và hiển thị danh sách model cloud. Khi DB được cấu hình, config cloud được upsert vào table `provider_models`; nếu DB chưa cấu hình thì vẫn lưu trong `data/settings.json`. Runtime local hiện vẫn dùng OmniVoice/Hugging Face cache trừ khi flow gọi model cloud được tích hợp.
 
 ## 19. API endpoints chính
 

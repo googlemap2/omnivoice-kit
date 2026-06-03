@@ -8,6 +8,10 @@ import {
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
   Paper,
   Stack,
@@ -30,6 +34,11 @@ type SettingsTab =
   | "translation"
   | "diagnostics"
   | "models";
+type CloudProviderDraft = {
+  provider_name: string;
+  base_url: string;
+  api_key: string;
+};
 
 export default function SettingsPage() {
   const studio = useStudio();
@@ -37,6 +46,19 @@ export default function SettingsPage() {
   const [cloudModels, setCloudModels] = useState<string[]>([]);
   const [cloudModelsError, setCloudModelsError] = useState<string | null>(null);
   const [cloudModelsLoading, setCloudModelsLoading] = useState(false);
+  const [providerDialogOpen, setProviderDialogOpen] = useState(false);
+  const [providerDialogMode, setProviderDialogMode] = useState<"add" | "edit">(
+    "add",
+  );
+  const [providerDraft, setProviderDraft] = useState<CloudProviderDraft>({
+    provider_name: "",
+    base_url: "",
+    api_key: "",
+  });
+  const [providerSaveError, setProviderSaveError] = useState<string | null>(
+    null,
+  );
+  const [providerSaving, setProviderSaving] = useState(false);
 
   function handleTabChange(value: SettingsTab) {
     setTab(value);
@@ -76,28 +98,58 @@ export default function SettingsPage() {
     });
   }
 
-  function updateModelProviderConfig(
-    provider: string,
-    field: string,
-    value: string | boolean,
-  ) {
+  function openProviderDialog(mode: "add" | "edit") {
+    setProviderDialogMode(mode);
+    setProviderSaveError(null);
+    setProviderDraft(
+      mode === "edit"
+        ? {
+            provider_name: modelProviderValue("cloud", "provider_name"),
+            base_url: modelProviderValue("cloud", "base_url"),
+            api_key: modelProviderValue("cloud", "api_key"),
+          }
+        : {
+            provider_name: "",
+            base_url: "",
+            api_key: "",
+          },
+    );
+    setProviderDialogOpen(true);
+  }
+
+  async function saveProviderDraft() {
     if (!studio.settings) return;
-    const current = studio.settings.model_provider_config || {};
-    const providerConfig = current[provider];
-    const nextProviderConfig =
-      providerConfig &&
-      typeof providerConfig === "object" &&
-      !Array.isArray(providerConfig)
-        ? { ...providerConfig, [field]: value }
-        : { [field]: value };
-    studio.setSettings({
-      ...studio.settings,
-      model_provider_config: {
-        ...current,
-        default_provider: "cloud",
-        [provider]: nextProviderConfig,
-      },
-    });
+    setProviderSaving(true);
+    setProviderSaveError(null);
+    try {
+      const currentCloud =
+        ((studio.settings.model_provider_config || {}).cloud as
+          | Record<string, unknown>
+          | undefined) || {};
+      const nextSettings: AppSettings = {
+        ...studio.settings,
+        model_provider_config: {
+          ...(studio.settings.model_provider_config || {}),
+          default_provider: "cloud",
+          cloud: {
+            ...currentCloud,
+            provider_name: providerDraft.provider_name,
+            base_url: providerDraft.base_url,
+            api_key: providerDraft.api_key,
+          },
+        },
+      };
+      const saved = await apiJson<{ data: AppSettings }>("/v1/settings", {
+        method: "PUT",
+        body: JSON.stringify(nextSettings),
+      });
+      studio.setSettings(saved.data);
+      setProviderDialogOpen(false);
+    } catch (err) {
+      setProviderSaveError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setProviderSaving(false);
+    }
   }
 
   function modelProviderValue(provider: string, field: string) {
@@ -194,12 +246,14 @@ export default function SettingsPage() {
       icon={<SettingsIcon />}
       title="Settings"
       action={
+        tab === "modelProviders" ? undefined : (
         <Button
           startIcon={<SaveAltIcon />}
           variant="contained"
           onClick={studio.saveSettings}>
           Save
         </Button>
+        )
       }>
       <Tabs
         value={tab}
@@ -274,6 +328,12 @@ export default function SettingsPage() {
       {tab === "modelProviders" && (
         <Box sx={{ maxWidth: 720 }}>
           <Stack spacing={2}>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              <Button variant="contained" onClick={() => openProviderDialog("add")}>
+                Add Provider
+              </Button>
+            </Stack>
+
             <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#252526" }}>
               <Typography
                 sx={{
@@ -282,86 +342,159 @@ export default function SettingsPage() {
                   fontWeight: 700,
                   textTransform: "uppercase",
                 }}>
-                Runtime Note
+                Provider
               </Typography>
-              <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
-                These settings are saved for an OpenAI-compatible model
-                endpoint. Local generation still uses OmniVoice unless the
-                calling flow is wired to this cloud provider.
-              </Typography>
+              <Stack spacing={1}>
+                <Typography sx={{ fontWeight: 600 }}>
+                  {modelProviderValue("cloud", "provider_name") ||
+                    "OpenAI-compatible Cloud"}
+                </Typography>
+                <Typography
+                  sx={{
+                    color: "text.secondary",
+                    fontSize: 13,
+                    overflowWrap: "anywhere",
+                  }}>
+                  {modelProviderValue("cloud", "base_url") ||
+                    "No base URL configured."}
+                </Typography>
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                  <Chip
+                    size="small"
+                    color={
+                      modelProviderValue("cloud", "base_url")
+                        ? "success"
+                        : "warning"
+                    }
+                    label={
+                      modelProviderValue("cloud", "base_url")
+                        ? "configured"
+                        : "missing base URL"
+                    }
+                  />
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    label={
+                      modelProviderValue("cloud", "api_key")
+                        ? "API key set"
+                        : "no API key"
+                    }
+                  />
+                </Stack>
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => openProviderDialog("edit")}>
+                    Edit
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={loadCloudModels}
+                    disabled={cloudModelsLoading}>
+                    {cloudModelsLoading ? "Loading..." : "Execute"}
+                  </Button>
+                </Stack>
+              </Stack>
             </Paper>
-            <ProviderConfig title="OpenAI-compatible Cloud" providerId="cloud">
-              <TextField
-                label="Provider name"
-                value={modelProviderValue("cloud", "provider_name")}
-                onChange={(event) =>
-                  updateModelProviderConfig(
-                    "cloud",
-                    "provider_name",
-                    event.target.value,
-                  )
-                }
-                placeholder="Provider name (e.g. OpenAI, Azure, etc.)"
-              />
-              <TextField
-                label="Base URL"
-                value={modelProviderValue("cloud", "base_url")}
-                onChange={(event) =>
-                  updateModelProviderConfig(
-                    "cloud",
-                    "base_url",
-                    event.target.value,
-                  )
-                }
-                placeholder="Base URL (e.g. https://api.openai.com/v1)"
-              />
-              <TextField
-                label="API key"
-                type="password"
-                value={modelProviderValue("cloud", "api_key")}
-                onChange={(event) =>
-                  updateModelProviderConfig(
-                    "cloud",
-                    "api_key",
-                    event.target.value,
-                  )
-                }
-              />
-              <Button
-                variant="contained"
-                onClick={loadCloudModels}
-                disabled={cloudModelsLoading}>
-                {cloudModelsLoading ? "Loading..." : "Execute"}
-              </Button>
-              {cloudModelsError && (
-                <Typography sx={{ color: "error.main", fontSize: 13 }}>
-                  {cloudModelsError}
+
+            {cloudModelsError && (
+              <Typography sx={{ color: "error.main", fontSize: 13 }}>
+                {cloudModelsError}
+              </Typography>
+            )}
+            <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#1e1e1e" }}>
+              <Typography
+                sx={{
+                  mb: 1,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                }}>
+                Cloud Models
+              </Typography>
+              {displayedCloudModels.length > 0 ? (
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                  {displayedCloudModels.map((modelId) => (
+                    <Chip
+                      key={modelId}
+                      size="small"
+                      variant="outlined"
+                      label={modelId}
+                    />
+                  ))}
+                </Stack>
+              ) : (
+                <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
+                  Execute the provider request to load cloud models.
                 </Typography>
               )}
-              {displayedCloudModels.length > 0 && (
-                <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#1e1e1e" }}>
-                  <Typography
-                    sx={{
-                      mb: 1,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                    }}>
-                    Cloud Models
-                  </Typography>
-                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                    {displayedCloudModels.map((modelId) => (
-                      <Chip
-                        key={modelId}
-                        size="small"
-                        variant="outlined"
-                        label={modelId}
-                      />
-                    ))}
-                  </Stack>
-                </Paper>
-              )}
-            </ProviderConfig>
+            </Paper>
+
+            <Dialog
+              open={providerDialogOpen}
+              onClose={() => setProviderDialogOpen(false)}
+              fullWidth
+              maxWidth="sm">
+              <DialogTitle>
+                {providerDialogMode === "add" ? "Add Provider" : "Edit Provider"}
+              </DialogTitle>
+              <DialogContent>
+                <Stack spacing={2} sx={{ pt: 1 }}>
+                  <TextField
+                    label="Provider name"
+                    value={providerDraft.provider_name}
+                    onChange={(event) =>
+                      setProviderDraft({
+                        ...providerDraft,
+                        provider_name: event.target.value,
+                      })
+                    }
+                    placeholder="Provider name (e.g. OpenAI, Azure, etc.)"
+                  />
+                  <TextField
+                    label="Base URL"
+                    value={providerDraft.base_url}
+                    onChange={(event) =>
+                      setProviderDraft({
+                        ...providerDraft,
+                        base_url: event.target.value,
+                      })
+                    }
+                    placeholder="Base URL (e.g. https://api.openai.com/v1)"
+                  />
+                  <TextField
+                    label="API key"
+                    type="password"
+                    value={providerDraft.api_key}
+                    onChange={(event) =>
+                      setProviderDraft({
+                        ...providerDraft,
+                        api_key: event.target.value,
+                      })
+                    }
+                  />
+                  {providerSaveError && (
+                    <Typography sx={{ color: "error.main", fontSize: 13 }}>
+                      {providerSaveError}
+                    </Typography>
+                  )}
+                </Stack>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setProviderDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={saveProviderDraft}
+                  disabled={providerSaving}>
+                  {providerSaving ? "Saving..." : "Save"}
+                </Button>
+              </DialogActions>
+            </Dialog>
           </Stack>
         </Box>
       )}
