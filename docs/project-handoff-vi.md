@@ -378,9 +378,11 @@ Transcription translation:
 
 - The Transcription page has a `Translate` switch.
 - When enabled, translation can use either the existing translation provider registry or a configured OpenAI-compatible Model Provider from Settings.
-- Model Provider translation sends subtitle segments to `/v1/translation/translate` with `provider_model_id` and optional `provider_model_name`.
-- Imported SRT/VTT files can be translated by importing subtitles, enabling `Translate`, choosing source/target languages and provider/model, then exporting subtitles.
-- Export keeps the original text in `metadata.source_text` and can download both translated and raw subtitle files.
+- During ASR, translation is handled inside `POST /v1/audio/transcriptions`; the frontend does not make a separate `/v1/translation/translate` call for transcript translation.
+- Model Provider translation sends `provider_model_id` and optional `provider_model_name` to the transcription endpoint.
+- When `response_format` is `srt` or `vtt` and `Translate` is enabled, the transcription endpoint can return raw and translated subtitle artifacts in one JSON response.
+- The Transcription page exposes download buttons for raw and translated subtitle files matching the selected `srt` or `vtt` output format.
+- Queued transcription jobs use the same translation path and expose raw/translated subtitle artifacts in the job result.
 
 ## 11. Subtitle import/export
 

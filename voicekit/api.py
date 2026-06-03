@@ -22,7 +22,6 @@ from voicekit.asr import (
     DEFAULT_ASR_MODEL_ID,
     TRANSCRIPTION_FORMATS,
     format_transcription,
-    format_transcription_with_translation,
     transcribe_file,
 )
 from voicekit.core import (
@@ -125,6 +124,79 @@ def _wav_response(audio: tuple[int, Any] | None, detail: str = "Generation faile
 
 def _generation_error(detail: str) -> HTTPException:
     return HTTPException(status_code=400, detail=detail)
+
+
+def _translated_transcription_payload(
+    result,
+    *,
+    source_language: str | None,
+    target_language: str | None,
+    translation_provider: str | None,
+    provider_model_id: str | None,
+    provider_model_name: str | None,
+) -> dict[str, Any]:
+    if not target_language:
+        raise ValueError("target_language is required when translate is enabled.")
+
+    raw_segments = [segment.to_dict() for segment in result.segments]
+    if provider_model_id:
+        translated = translate_segments_with_provider_model(
+            segments=raw_segments,
+            source_language=source_language or result.language,
+            target_language=target_language,
+            provider_model_id=provider_model_id,
+            provider_model_name=provider_model_name,
+        )
+    else:
+        translated = translate_segments(
+            segments=raw_segments,
+            source_language=source_language or result.language,
+            target_language=target_language,
+            provider_id=translation_provider,
+        )
+    translated_segments = translated.segments or []
+    output_segments = []
+    for index, raw in enumerate(raw_segments):
+        translated_segment = translated_segments[index] if index < len(translated_segments) else None
+        translated_text = (translated_segment.translated_text if translated_segment else None) or raw["text"]
+        output_segments.append({**raw, "text": translated_text, "metadata": {"source_text": raw["text"]}})
+
+    return {
+        "text": translated.text,
+        "language": result.language,
+        "duration": result.duration,
+        "translation": {
+            "source_language": source_language or result.language,
+            "target_language": target_language,
+            "provider": translated.provider,
+        },
+        "segments": output_segments,
+        "raw_segments": raw_segments,
+        "raw_srt": export_subtitle(raw_segments, "srt"),
+        "raw_vtt": export_subtitle(raw_segments, "vtt"),
+        "translated_srt": export_subtitle(output_segments, "srt"),
+        "translated_vtt": export_subtitle(output_segments, "vtt"),
+    }
+
+
+def _format_translated_payload(payload: dict[str, Any], response_format: str, include_subtitle_artifacts: bool):
+    if include_subtitle_artifacts:
+        return {**payload, "response_format": response_format}
+    if response_format == "text":
+        return payload["text"]
+    if response_format == "json":
+        return {"text": payload["text"]}
+    if response_format == "verbose_json":
+        return {
+            key: payload[key]
+            for key in ("text", "language", "duration", "translation", "segments")
+            if key in payload
+        }
+    if response_format == "srt":
+        return payload["translated_srt"]
+    if response_format == "vtt":
+        return payload["translated_vtt"]
+    raise ValueError(f"Unsupported transcription format: {response_format}")
 
 
 def _server_error(e: Exception) -> HTTPException:
@@ -1423,6 +1495,7 @@ async def create_transcription(
     translation_provider: str | None = Form(None),
     provider_model_id: str | None = Form(None),
     provider_model_name: str | None = Form(None),
+    include_subtitle_artifacts: bool = Form(False),
     queued: bool = Form(False),
 ):
     if response_format not in TRANSCRIPTION_FORMATS:
@@ -1451,6 +1524,8 @@ async def create_transcription(
                     "translation_provider": translation_provider,
                     "provider_model_id": provider_model_id,
                     "provider_model_name": provider_model_name,
+                    "response_format": response_format,
+                    "include_subtitle_artifacts": include_subtitle_artifacts,
                 },
             )
             return JSONResponse({"object": "job", "data": job.to_dict()})
@@ -1463,55 +1538,18 @@ async def create_transcription(
             word_timestamps=word_timestamps,
             beam_size=beam_size,
         )
-        if translate and provider_model_id:
-            if not target_language:
-                raise ValueError("target_language is required when translate is enabled.")
-            raw_segments = [segment.to_dict() for segment in result.segments]
-            translated = translate_segments_with_provider_model(
-                segments=raw_segments,
+        if translate:
+            translated_payload = _translated_transcription_payload(
+                result,
                 source_language=source_language or result.language,
                 target_language=target_language,
+                translation_provider=translation_provider,
                 provider_model_id=provider_model_id,
                 provider_model_name=provider_model_name,
             )
-            output_segments = []
-            for index, raw in enumerate(raw_segments):
-                translated_segment = translated.segments[index] if translated.segments and index < len(translated.segments) else None
-                translated_text = (translated_segment.translated_text if translated_segment else None) or raw["text"]
-                output_segments.append({**raw, "text": translated_text, "metadata": {"source_text": raw["text"]}})
-            translated_result = {
-                "text": translated.text,
-                "language": result.language,
-                "duration": result.duration,
-                "translation": {
-                    "source_language": source_language or result.language,
-                    "target_language": target_language,
-                    "provider": translated.provider,
-                },
-                "segments": output_segments,
-            }
-            if response_format == "text":
-                formatted = translated.text
-            elif response_format == "json":
-                formatted = {"text": translated.text}
-            elif response_format == "verbose_json":
-                formatted = translated_result
-            elif response_format in {"srt", "vtt"}:
-                formatted = export_subtitle(output_segments, response_format)
-            else:
-                raise ValueError(f"Unsupported transcription format: {response_format}")
+            formatted = _format_translated_payload(translated_payload, response_format, include_subtitle_artifacts)
         else:
-            formatted = (
-                format_transcription_with_translation(
-                    result,
-                    response_format,
-                    source_language=source_language,
-                    target_language=target_language,
-                    provider_id=translation_provider,
-                )
-                if translate
-                else format_transcription(result, response_format)
-            )
+            formatted = format_transcription(result, response_format)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=f"{type(e).__name__}: {e}") from e
     except Exception as e:

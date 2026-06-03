@@ -320,7 +320,7 @@ def execute_job(job_type: str, params: dict[str, Any]) -> dict[str, Any]:
     if job_type == "transcription":
         from voicekit.asr import format_transcription_with_translation, transcribe_file
         from voicekit.subtitles import export_subtitle
-        from voicekit.translation import translate_segments_with_provider_model
+        from voicekit.translation import translate_segments, translate_segments_with_provider_model
 
         params = dict(params)
         translate = bool(params.pop("translate", False))
@@ -329,7 +329,49 @@ def execute_job(job_type: str, params: dict[str, Any]) -> dict[str, Any]:
         translation_provider = params.pop("translation_provider", None)
         provider_model_id = params.pop("provider_model_id", None)
         provider_model_name = params.pop("provider_model_name", None)
+        response_format = params.pop("response_format", "verbose_json")
+        include_subtitle_artifacts = bool(params.pop("include_subtitle_artifacts", False))
         result = transcribe_file(**params)
+        if translate and include_subtitle_artifacts:
+            raw_segments = [segment.to_dict() for segment in result.segments]
+            if provider_model_id:
+                translated = translate_segments_with_provider_model(
+                    segments=raw_segments,
+                    source_language=source_language or result.language,
+                    target_language=target_language,
+                    provider_model_id=provider_model_id,
+                    provider_model_name=provider_model_name,
+                )
+            else:
+                translated = translate_segments(
+                    segments=raw_segments,
+                    source_language=source_language or result.language,
+                    target_language=target_language,
+                    provider_id=translation_provider,
+                )
+            translated_segments = translated.segments or []
+            output_segments = []
+            for index, raw in enumerate(raw_segments):
+                translated_segment = translated_segments[index] if index < len(translated_segments) else None
+                translated_text = (translated_segment.translated_text if translated_segment else None) or raw["text"]
+                output_segments.append({**raw, "text": translated_text, "metadata": {"source_text": raw["text"]}})
+            return {
+                "text": translated.text,
+                "language": result.language,
+                "duration": result.duration,
+                "translation": {
+                    "source_language": source_language or result.language,
+                    "target_language": target_language,
+                    "provider": translated.provider,
+                },
+                "response_format": response_format,
+                "segments": output_segments,
+                "raw_segments": raw_segments,
+                "raw_srt": export_subtitle(raw_segments, "srt"),
+                "raw_vtt": export_subtitle(raw_segments, "vtt"),
+                "translated_srt": export_subtitle(output_segments, "srt"),
+                "translated_vtt": export_subtitle(output_segments, "vtt"),
+            }
         if translate and provider_model_id:
             raw_segments = [segment.to_dict() for segment in result.segments]
             translated = translate_segments_with_provider_model(
@@ -366,6 +408,21 @@ def execute_job(job_type: str, params: dict[str, Any]) -> dict[str, Any]:
                 provider_id=translation_provider,
             )
             return formatted if isinstance(formatted, dict) else {"text": formatted}
+        if include_subtitle_artifacts and response_format in {"srt", "vtt"}:
+            raw_segments = [segment.to_dict() for segment in result.segments]
+            payload = {
+                "text": result.text,
+                "language": result.language,
+                "duration": result.duration,
+                "response_format": response_format,
+                "segments": raw_segments,
+                "raw_segments": raw_segments,
+            }
+            if response_format == "srt":
+                payload["raw_srt"] = export_subtitle(raw_segments, "srt")
+            else:
+                payload["raw_vtt"] = export_subtitle(raw_segments, "vtt")
+            return payload
         return result.to_dict(verbose=True)
 
     if job_type == "dubbing":

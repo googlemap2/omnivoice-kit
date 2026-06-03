@@ -118,6 +118,28 @@ export default function TranscriptionPage() {
             onChange={studio.setTranscribeFormat}
             options={studio.meta.transcription_formats.map((id) => ({ id, label: id }))}
           />
+          {(studio.rawSubtitleText || studio.translatedSubtitleText) && (
+            <Stack direction="row" spacing={1}>
+              <Button
+                startIcon={<SaveAltIcon />}
+                variant="outlined"
+                disabled={!studio.rawSubtitleText}
+                onClick={studio.downloadRawTranscriptSubtitle}
+                sx={{ flex: 1 }}
+              >
+                Raw {studio.transcriptionSubtitleFormat.toUpperCase()}
+              </Button>
+              <Button
+                startIcon={<SaveAltIcon />}
+                variant="outlined"
+                disabled={!studio.translatedSubtitleText}
+                onClick={studio.downloadTranslatedTranscriptSubtitle}
+                sx={{ flex: 1 }}
+              >
+                Translated {studio.transcriptionSubtitleFormat.toUpperCase()}
+              </Button>
+            </Stack>
+          )}
           <FormControlLabel
             control={
               <Switch

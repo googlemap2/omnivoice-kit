@@ -190,7 +190,22 @@ function downloadArtifacts(job: {
     ];
   }
   if (job.type === "transcription") {
-    return [{ id: "json", label: "Download transcript JSON" }];
+    const items = [];
+    const format = typeof job.result.response_format === "string" ? job.result.response_format : "";
+    if ((!format || format === "srt") && typeof job.result.raw_srt === "string") {
+      items.push({ id: "raw_srt", label: "Download raw SRT" });
+    }
+    if ((!format || format === "srt") && typeof job.result.translated_srt === "string") {
+      items.push({ id: "translated_srt", label: "Download translated SRT" });
+    }
+    if ((!format || format === "vtt") && typeof job.result.raw_vtt === "string") {
+      items.push({ id: "raw_vtt", label: "Download raw VTT" });
+    }
+    if ((!format || format === "vtt") && typeof job.result.translated_vtt === "string") {
+      items.push({ id: "translated_vtt", label: "Download translated VTT" });
+    }
+    items.push({ id: "json", label: "Download transcript JSON" });
+    return items;
   }
   return [{ id: "json", label: "Download JSON" }];
 }
