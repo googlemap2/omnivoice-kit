@@ -373,6 +373,9 @@ Frontend:
 
 - `frontend/src/app/(studio)/transcription/page.tsx`
 - `StudioContext.transcribe()`
+- The Transcription page has two local tabs:
+  - `ASR`: media transcription, dictation, transcript translation, and raw/translated subtitle artifact downloads.
+  - `Subtitle Tools`: import SRT/VTT, edit subtitle segments, and export SRT/VTT.
 
 Transcription translation:
 

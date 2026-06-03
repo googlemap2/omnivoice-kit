@@ -19,6 +19,8 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  Tab,
+  Tabs,
   TableHead,
   TableRow,
   TextField,
@@ -35,6 +37,7 @@ import type { ProviderModel } from "../../../types/api";
 
 export default function TranscriptionPage() {
   const studio = useStudio();
+  const [tab, setTab] = useState<"asr" | "subtitles">("asr");
   const [providerModels, setProviderModels] = useState<ProviderModel[]>([]);
   const transcribeProviderModelId = studio.transcribeProviderModelId;
   const setTranscribeProviderModelId = studio.setTranscribeProviderModelId;
@@ -89,13 +92,21 @@ export default function TranscriptionPage() {
       icon={<SubtitlesIcon />}
       title="Transcription"
       action={
-        <Button startIcon={<PlayArrowIcon />} variant="contained" onClick={studio.transcribe}>
-          Run ASR
-        </Button>
+        tab === "asr" ? (
+          <Button startIcon={<PlayArrowIcon />} variant="contained" onClick={studio.transcribe}>
+            Run ASR
+          </Button>
+        ) : undefined
       }
     >
+      <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 2 }}>
+        <Tab value="asr" label="ASR" />
+        <Tab value="subtitles" label="Subtitle Tools" />
+      </Tabs>
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "320px minmax(0, 1fr)" }, gap: 2 }}>
         <Stack spacing={2}>
+          {tab === "asr" ? (
+            <>
           <Button component="label" startIcon={<UploadFileIcon />} variant="outlined">
             {studio.transcribeFile ? studio.transcribeFile.name : "Choose media file"}
             <input
@@ -157,6 +168,9 @@ export default function TranscriptionPage() {
           >
             {studio.dictationActive ? "Stop dictation" : "Start dictation"}
           </Button>
+            </>
+          ) : (
+            <>
           <Button component="label" startIcon={<UploadFileIcon />} variant="outlined">
             {studio.subtitleFile ? studio.subtitleFile.name : "Import subtitle"}
             <input
@@ -178,6 +192,10 @@ export default function TranscriptionPage() {
           <Button startIcon={<SaveAltIcon />} variant="outlined" onClick={studio.exportSubtitles}>
             Export
           </Button>
+            </>
+          )}
+          {tab === "asr" && (
+            <>
           <FormControlLabel
             control={<Switch checked={studio.transcribeTranslate} onChange={toggleTranslate} />}
             label="Translate"
@@ -244,8 +262,11 @@ export default function TranscriptionPage() {
               </Stack>
             </Paper>
           )}
+            </>
+          )}
         </Stack>
         <Stack spacing={2} sx={{ minWidth: 0 }}>
+          {tab === "subtitles" && (
           <Paper variant="outlined" sx={{ bgcolor: "#252526", overflow: "hidden" }}>
             <Stack
               direction={{ xs: "column", sm: "row" }}
@@ -336,8 +357,9 @@ export default function TranscriptionPage() {
               </Table>
             </TableContainer>
           </Paper>
+          )}
           <TextField
-            label="Raw transcript JSON"
+            label={tab === "asr" ? "Raw transcript JSON" : "Subtitle JSON"}
             multiline
             minRows={8}
             value={studio.transcription}
