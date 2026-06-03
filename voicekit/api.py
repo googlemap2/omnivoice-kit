@@ -304,8 +304,6 @@ class CloudProviderModelsRequest(BaseModel):
     provider_name: str | None = None
     base_url: str | None = None
     api_key: str | None = None
-    speech_model: str | None = None
-    transcription_model: str | None = None
 
 
 class TranslationSegmentRequest(BaseModel):
@@ -490,10 +488,6 @@ def load_cloud_provider_models(request: CloudProviderModelsRequest) -> dict:
         cloud["base_url"] = request.base_url
     if request.api_key is not None:
         cloud["api_key"] = request.api_key
-    if request.speech_model is not None:
-        cloud["speech_model"] = request.speech_model
-    if request.transcription_model is not None:
-        cloud["transcription_model"] = request.transcription_model
 
     base_url = str(cloud.get("base_url") or "").strip().rstrip("/")
     if not base_url:

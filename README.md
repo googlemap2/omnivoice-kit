@@ -575,9 +575,7 @@ curl -X PUT http://127.0.0.1:8000/v1/settings \
       "cloud": {
         "provider_name": "DigiPay AI",
         "base_url": "https://ai.digipaysolution.com/v1",
-        "api_key": "YOUR_KEY",
-        "speech_model": "tts-1",
-        "transcription_model": "whisper-1"
+        "api_key": "YOUR_KEY"
       }
     }
   }'

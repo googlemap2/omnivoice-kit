@@ -137,8 +137,6 @@ export default function SettingsPage() {
           provider_name: modelProviderValue("cloud", "provider_name"),
           base_url: modelProviderValue("cloud", "base_url"),
           api_key: modelProviderValue("cloud", "api_key"),
-          speech_model: modelProviderValue("cloud", "speech_model"),
-          transcription_model: modelProviderValue("cloud", "transcription_model"),
         }),
       });
       const modelIds = result.data.map((model) => model.id).filter((id): id is string => Boolean(id));
@@ -328,30 +326,6 @@ export default function SettingsPage() {
                     event.target.value,
                   )
                 }
-              />
-              <TextField
-                label="Default speech model"
-                value={modelProviderValue("cloud", "speech_model")}
-                onChange={(event) =>
-                  updateModelProviderConfig(
-                    "cloud",
-                    "speech_model",
-                    event.target.value,
-                  )
-                }
-                placeholder="tts-1"
-              />
-              <TextField
-                label="Default transcription model"
-                value={modelProviderValue("cloud", "transcription_model")}
-                onChange={(event) =>
-                  updateModelProviderConfig(
-                    "cloud",
-                    "transcription_model",
-                    event.target.value,
-                  )
-                }
-                placeholder="whisper-1"
               />
               <Button
                 variant="contained"
