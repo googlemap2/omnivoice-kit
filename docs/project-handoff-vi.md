@@ -91,6 +91,7 @@ API liên quan model:
 - `voicekit/diarization.py`: pyannote availability, run diarization, merge speaker label vào subtitles.
 - `voicekit/dictation.py`: realtime dictation helper, lưu chunk/upload tạm.
 - `voicekit/jobs.py`: job store/worker cho speech, transcription, translation, dubbing.
+- `voicekit/stores/`: database-backed stores cho generation history, jobs và provider models.
 - `voicekit/settings.py`: load/save settings JSON.
 - `voicekit/history.py`: generation history.
 - `voicekit/ui.py`: Gradio legacy UI.

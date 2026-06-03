@@ -47,10 +47,10 @@ from voicekit.dictation import fake_result_event, partial_event, result_event, t
 from voicekit.diagnostics import clear_logs, diagnostics_snapshot, read_logs, setup_logging
 from voicekit.dubbing import dub_file
 from voicekit.emotion_tts import load_tag_aliases, render_emotion_tts_speaker_id
-from voicekit.history import list_history
-from voicekit.jobs import JOB_STATUSES, JobType, get_job_store, get_job_worker
+from voicekit.stores.history import list_history
+from voicekit.stores.jobs import JOB_STATUSES, JobType, get_job_store, get_job_worker
 from voicekit.model_store import DEFAULT_MODEL_ID, install_model, list_model_statuses
-from voicekit.provider_models import cloud_provider_to_settings_config, get_provider_model_store
+from voicekit.stores.provider_models import cloud_provider_to_settings_config, get_provider_model_store
 from voicekit.settings import (
     DEFAULT_NLLB_MODEL_ID,
     AppSettings,
