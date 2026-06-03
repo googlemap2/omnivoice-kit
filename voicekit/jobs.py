@@ -63,7 +63,7 @@ class JobStore:
         conn.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {self.table_name} (
-                id TEXT PRIMARY KEY,
+                id UUID PRIMARY KEY,
                 created_at TIMESTAMPTZ NOT NULL,
                 updated_at TIMESTAMPTZ NOT NULL,
                 type TEXT NOT NULL,

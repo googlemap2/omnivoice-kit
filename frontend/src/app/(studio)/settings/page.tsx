@@ -123,9 +123,11 @@ export default function SettingsPage() {
     setProviderSaveError(null);
     try {
       const currentCloud =
-        ((studio.settings.model_provider_config || {}).cloud as
-          | Record<string, unknown>
-          | undefined) || {};
+        providerDialogMode === "edit"
+          ? (((studio.settings.model_provider_config || {}).cloud as
+              | Record<string, unknown>
+              | undefined) || {})
+          : {};
       const nextSettings: AppSettings = {
         ...studio.settings,
         model_provider_config: {

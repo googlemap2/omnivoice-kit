@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -33,7 +34,7 @@ class ProviderModelStore:
         conn.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {self.table_name} (
-                id TEXT PRIMARY KEY,
+                id UUID PRIMARY KEY,
                 created_at TIMESTAMPTZ NOT NULL,
                 updated_at TIMESTAMPTZ NOT NULL,
                 provider_name TEXT NOT NULL,
@@ -57,11 +58,14 @@ class ProviderModelStore:
         from psycopg.types.json import Jsonb
 
         cloud = config if isinstance(config, dict) else {}
+        provider_id = str(cloud.get("id") or "").strip()
+        if not provider_id or provider_id == "cloud":
+            provider_id = str(uuid.uuid4())
         base_url = str(cloud.get("base_url") or "").strip()
 
         now = utc_now_iso()
         record = ProviderModelRecord(
-            id="cloud",
+            id=provider_id,
             created_at=now,
             updated_at=now,
             provider_name=str(cloud.get("provider_name") or "OpenAI-compatible Cloud").strip()
@@ -114,9 +118,11 @@ class ProviderModelStore:
                 SELECT id, created_at, updated_at, provider_name, provider_type, base_url,
                        api_key, speech_model, transcription_model, config
                 FROM {self.table_name}
-                WHERE id = %s
+                WHERE provider_type = %s
+                ORDER BY updated_at DESC
+                LIMIT 1
                 """,
-                ("cloud",),
+                ("openai-compatible",),
             ).fetchone()
         if row is None:
             return None
@@ -145,6 +151,7 @@ def get_provider_model_store() -> ProviderModelStore:
 def cloud_provider_to_settings_config(record: ProviderModelRecord) -> dict[str, Any]:
     return {
         **(record.config or {}),
+        "id": record.id,
         "provider_name": record.provider_name,
         "base_url": record.base_url,
         "api_key": record.api_key or "",

@@ -34,7 +34,7 @@ class GenerationHistoryStore:
         conn.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {self.table_name} (
-                id TEXT PRIMARY KEY,
+                id UUID PRIMARY KEY,
                 created_at TIMESTAMPTZ NOT NULL,
                 mode TEXT NOT NULL,
                 model TEXT,
