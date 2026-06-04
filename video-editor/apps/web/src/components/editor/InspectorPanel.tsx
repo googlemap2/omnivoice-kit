@@ -7,13 +7,12 @@ import { useEngineStore } from "../../stores/engine-store";
 import type { Transform, EditingTemplatePrimitive } from "@openreel/core";
 import {
   ChromaKeyEngine,
-  initializeTranscriptionService,
   type WhisperTranscriptionProgress,
   type CaptionAnimationStyle,
   CAPTION_ANIMATION_STYLES,
   getAnimationStyleDisplayName,
 } from "@openreel/core";
-import { OPENREEL_TRANSCRIBE_URL } from "../../config/api-endpoints";
+import { generateOmniVoiceCaptions } from "../../services/omnivoice-transcription";
 import { mergeEditingTemplateControlValues } from "./panels/EditingTemplateControls";
 import {
   getAudioBridgeEffects,
@@ -486,27 +485,23 @@ export const InspectorPanel: React.FC = () => {
     });
 
     try {
-      const transcriptionService = initializeTranscriptionService({
-        apiEndpoint: `${OPENREEL_TRANSCRIBE_URL}/transcribe`,
-        targetLanguage: targetLanguage !== "none" ? targetLanguage : undefined,
-      });
-
       const regularClip = getClip(selectedClip.id);
       if (!regularClip) {
         throw new Error("Could not find clip data");
       }
 
-      const subtitles = await transcriptionService.transcribeClip(
+      const subtitles = await generateOmniVoiceCaptions(
         regularClip,
         mediaItem,
+        {
+          targetLanguage: targetLanguage !== "none" ? targetLanguage : undefined,
+          animationStyle: defaultAnimationStyle,
+        },
         setTranscriptionProgress,
       );
 
       for (const subtitle of subtitles) {
-        addSubtitle({
-          ...subtitle,
-          animationStyle: defaultAnimationStyle,
-        });
+        await addSubtitle(subtitle);
       }
 
       setTranscriptionProgress({

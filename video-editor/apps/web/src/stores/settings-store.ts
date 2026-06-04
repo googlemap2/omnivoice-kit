@@ -61,6 +61,7 @@ export interface SettingsState {
   defaultTtsProvider: TtsProvider;
   defaultLlmProvider: LlmProvider;
   defaultAggregator: AggregatorProvider;
+  omnivoiceApiBaseUrl: string;
   elevenLabsModel: string;
   favoriteVoices: Array<{ voiceId: string; name: string; previewUrl?: string }>;
   favoriteModels: Array<{ modelId: string; name: string }>;
@@ -81,6 +82,7 @@ export interface SettingsState {
   setDefaultTtsProvider: (provider: TtsProvider) => void;
   setDefaultLlmProvider: (provider: LlmProvider) => void;
   setDefaultAggregator: (provider: AggregatorProvider) => void;
+  setOmnivoiceApiBaseUrl: (url: string) => void;
   setElevenLabsModel: (model: string) => void;
   addFavoriteVoice: (voice: { voiceId: string; name: string; previewUrl?: string }) => void;
   removeFavoriteVoice: (voiceId: string) => void;
@@ -106,6 +108,7 @@ export const useSettingsStore = create<SettingsState>()(
         defaultTtsProvider: "elevenlabs" as TtsProvider,
         defaultLlmProvider: "openai" as LlmProvider,
         defaultAggregator: "kie-ai" as AggregatorProvider,
+        omnivoiceApiBaseUrl: "http://127.0.0.1:8000",
         elevenLabsModel: "eleven_v3",
         favoriteVoices: [],
         favoriteModels: [],
@@ -132,6 +135,9 @@ export const useSettingsStore = create<SettingsState>()(
 
         setDefaultAggregator: (provider: AggregatorProvider) =>
           set({ defaultAggregator: provider }),
+
+        setOmnivoiceApiBaseUrl: (url: string) =>
+          set({ omnivoiceApiBaseUrl: url.trim().replace(/\/+$/, "") }),
 
         setElevenLabsModel: (model: string) =>
           set({ elevenLabsModel: model }),
@@ -201,6 +207,7 @@ export const useSettingsStore = create<SettingsState>()(
           defaultTtsProvider: state.defaultTtsProvider,
           defaultLlmProvider: state.defaultLlmProvider,
           defaultAggregator: state.defaultAggregator,
+          omnivoiceApiBaseUrl: state.omnivoiceApiBaseUrl,
           elevenLabsModel: state.elevenLabsModel,
           favoriteVoices: state.favoriteVoices,
           favoriteModels: state.favoriteModels,

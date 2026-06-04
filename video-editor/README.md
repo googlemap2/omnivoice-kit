@@ -110,6 +110,11 @@ pnpm dev
 # Open http://localhost:5173
 ```
 
+To generate captions with the OmniVoice backend, open the header menu:
+**Settings** → **OmniVoice Backend**, then save your backend API URL
+(for example `http://127.0.0.1:8000`). The value is stored locally in
+your browser.
+
 ### Build for Production
 
 ```bash

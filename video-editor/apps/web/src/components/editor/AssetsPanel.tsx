@@ -1086,8 +1086,8 @@ export const AssetsPanel: React.FC = () => {
         );
       case "graphics":
         return (
-          <div className="min-h-0 flex-1 border-t border-border/70">
-            <ScrollArea className="min-h-0 flex-1">
+          <div className="min-h-0 flex-1 border-t border-border/70 flex flex-col overflow-hidden">
+            <ScrollArea className="min-h-0 flex-1 h-full">
               <div className="px-4 py-4">
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">

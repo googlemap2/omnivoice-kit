@@ -796,6 +796,10 @@ export const Toolbar: React.FC = () => {
               <Settings size={14} />
               <span>Settings & API keys</span>
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openSettings("general")} className="gap-2">
+              <Zap size={14} />
+              <span>OmniVoice backend</span>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setIsRecorderOpen(true)} className="gap-2">
               <Circle size={14} className="fill-current text-status-error" />
               <span>Screen recorder</span>

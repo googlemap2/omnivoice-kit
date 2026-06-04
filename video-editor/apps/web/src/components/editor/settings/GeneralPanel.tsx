@@ -21,12 +21,14 @@ export const GeneralPanel: React.FC = () => {
     defaultTtsProvider,
     defaultLlmProvider,
     defaultAggregator,
+    omnivoiceApiBaseUrl,
     configuredServices,
     setAutoSave,
     setAutoSaveInterval,
     setDefaultTtsProvider,
     setDefaultLlmProvider,
     setDefaultAggregator,
+    setOmnivoiceApiBaseUrl,
   } = useSettingsStore();
 
   const projectWidth = useProjectStore((s) => s.project.settings.width);
@@ -35,11 +37,17 @@ export const GeneralPanel: React.FC = () => {
 
   const [draftWidth, setDraftWidth] = React.useState(String(projectWidth));
   const [draftHeight, setDraftHeight] = React.useState(String(projectHeight));
+  const [draftOmnivoiceUrl, setDraftOmnivoiceUrl] =
+    React.useState(omnivoiceApiBaseUrl);
 
   React.useEffect(() => {
     setDraftWidth(String(projectWidth));
     setDraftHeight(String(projectHeight));
   }, [projectWidth, projectHeight]);
+
+  React.useEffect(() => {
+    setDraftOmnivoiceUrl(omnivoiceApiBaseUrl);
+  }, [omnivoiceApiBaseUrl]);
 
   const applyDimensions = useCallback(
     async (width: number, height: number) => {
@@ -78,6 +86,10 @@ export const GeneralPanel: React.FC = () => {
       s.id === "freepik" ||
       configuredServices.includes(s.id),
   );
+
+  const applyOmnivoiceUrl = useCallback(() => {
+    setOmnivoiceApiBaseUrl(draftOmnivoiceUrl);
+  }, [draftOmnivoiceUrl, setOmnivoiceApiBaseUrl]);
 
   return (
     <div className="space-y-6 pb-4">
@@ -183,6 +195,46 @@ export const GeneralPanel: React.FC = () => {
             </select>
           </div>
         )}
+      </div>
+
+      <div className="h-px bg-border" />
+
+      {/* OmniVoice backend */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-sm font-medium text-text-primary">
+            OmniVoice Backend
+          </h3>
+          <p className="text-xs text-text-muted mt-0.5">
+            Backend URL used for transcription and future OmniVoice features.
+            This value is saved locally in your browser.
+          </p>
+        </div>
+
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <Label className="text-xs text-text-secondary">API Base URL</Label>
+            <input
+              type="url"
+              value={draftOmnivoiceUrl}
+              onChange={(e) => setDraftOmnivoiceUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  applyOmnivoiceUrl();
+                  (e.currentTarget as HTMLInputElement).blur();
+                }
+              }}
+              placeholder="http://127.0.0.1:8000"
+              className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            />
+          </div>
+          <button
+            onClick={applyOmnivoiceUrl}
+            className="h-9 px-3 rounded-md bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
+          >
+            Save
+          </button>
+        </div>
       </div>
 
       <div className="h-px bg-border" />
