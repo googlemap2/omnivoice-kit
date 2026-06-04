@@ -585,6 +585,10 @@ curl "http://127.0.0.1:8000/v1/logs?limit=200"
 curl -X DELETE http://127.0.0.1:8000/v1/logs
 ```
 
+Trong `/v1/diagnostics`, xem `data.runtime.process_memory.rss_bytes` để biết RAM process đang dùng,
+`data.runtime.loaded_models.omnivoice_models` để biết model OmniVoice nào đang được giữ trong cache,
+và `data.runtime.cuda_memory.devices[].reserved_bytes` để kiểm tra GPU memory PyTorch đang giữ.
+
 Cài model mặc định nếu còn thiếu:
 
 ```bash

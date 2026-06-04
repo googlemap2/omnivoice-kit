@@ -85,6 +85,65 @@ def _torch_info() -> dict[str, Any]:
     }
 
 
+def _process_memory_info() -> dict[str, Any]:
+    try:
+        import psutil
+
+        process = psutil.Process()
+        memory = process.memory_info()
+        return {
+            "rss_bytes": int(memory.rss),
+            "vms_bytes": int(memory.vms),
+            "source": "psutil",
+        }
+    except Exception:
+        pass
+
+    try:
+        import resource
+
+        rss_kb = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+        if sys.platform == "darwin":
+            rss_bytes = rss_kb
+        else:
+            rss_bytes = rss_kb * 1024
+        return {"rss_bytes": rss_bytes, "source": "resource.ru_maxrss"}
+    except Exception as exc:
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def _cuda_memory_info() -> dict[str, Any]:
+    try:
+        import torch
+    except Exception as exc:
+        return {"available": False, "error": f"{type(exc).__name__}: {exc}"}
+    if not torch.cuda.is_available():
+        return {"available": False}
+    devices = []
+    for index in range(torch.cuda.device_count()):
+        devices.append(
+            {
+                "index": index,
+                "name": torch.cuda.get_device_name(index),
+                "allocated_bytes": int(torch.cuda.memory_allocated(index)),
+                "reserved_bytes": int(torch.cuda.memory_reserved(index)),
+                "max_allocated_bytes": int(torch.cuda.max_memory_allocated(index)),
+            }
+        )
+    return {"available": True, "devices": devices}
+
+
+def _loaded_model_info() -> dict[str, Any]:
+    try:
+        from backend.services.speech_service import MODEL_CACHE
+    except Exception as exc:
+        return {"error": f"{type(exc).__name__}: {exc}"}
+    return {
+        "omnivoice_models": list(MODEL_CACHE.keys()),
+        "omnivoice_model_count": len(MODEL_CACHE),
+    }
+
+
 def _dir_size(path: Path) -> int:
     if not path.exists():
         return 0
@@ -123,6 +182,11 @@ def diagnostics_snapshot() -> dict[str, Any]:
             "cache_size_bytes": _dir_size(DEFAULT_MODEL_BASE_DIR),
             "installed_count": sum(1 for status in statuses if status.get("installed")),
             "statuses": statuses,
+        },
+        "runtime": {
+            "process_memory": _process_memory_info(),
+            "cuda_memory": _cuda_memory_info(),
+            "loaded_models": _loaded_model_info(),
         },
         "logs": {
             "path": str(LOG_FILE.resolve()),
