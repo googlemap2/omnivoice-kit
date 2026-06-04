@@ -220,30 +220,42 @@ export const Uploads = () => {
             </div>
             <ScrollArea className="max-h-32">
               <div className="grid grid-cols-3 gap-2 max-w-full">
-                {videos.map((video, idx) => (
-                  <div
-                    className="flex items-center gap-2 flex-col w-full"
-                    key={video.id || idx}
-                  >
-                    <Card
-                      className="w-16 h-16 flex items-center justify-center overflow-hidden relative cursor-pointer"
-                      onClick={() => handleAddVideo(video)}
+                {videos.map((video, idx) => {
+                  const videoSrc = video.metadata?.uploadedUrl || video.url;
+
+                  return (
+                    <div
+                      className="flex items-center gap-2 flex-col w-full"
+                      key={video.id || idx}
                     >
-                      {video.metadata?.previewUrl ? (
-                        <img
-                          className="h-full w-full object-cover"
-                          src={video.metadata.previewUrl}
-                          alt={video.fileName || "Video thumbnail"}
-                        />
-                      ) : (
-                        <VideoIcon className="w-8 h-8 text-muted-foreground" />
-                      )}
-                    </Card>
-                    <div className="text-xs text-muted-foreground truncate w-full text-center">
-                      {video.file?.name || video.url || "Video"}
+                      <Card
+                        className="w-16 h-16 flex items-center justify-center overflow-hidden relative cursor-pointer"
+                        onClick={() => handleAddVideo(video)}
+                      >
+                        {video.metadata?.previewUrl ? (
+                          <img
+                            className="h-full w-full object-cover"
+                            src={video.metadata.previewUrl}
+                            alt={video.fileName || "Video thumbnail"}
+                          />
+                        ) : videoSrc ? (
+                          <video
+                            className="h-full w-full object-cover"
+                            src={videoSrc}
+                            muted
+                            playsInline
+                            preload="metadata"
+                          />
+                        ) : (
+                          <VideoIcon className="w-8 h-8 text-muted-foreground" />
+                        )}
+                      </Card>
+                      <div className="text-xs text-muted-foreground truncate w-full text-center">
+                        {video.file?.name || video.url || "Video"}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
           </div>
