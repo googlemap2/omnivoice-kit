@@ -14,7 +14,7 @@ from backend.services.speech_service import (
 )
 from backend.domain.audio import EFFECT_PRESETS
 from backend.services.transcription_service import ASR_MODEL_CHOICES, DEFAULT_ASR_MODEL_ID, TRANSCRIPTION_FORMATS, transcribe_for_ui
-from backend.infrastructure.stores.history import list_history
+from backend.infrastructure.stores.histories import list_history
 from backend.infrastructure.model_store import DEFAULT_MODEL_ID
 from backend.infrastructure.model_store import install_model, list_model_statuses
 from backend.domain.settings import (

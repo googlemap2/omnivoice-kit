@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from backend.app.schemas.jobs import JobCreateRequest
-from backend.infrastructure.stores.history import list_history
+from backend.infrastructure.stores.histories import list_history
 from backend.infrastructure.stores.jobs import JOB_STATUSES, get_job_store
 
 router = APIRouter()

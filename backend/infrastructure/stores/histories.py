@@ -28,7 +28,7 @@ class GenerationHistoryEntry:
 
 
 class GenerationHistoryStore:
-    table_name = "backend_generation_history"
+    table_name = "histories"
 
     def _ensure_table(self, conn) -> None:
         conn.execute(

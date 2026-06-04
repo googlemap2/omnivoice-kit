@@ -13,7 +13,7 @@ from backend.infrastructure.model_store import (
 )
 from backend.paths import ASSETS_DIR, SPEAKERS_PATH as DEFAULT_SPEAKERS_PATH
 from backend.services.voice_profile_service import VoiceProfileStore
-from backend.infrastructure.stores.history import try_record_generation
+from backend.infrastructure.stores.histories import try_record_generation
 
 SPEAKERS_PATH = DEFAULT_SPEAKERS_PATH
 VALID_INSTRUCTS_EN = [

@@ -21,7 +21,7 @@ from backend.services.speech_service import (
 from backend.services.diarization_service import DEFAULT_DIARIZATION_MODEL_ID, diarize_file
 from backend.services.dubbing_service import dub_file
 from backend.services.emotion_tts_service import load_tag_aliases, run_emotion_tts_speaker_id
-from backend.infrastructure.stores.history import try_record_generation
+from backend.infrastructure.stores.histories import try_record_generation
 from backend.infrastructure.model_store import DEFAULT_MODEL_ID
 from backend.domain.settings import load_settings
 from backend.services.subtitle_service import SUBTITLE_FORMATS, export_subtitle, parse_subtitle_file

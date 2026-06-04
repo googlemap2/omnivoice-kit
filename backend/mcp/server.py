@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse, Response
 
 from backend.services.transcription_service import DEFAULT_ASR_MODEL_ID, transcribe_file
 from backend.services.speech_service import OMNIVOICE_LANGUAGE_CHOICES, generate_clone_with_speaker_id, get_profile_store
-from backend.infrastructure.stores.history import list_history
+from backend.infrastructure.stores.histories import list_history
 from backend.infrastructure.model_store import DEFAULT_MODEL_ID
 from backend.paths import OUTPUTS_DIR
 

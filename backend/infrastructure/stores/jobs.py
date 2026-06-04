@@ -10,7 +10,6 @@ from typing import Any, Literal, Protocol
 from backend.infrastructure.database import iso_value, json_value, postgres_connection
 from backend.paths import OUTPUTS_DIR
 
-
 logger = logging.getLogger("backend.infrastructure.stores.jobs")
 
 
@@ -40,7 +39,9 @@ class JobRecord:
 
 
 class JobStoreProtocol(Protocol):
-    def create_job(self, job_type: str, params: dict[str, Any] | None = None) -> JobRecord: ...
+    def create_job(
+        self, job_type: str, params: dict[str, Any] | None = None
+    ) -> JobRecord: ...
     def list_jobs(self, limit: int = 50) -> list[JobRecord]: ...
     def get_job(self, job_id: str) -> JobRecord | None: ...
     def next_pending_job(self) -> JobRecord | None: ...
@@ -58,11 +59,10 @@ class JobStoreProtocol(Protocol):
 
 
 class JobStore:
-    table_name = "backend_jobs"
+    table_name = "jobs"
 
     def _ensure_table(self, conn) -> None:
-        conn.execute(
-            f"""
+        conn.execute(f"""
             CREATE TABLE IF NOT EXISTS {self.table_name} (
                 id UUID PRIMARY KEY,
                 created_at TIMESTAMPTZ NOT NULL,
@@ -74,16 +74,15 @@ class JobStore:
                 error TEXT,
                 progress DOUBLE PRECISION NOT NULL DEFAULT 0
             )
-            """
-        )
-        conn.execute(
-            f"""
+            """)
+        conn.execute(f"""
             CREATE INDEX IF NOT EXISTS idx_{self.table_name}_status_created
             ON {self.table_name} (status, created_at)
-            """
-        )
+            """)
 
-    def create_job(self, job_type: str, params: dict[str, Any] | None = None) -> JobRecord:
+    def create_job(
+        self, job_type: str, params: dict[str, Any] | None = None
+    ) -> JobRecord:
         from psycopg.types.json import Jsonb
 
         now = utc_now_iso()
@@ -146,15 +145,13 @@ class JobStore:
     def next_pending_job(self) -> JobRecord | None:
         with postgres_connection() as conn:
             self._ensure_table(conn)
-            row = conn.execute(
-                f"""
+            row = conn.execute(f"""
                 SELECT id, created_at, updated_at, type, status, params, result, error, progress
                 FROM {self.table_name}
                 WHERE status = 'pending'
                 ORDER BY created_at ASC
                 LIMIT 1
-                """
-            ).fetchone()
+                """).fetchone()
         return self._row_to_record(row) if row is not None else None
 
     def update_job(
@@ -205,7 +202,9 @@ class JobStore:
     def delete_job(self, job_id: str) -> bool:
         with postgres_connection() as conn:
             self._ensure_table(conn)
-            cursor = conn.execute(f"DELETE FROM {self.table_name} WHERE id = %s", (job_id,))
+            cursor = conn.execute(
+                f"DELETE FROM {self.table_name} WHERE id = %s", (job_id,)
+            )
             return cursor.rowcount > 0
 
     @staticmethod
@@ -224,7 +223,9 @@ class JobStore:
 
 
 class JobWorker:
-    def __init__(self, store: JobStoreProtocol | None = None, poll_interval: float = 1.0):
+    def __init__(
+        self, store: JobStoreProtocol | None = None, poll_interval: float = 1.0
+    ):
         self.store = store or get_job_store()
         self.poll_interval = poll_interval
         self._stop_event = threading.Event()
@@ -234,7 +235,9 @@ class JobWorker:
         if self._thread and self._thread.is_alive():
             return
         self._stop_event.clear()
-        self._thread = threading.Thread(target=self._run_loop, name="backend-job-worker", daemon=True)
+        self._thread = threading.Thread(
+            target=self._run_loop, name="backend-job-worker", daemon=True
+        )
         self._thread.start()
 
     def stop(self) -> None:
@@ -247,7 +250,9 @@ class JobWorker:
             try:
                 job = self.store.next_pending_job()
             except Exception as e:
-                logger.error("Job worker database polling failed: %s: %s", type(e).__name__, e)
+                logger.error(
+                    "Job worker database polling failed: %s: %s", type(e).__name__, e
+                )
                 self._stop_event.wait(max(self.poll_interval, 5.0))
                 continue
             if job is None:
@@ -272,7 +277,9 @@ class JobWorker:
         current = self.store.get_job(job.id)
         if current and current.status == "canceled":
             return current
-        return self.store.update_job(job.id, status="completed", result=result, progress=1.0)
+        return self.store.update_job(
+            job.id, status="completed", result=result, progress=1.0
+        )
 
 
 def execute_job(job_type: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -319,9 +326,15 @@ def execute_job(job_type: str, params: dict[str, Any]) -> dict[str, Any]:
         return result.to_dict()
 
     if job_type == "transcription":
-        from backend.services.transcription_service import format_transcription_with_translation, transcribe_file
+        from backend.services.transcription_service import (
+            format_transcription_with_translation,
+            transcribe_file,
+        )
         from backend.services.subtitle_service import export_subtitle
-        from backend.services.translation_service import translate_segments, translate_segments_with_provider_model
+        from backend.services.translation_service import (
+            translate_segments,
+            translate_segments_with_provider_model,
+        )
 
         params = dict(params)
         translate = bool(params.pop("translate", False))
@@ -331,7 +344,9 @@ def execute_job(job_type: str, params: dict[str, Any]) -> dict[str, Any]:
         provider_model_id = params.pop("provider_model_id", None)
         provider_model_name = params.pop("provider_model_name", None)
         response_format = params.pop("response_format", "verbose_json")
-        include_subtitle_artifacts = bool(params.pop("include_subtitle_artifacts", False))
+        include_subtitle_artifacts = bool(
+            params.pop("include_subtitle_artifacts", False)
+        )
         result = transcribe_file(**params)
         if translate and include_subtitle_artifacts:
             raw_segments = [segment.to_dict() for segment in result.segments]
@@ -353,9 +368,21 @@ def execute_job(job_type: str, params: dict[str, Any]) -> dict[str, Any]:
             translated_segments = translated.segments or []
             output_segments = []
             for index, raw in enumerate(raw_segments):
-                translated_segment = translated_segments[index] if index < len(translated_segments) else None
-                translated_text = (translated_segment.translated_text if translated_segment else None) or raw["text"]
-                output_segments.append({**raw, "text": translated_text, "metadata": {"source_text": raw["text"]}})
+                translated_segment = (
+                    translated_segments[index]
+                    if index < len(translated_segments)
+                    else None
+                )
+                translated_text = (
+                    translated_segment.translated_text if translated_segment else None
+                ) or raw["text"]
+                output_segments.append(
+                    {
+                        **raw,
+                        "text": translated_text,
+                        "metadata": {"source_text": raw["text"]},
+                    }
+                )
             return {
                 "text": translated.text,
                 "language": result.language,
@@ -384,9 +411,21 @@ def execute_job(job_type: str, params: dict[str, Any]) -> dict[str, Any]:
             )
             output_segments = []
             for index, raw in enumerate(raw_segments):
-                translated_segment = translated.segments[index] if translated.segments and index < len(translated.segments) else None
-                translated_text = (translated_segment.translated_text if translated_segment else None) or raw["text"]
-                output_segments.append({**raw, "text": translated_text, "metadata": {"source_text": raw["text"]}})
+                translated_segment = (
+                    translated.segments[index]
+                    if translated.segments and index < len(translated.segments)
+                    else None
+                )
+                translated_text = (
+                    translated_segment.translated_text if translated_segment else None
+                ) or raw["text"]
+                output_segments.append(
+                    {
+                        **raw,
+                        "text": translated_text,
+                        "metadata": {"source_text": raw["text"]},
+                    }
+                )
             return {
                 "text": translated.text,
                 "language": result.language,
