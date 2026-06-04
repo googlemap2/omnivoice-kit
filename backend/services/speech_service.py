@@ -6,11 +6,14 @@ import numpy as np
 import torch
 
 from backend.domain.audio import apply_effect_preset, to_wav16
-from backend.infrastructure.model_store import DEFAULT_MODEL_ID, KHANH_TTS_MODEL_ID, resolve_model_source
+from backend.infrastructure.model_store import (
+    DEFAULT_MODEL_ID,
+    KHANH_TTS_MODEL_ID,
+    resolve_model_source,
+)
 from backend.paths import ASSETS_DIR, SPEAKERS_PATH as DEFAULT_SPEAKERS_PATH
 from backend.services.voice_profile_service import VoiceProfileStore
 from backend.infrastructure.stores.history import try_record_generation
-
 
 SPEAKERS_PATH = DEFAULT_SPEAKERS_PATH
 VALID_INSTRUCTS_EN = [
@@ -102,8 +105,9 @@ MODEL_CACHE: dict[str, Any] = {}
 
 def load_voice_clone_prompt(prompt_path: str | Path):
     from omnivoice.models.omnivoice import VoiceClonePrompt
+    from backend.paths import resolve_path
 
-    path = Path(prompt_path)
+    path = resolve_path(prompt_path)
     ext = path.suffix.lower()
 
     if ext == ".pt":
@@ -161,7 +165,9 @@ def get_model(model_arg: str | None):
     return model
 
 
-def run_generate(model_arg: str | None = None, effect_preset: str | None = "raw", **kwargs):
+def run_generate(
+    model_arg: str | None = None, effect_preset: str | None = "raw", **kwargs
+):
     try:
         model = get_model(model_arg)
         audio = model.generate(**kwargs)[0]
@@ -239,7 +245,9 @@ def generate_clone_with_speaker_id(
         preprocess_prompt=bool(preprocess_prompt),
         postprocess_output=bool(postprocess_output),
     )
-    audio, status = run_generate(model_arg=model_id, effect_preset=effect_preset, **kwargs)
+    audio, status = run_generate(
+        model_arg=model_id, effect_preset=effect_preset, **kwargs
+    )
     if audio is not None and record_history:
         try_record_generation(
             mode="speaker-id",
@@ -302,7 +310,9 @@ def generate_clone_with_ref_audio(
         preprocess_prompt=bool(preprocess_prompt),
         postprocess_output=bool(postprocess_output),
     )
-    audio, status = run_generate(model_arg=model_id, effect_preset=effect_preset, **kwargs)
+    audio, status = run_generate(
+        model_arg=model_id, effect_preset=effect_preset, **kwargs
+    )
     if audio is not None:
         try_record_generation(
             mode="ref-audio",
@@ -360,7 +370,9 @@ def generate_voice_design(
         denoise=bool(denoise),
         postprocess_output=bool(postprocess_output),
     )
-    audio, status = run_generate(model_arg=model_id, effect_preset=effect_preset, **kwargs)
+    audio, status = run_generate(
+        model_arg=model_id, effect_preset=effect_preset, **kwargs
+    )
     if audio is not None:
         try_record_generation(
             mode="voice-design",
@@ -420,7 +432,9 @@ def create_speaker_id(speaker_id, ref_audio, ref_text, language, save_format):
             np.save(out_path, prompt.ref_audio_tokens.detach().cpu().numpy())
             meta_path = out_path.with_suffix(".json")
             meta = {"ref_text": prompt.ref_text, "ref_rms": float(prompt.ref_rms)}
-            meta_path.write_text(json.dumps(meta, ensure_ascii=True, indent=2), encoding="utf-8")
+            meta_path.write_text(
+                json.dumps(meta, ensure_ascii=True, indent=2), encoding="utf-8"
+            )
 
         get_profile_store().create_profile(
             profile_id=speaker_key,
@@ -459,7 +473,9 @@ def delete_speaker_id(speaker_id):
 
     store.delete_profile(speaker_id)
     if deleted_files:
-        return f"Deleted speaker_id '{speaker_id}' and files: {', '.join(deleted_files)}"
+        return (
+            f"Deleted speaker_id '{speaker_id}' and files: {', '.join(deleted_files)}"
+        )
     return f"Deleted speaker_id '{speaker_id}' from speakers.json."
 
 
@@ -484,7 +500,9 @@ def rename_speaker_id(old_speaker_id, new_speaker_id):
 
     try:
         if old_prompt_path.exists():
-            new_prompt_path = old_prompt_path.with_name(f"{new_key}{old_prompt_path.suffix}")
+            new_prompt_path = old_prompt_path.with_name(
+                f"{new_key}{old_prompt_path.suffix}"
+            )
             old_prompt_path.rename(new_prompt_path)
             if old_prompt_path.suffix.lower() == ".npy":
                 old_meta = old_prompt_path.with_suffix(".json")
@@ -494,5 +512,7 @@ def rename_speaker_id(old_speaker_id, new_speaker_id):
     except Exception as e:
         return f"Error while renaming files: {type(e).__name__}: {e}"
 
-    store.rename_profile(old_speaker_id, new_key, str(new_prompt_path).replace("\\", "/"))
+    store.rename_profile(
+        old_speaker_id, new_key, str(new_prompt_path).replace("\\", "/")
+    )
     return f"Renamed speaker_id '{old_speaker_id}' to '{new_key}'."
