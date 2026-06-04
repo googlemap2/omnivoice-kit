@@ -28,9 +28,9 @@ Guidance for agents and developers working in the `omnivoice-kit` repository.
 
 ## Read First
 
-1. Read [backend/docs/project-handoff-vi.md](backend/docs/project-handoff-vi.md) to understand the product goals, tech stack, models, FE/API/CLI flows, and feature status.
+1. Read [docs/project-handoff-vi.md](docs/project-handoff-vi.md) to understand the product goals, tech stack, models, FE/API/CLI flows, and feature status.
 2. Read [backend/README.md](backend/README.md) for installation, backend/frontend startup, and main CLI commands.
-3. Read [backend/docs/refactor-feature-plan.md](backend/docs/refactor-feature-plan.md) if you need phase status or pending work.
+3. Read [docs/refactor-feature-plan.md](docs/refactor-feature-plan.md) if you need phase status or pending work.
 4. For a specific backend feature, read the endpoint in `backend/api.py` first, then inspect the corresponding module.
 5. For frontend work, read `frontend/src/components/studio/StudioContext.tsx` before the page file because it owns state and API actions.
 
@@ -201,7 +201,7 @@ pnpm build
 
 ## Related Docs
 
-- [backend/docs/project-handoff-vi.md](backend/docs/project-handoff-vi.md): full handoff document.
-- [backend/docs/omnivoice-kit-feature-notes.md](backend/docs/omnivoice-kit-feature-notes.md): product feature spec and vision.
-- [backend/docs/refactor-feature-plan.md](backend/docs/refactor-feature-plan.md): roadmap and phase status.
+- [docs/project-handoff-vi.md](docs/project-handoff-vi.md): full handoff document.
+- [docs/omnivoice-kit-feature-notes.md](docs/omnivoice-kit-feature-notes.md): product feature spec and vision.
+- [docs/refactor-feature-plan.md](docs/refactor-feature-plan.md): roadmap and phase status.
 - [frontend/README.md](frontend/README.md): frontend setup and configuration.
