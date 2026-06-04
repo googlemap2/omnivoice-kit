@@ -1,1 +1,1 @@
-﻿"""Command modules are split in a later implementation pass."""
+"""Command modules are split in a later implementation pass."""

@@ -1,4 +1,4 @@
-﻿# OmniVoice Voice Clone Kit
+# OmniVoice Voice Clone Kit
 
 Project riêng cho nhu cầu clone giọng TTS với OmniVoice.
 
