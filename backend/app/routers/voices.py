@@ -8,11 +8,18 @@ from fastapi.responses import FileResponse, JSONResponse
 from starlette.concurrency import run_in_threadpool
 
 from backend.app.errors import server_error as _server_error
+from backend.infrastructure.model_store import DEFAULT_MODEL_ID
 from backend.paths import ASSETS_DIR, DATA_DIR
 from backend.app.errors import generation_error as _generation_error
 from backend.app.routers.common import _voice_profile_dict
 from backend.app.schemas.voices import VoicePreviewRequest, VoiceProfileUpdateRequest, VoiceRenameRequest
-from backend.services.speech_service import create_speaker_id, delete_speaker_id, get_profile_store, rename_speaker_id
+from backend.services.speech_service import (
+    create_speaker_id,
+    delete_speaker_id,
+    generate_clone_with_speaker_id,
+    get_profile_store,
+    rename_speaker_id,
+)
 
 router = APIRouter()
 
