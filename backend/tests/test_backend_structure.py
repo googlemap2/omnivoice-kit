@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 
 
 def test_api_entrypoint_registers_core_routes():
-    from backend.api import app
+    from backend.app.main import app
 
     client = TestClient(app)
     assert client.get("/health").status_code == 200
@@ -14,8 +14,8 @@ def test_api_entrypoint_registers_core_routes():
 
 def test_compatibility_entrypoints_import():
     from backend.cli import main as cli_main
-    from backend.mcp_server import main as mcp_main
-    from backend.ui import main as ui_main
+    from backend.mcp.server import main as mcp_main
+    from backend.legacy.ui import main as ui_main
 
     assert callable(cli_main)
     assert callable(mcp_main)

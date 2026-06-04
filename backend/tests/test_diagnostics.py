@@ -3,7 +3,7 @@ import unittest
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from backend.diagnostics import clear_logs, diagnostics_snapshot, read_logs, redact_text, setup_logging
+from backend.services.diagnostics_service import clear_logs, diagnostics_snapshot, read_logs, redact_text, setup_logging
 
 
 class DiagnosticsTests(unittest.TestCase):

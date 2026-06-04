@@ -1,6 +1,6 @@
 import unittest
 
-from backend.settings import AppSettings, SettingsStore, merge_translation_provider_config
+from backend.domain.settings import AppSettings, SettingsStore, merge_translation_provider_config
 from pathlib import Path
 import tempfile
 

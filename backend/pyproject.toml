@@ -46,5 +46,5 @@ backend = "."
 
 [project.scripts]
 backend = "backend.cli:main"
-backend-ui = "backend.ui:main"
-backend-mcp = "backend.mcp_server:main"
+backend-ui = "backend.legacy.ui:main"
+backend-mcp = "backend.mcp.server:main"

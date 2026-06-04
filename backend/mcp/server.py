@@ -327,7 +327,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.http:
         import uvicorn
 
-        uvicorn.run("backend.mcp_server:http_app", host=args.host, port=args.port)
+        uvicorn.run("backend.mcp.server:http_app", host=args.host, port=args.port)
         return
     serve_stdio()
 

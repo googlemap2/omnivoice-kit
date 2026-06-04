@@ -1,7 +1,7 @@
 import unittest
 import uuid
 
-from backend.jobs import JobRecord, JobWorker, utc_now_iso
+from backend.infrastructure.stores.jobs import JobRecord, JobWorker, utc_now_iso
 
 
 class MemoryJobStore:

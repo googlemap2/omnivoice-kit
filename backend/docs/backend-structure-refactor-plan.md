@@ -126,7 +126,7 @@ pnpm build
 Backend smoke:
 
 ```bash
-uv run uvicorn backend.api:app --host 127.0.0.1 --port 8000
+uv run uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 
 If `pnpm build` fails with `.next` ENOENT after a dev server was running:
@@ -165,7 +165,7 @@ Exit criteria:
 
 Baseline snapshot:
 
-- Public backend entrypoint: `backend.api:app`.
+- Public backend entrypoint: `backend.app.main:app`.
 - Public CLI entrypoint: `backend.cli:main`.
 - Console scripts: `backend`, `backend-ui`, `backend-mcp`.
 - FastAPI endpoint decorators in `backend/api.py`: health/meta/models/settings/diagnostics/provider-models/model-status/voices/translation/history/jobs/files/subtitles/diarization/dubbing/speech/dictation/transcription.
@@ -186,7 +186,7 @@ Tasks:
 - [x] Move FastAPI app creation, CORS setup, logging setup, startup hook, and shutdown hook from `backend/api.py` to `backend/app/main.py`.
 - [x] Keep endpoint functions in `backend/api.py` during this phase if that is the smallest safe move.
 - [x] Keep `backend/api.py` as the public uvicorn entrypoint.
-- [x] Ensure `uvicorn backend.api:app` still works through import/app smoke.
+- [x] Ensure `uvicorn backend.app.main:app` still works through import/app smoke.
 
 Compatibility target:
 
@@ -197,8 +197,8 @@ from backend.app.main import app
 Validation:
 
 - [x] `python -m py_compile backend/api.py backend/app/main.py`
-- [x] `uv run python -c "from backend.api import app; print(app.title, len(app.routes))"`
-- [x] `uv run python -c "from fastapi.testclient import TestClient; from backend.api import app; r=TestClient(app).get('/health'); print(r.status_code, r.json())"`
+- [x] `uv run python -c "from backend.app.main import app; print(app.title, len(app.routes))"`
+- [x] `uv run python -c "from fastapi.testclient import TestClient; from backend.app.main import app; r=TestClient(app).get('/health'); print(r.status_code, r.json())"`
 
 Exit criteria:
 
@@ -440,12 +440,12 @@ Tasks:
 - [x] Create `backend/legacy/__init__.py`.
 - [x] Move `backend/ui.py` implementation into `legacy/ui.py`.
 - [x] Keep `backend/ui.py` as a compatibility shim.
-- [x] Verify `backend.ui:main` imports.
+- [x] Verify `backend.legacy.ui:main` imports.
 
 Validation:
 
 - [x] `python -m py_compile backend/ui.py backend/legacy/ui.py`
-- [x] `backend.ui:main` import smoke passes.
+- [x] `backend.legacy.ui:main` import smoke passes.
 
 Exit criteria:
 
@@ -459,7 +459,7 @@ Goal: Move internal imports from compatibility shims to the new package paths.
 
 Tasks:
 
-- [x] Replace workflow-router imports of `backend.model_store` with `backend.infrastructure.model_store`.
+- [x] Replace workflow-router imports with direct infrastructure/service/domain imports.
 - [x] Replace workflow-router imports of `backend.stores.*` with `backend.infrastructure.stores.*`.
 - [x] Move database/media/model/stores implementations to infrastructure modules.
 - [x] Add CLI package wrapper while keeping command implementation in `backend/cli_legacy.py`.
@@ -493,7 +493,7 @@ Tasks:
 - [x] CLI command registration smoke passes.
 - [x] Remove duplicate API app setup and schema definitions.
 - [x] Update `docs/backend-structure-refactor-plan.md`.
-- [x] No README entrypoint change required; `backend.api:app` remains stable.
+- [x] No README entrypoint change required; `backend.app.main:app` remains stable.
 
 Validation:
 
@@ -571,6 +571,6 @@ Internal imports have moved to the new package paths. Keep these root-level shim
 
 - Approved target structure: accepted by project owner.
 - Refactor must be sequential by phase.
-- `backend.api:app` remains the public backend entrypoint until explicitly changed.
+- `backend.app.main:app` remains the public backend entrypoint until explicitly changed.
 - Frontend API contracts must remain stable.
 - Hugging Face token from Settings should be used for all model downloads through the model store.

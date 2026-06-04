@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from backend.diarization import (
+from backend.services.diarization_service import (
     DiarizationSegment,
     assign_speakers_to_segments,
     configure_headless_matplotlib,

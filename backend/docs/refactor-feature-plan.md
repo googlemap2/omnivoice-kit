@@ -351,7 +351,7 @@ Related feature: Desktop packaging with Tauri/React.
 - [x] Verified `/v1/audio/speech` real generation path and wrote `api_speech.wav`.
 - [x] Reorganized backend code into `backend/` package and removed unnecessary root shims.
 - [x] Moved UI, CLI, and helper scripts from legacy `omnivoice/` folder into `backend/`, then removed the legacy folder.
-- [x] Completed Phase 5 basic model status/install support in `backend.model_store`, FastAPI, and Gradio UI.
+- [x] Completed Phase 5 basic model status/install support in `backend.infrastructure.model_store`, FastAPI, and Gradio UI.
 - [x] Completed Phase 6 PostgreSQL generation history with core/CLI recording, API listing, and Gradio History tab.
 - [x] Completed Phase 7 audio DSP presets with raw/normalize/broadcast options in core, UI, CLI, and API.
 - [x] Completed Phase 8 local settings with JSON storage, API endpoints, UI tab, and CLI/UI defaults.

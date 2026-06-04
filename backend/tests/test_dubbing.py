@@ -8,7 +8,7 @@ from unittest.mock import patch
 import numpy as np
 import soundfile as sf
 
-from backend.dubbing import (
+from backend.services.dubbing_service import (
     dub_file,
     fit_audio_to_duration,
     next_output_folder,
@@ -18,8 +18,8 @@ from backend.dubbing import (
     validate_speaker_voice_map,
     voice_for_segment,
 )
-from backend.subtitles import SubtitleSegment
-from backend.translation import TranslationResult, TranslationSegment
+from backend.services.subtitle_service import SubtitleSegment
+from backend.services.translation_service import TranslationResult, TranslationSegment
 
 
 class DubbingAudioTests(unittest.TestCase):
@@ -111,16 +111,16 @@ class DubbingAudioTests(unittest.TestCase):
 
             profiles = [SimpleNamespace(id="default"), SimpleNamespace(id="alice")]
             with (
-                patch("backend.dubbing.get_profile_store") as get_profile_store,
-                patch("backend.dubbing.extract_audio", side_effect=fake_extract_audio),
-                patch("backend.dubbing.transcribe_file", return_value=SimpleNamespace(language="en")),
-                patch("backend.dubbing.from_transcription_result", return_value=subtitle_segments),
-                patch("backend.dubbing.translate_segments", return_value=translated),
+                patch("backend.services.dubbing_service.get_profile_store") as get_profile_store,
+                patch("backend.services.dubbing_service.extract_audio", side_effect=fake_extract_audio),
+                patch("backend.services.dubbing_service.transcribe_file", return_value=SimpleNamespace(language="en")),
+                patch("backend.services.dubbing_service.from_transcription_result", return_value=subtitle_segments),
+                patch("backend.services.dubbing_service.translate_segments", return_value=translated),
                 patch(
-                    "backend.dubbing.generate_clone_with_speaker_id",
+                    "backend.services.dubbing_service.generate_clone_with_speaker_id",
                     return_value=((24000, np.ones(12000, dtype=np.int16)), "ok"),
                 ) as generate_tts,
-                patch("backend.dubbing.has_video_stream", return_value=False),
+                patch("backend.services.dubbing_service.has_video_stream", return_value=False),
             ):
                 get_profile_store.return_value.list_profiles.return_value = profiles
                 result = dub_file(

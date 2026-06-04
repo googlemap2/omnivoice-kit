@@ -32,7 +32,7 @@ class McpServerTests(unittest.TestCase):
             preview_path=None,
         )
         store = SimpleNamespace(list_profiles=lambda: [profile])
-        with patch("backend.mcp_server.get_profile_store", return_value=store):
+        with patch("backend.mcp.server.get_profile_store", return_value=store):
             response = mcp_server.handle_request(
                 {
                     "jsonrpc": "2.0",
@@ -49,7 +49,7 @@ class McpServerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             output_path = Path(tmp) / "speech.wav"
             with patch(
-                "backend.mcp_server.generate_clone_with_speaker_id",
+                "backend.mcp.server.generate_clone_with_speaker_id",
                 return_value=((24000, np.zeros(240, dtype=np.int16)), "Done."),
             ) as generate:
                 response = mcp_server.handle_request(
@@ -73,7 +73,7 @@ class McpServerTests(unittest.TestCase):
             self.assertFalse(generate.call_args.kwargs["record_history"])
 
     def test_recent_history_resource_handles_database_error(self):
-        with patch("backend.mcp_server.list_history", side_effect=RuntimeError("missing db")):
+        with patch("backend.mcp.server.list_history", side_effect=RuntimeError("missing db")):
             response = mcp_server.handle_request(
                 {
                     "jsonrpc": "2.0",

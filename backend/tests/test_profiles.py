@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from backend.profiles import VoiceProfileStore
+from backend.services.voice_profile_service import VoiceProfileStore
 
 
 class VoiceProfileStoreTests(unittest.TestCase):
@@ -57,7 +57,7 @@ class VoiceProfileStoreTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             asset_root = root / "assets" / "voices"
-            with patch("backend.profiles.DEFAULT_VOICE_ASSET_ROOT", asset_root):
+            with patch("backend.services.voice_profile_service.DEFAULT_VOICE_ASSET_ROOT", asset_root):
                 source_store = VoiceProfileStore(root / "source.json")
                 prompt_path = asset_root / "alice" / "prompt.pt"
                 prompt_path.parent.mkdir(parents=True)
@@ -97,7 +97,7 @@ class VoiceProfileStoreTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             asset_root = root / "assets" / "voices"
-            with patch("backend.profiles.DEFAULT_VOICE_ASSET_ROOT", asset_root):
+            with patch("backend.services.voice_profile_service.DEFAULT_VOICE_ASSET_ROOT", asset_root):
                 source_store = VoiceProfileStore(root / "source.json")
                 prompt_path = asset_root / "alice" / "prompt.pt"
                 prompt_path.parent.mkdir(parents=True)

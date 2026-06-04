@@ -11,7 +11,7 @@ from backend.infrastructure.database import iso_value, json_value, postgres_conn
 from backend.paths import OUTPUTS_DIR
 
 
-logger = logging.getLogger("backend.jobs")
+logger = logging.getLogger("backend.infrastructure.stores.jobs")
 
 
 JOB_STATUSES = ("pending", "running", "completed", "failed", "canceled")

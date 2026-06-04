@@ -1,7 +1,7 @@
 import unittest
 from importlib.util import find_spec
 
-from backend.dictation import DICTATION_VAD_PARAMETERS, fake_result_event, media_suffix_from_mime, partial_event
+from backend.services.dictation_service import DICTATION_VAD_PARAMETERS, fake_result_event, media_suffix_from_mime, partial_event
 
 
 class DictationProtocolTests(unittest.TestCase):
@@ -31,7 +31,7 @@ class DictationProtocolTests(unittest.TestCase):
     )
     def test_websocket_protocol_with_fake_asr(self) -> None:
         from fastapi.testclient import TestClient
-        from backend.api import app
+        from backend.app.main import app
 
         client = TestClient(app)
         with client.websocket_connect("/v1/dictation/ws?test_mode=true") as websocket:

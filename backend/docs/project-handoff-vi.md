@@ -76,7 +76,7 @@ API liên quan model:
 
 ## 4. Cấu trúc backend quan trọng
 
-- `backend/app/main.py`: FastAPI app shell, CORS, startup/shutdown worker hooks, router registration. Public entrypoint `backend.api:app` remains stable.
+- `backend/app/main.py`: FastAPI app shell, CORS, startup/shutdown worker hooks, router registration. Public entrypoint `backend.app.main:app` remains stable.
 - `backend/app/routers/`: API routers split by topic. Core workflow endpoints live in focused routers such as `speech.py`, `transcription.py`, `subtitles.py`, `translation.py`, `dubbing.py`, `diarization.py`, `dictation.py`, `voices.py`, `jobs.py`, and `settings.py`; `workflows.py` remains as an empty compatibility router during the transition.
 - `backend/app/schemas/`: Pydantic request schemas grouped by feature.
 - `backend/services/`: real service implementations for speech, emotion TTS, transcription, subtitles, translation, dubbing, diarization, dictation, voice profiles, models, and diagnostics.
@@ -117,7 +117,7 @@ API liên quan model:
 Backend:
 
 ```bash
-uv run uvicorn backend.api:app --host 127.0.0.1 --port 8000
+uv run uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Frontend:

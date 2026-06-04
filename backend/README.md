@@ -33,8 +33,8 @@ Lần chạy đầu (UI **Install Default Model**, API `/v1/model-status/install
 Cài thủ công trước khi chạy:
 
 ```bash
-uv run python -c "from backend.model_store import install_model; install_model('k2-fsa/OmniVoice')"
-uv run python -c "from backend.model_store import install_model; install_model('Systran/faster-whisper-large-v3')"
+uv run python -c "from backend.infrastructure.model_store import install_model; install_model('k2-fsa/OmniVoice')"
+uv run python -c "from backend.infrastructure.model_store import install_model; install_model('Systran/faster-whisper-large-v3')"
 ```
 
 Nếu truyền `--model` là đường dẫn local (ví dụ `models/OmniVoice`) thì sẽ ưu tiên load từ đường dẫn đó.
@@ -52,7 +52,7 @@ của runtime Colab khi cần.
 Terminal 1 — API backend:
 
 ```bash
-uv run uvicorn backend.api:app --host 127.0.0.1 --port 8000
+uv run uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Terminal 2 — frontend:
@@ -497,7 +497,7 @@ Cấu hình provider trong tab **Settings** → **Translation provider API keys*
 Chạy local API server:
 
 ```bash
-uv run uvicorn backend.api:app --host 127.0.0.1 --port 8000
+uv run uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Health check:
@@ -749,7 +749,7 @@ python -m backend.scripts.clone_tts_with_speaker_id \
 Tạo snapshot local + manifest checksum:
 
 ```bash
-python backend/backup_model.py \
+python -m backend.scripts.backup_model \
   --repo-id k2-fsa/OmniVoice \
   --revision main \
   --local-dir models/models--k2-fsa--OmniVoice
@@ -763,7 +763,7 @@ Script sẽ:
 Kiểm tra toàn vẹn sau khi copy/restore:
 
 ```bash
-python backend/verify_checksum.py --model-dir models/models--k2-fsa--OmniVoice
+python -m backend.scripts.verify_checksum --model-dir models/models--k2-fsa--OmniVoice
 ```
 
 Nên lưu trữ thêm 1 bản archive:

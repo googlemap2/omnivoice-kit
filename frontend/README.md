@@ -15,7 +15,7 @@ Terminal 1, from the repository root:
 
 ```bash
 cd backend
-uv run uvicorn backend.api:app --host 127.0.0.1 --port 8000
+uv run uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Terminal 2, from `frontend/`:

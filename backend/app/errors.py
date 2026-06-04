@@ -4,7 +4,7 @@ import traceback
 from fastapi import HTTPException, WebSocket
 
 
-logger = logging.getLogger("backend.api")
+logger = logging.getLogger("backend.app")
 
 
 def generation_error(detail: str) -> HTTPException:

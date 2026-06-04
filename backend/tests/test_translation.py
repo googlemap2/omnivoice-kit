@@ -1,6 +1,6 @@
 import unittest
 
-from backend.translation import (
+from backend.services.translation_service import (
     PassthroughProvider,
     list_providers,
     normalize_segments,
@@ -52,7 +52,7 @@ class TranslationPassthroughTests(unittest.TestCase):
         self.assertTrue(providers["passthrough"].available)
 
     def test_passthrough_provider_direct(self) -> None:
-        from backend.settings import AppSettings
+        from backend.domain.settings import AppSettings
 
         provider = PassthroughProvider()
         available, message = provider.availability(AppSettings())
@@ -60,7 +60,7 @@ class TranslationPassthroughTests(unittest.TestCase):
         self.assertIsNone(message)
 
     def test_format_transcription_with_translation_keeps_source_text(self) -> None:
-        from backend.asr import TranscriptionResult, TranscriptionSegment, format_transcription_with_translation
+        from backend.services.transcription_service import TranscriptionResult, TranscriptionSegment, format_transcription_with_translation
 
         result = TranscriptionResult(
             text="Hello world",

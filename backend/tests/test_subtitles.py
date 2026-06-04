@@ -1,6 +1,6 @@
 import unittest
 
-from backend.subtitles import export_subtitle, parse_srt, parse_subtitle, parse_vtt
+from backend.services.subtitle_service import export_subtitle, parse_srt, parse_subtitle, parse_vtt
 
 
 class SubtitleRoundtripTests(unittest.TestCase):
