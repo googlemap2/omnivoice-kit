@@ -29,6 +29,7 @@ Thumbs.db
 .colab_api_pid
 *.log
 data/
+backend/data/
 
 # Next.js frontend
 frontend/node_modules/
@@ -40,3 +41,5 @@ frontend/.env.local
 *.mp3
 *.flac
 models/
+backend/models/
+backend/outputs/

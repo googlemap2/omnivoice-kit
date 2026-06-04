@@ -14,7 +14,8 @@ cp .env.local.example .env.local
 Terminal 1, from the repository root:
 
 ```bash
-uv run uvicorn voicekit.api:app --host 127.0.0.1 --port 8000
+cd backend
+uv run uvicorn backend.api:app --host 127.0.0.1 --port 8000
 ```
 
 Terminal 2, from `frontend/`:
@@ -36,7 +37,7 @@ NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 When the backend is exposed through ngrok, set `NEXT_PUBLIC_API_BASE_URL` to the
 backend ngrok URL. The backend allows localhost origins by default. If the
 frontend runs from another origin, add that exact origin to `CORS_ORIGINS` in
-`voicekit/api.py` or start the backend with:
+`backend/api.py` or start the backend with:
 
 ```bash
 VOICEKIT_CORS_ORIGINS=http://localhost:3000,https://your-frontend-origin.example

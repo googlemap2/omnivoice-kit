@@ -28,10 +28,10 @@ Guidance for agents and developers working in the `omnivoice-kit` repository.
 
 ## Read First
 
-1. Read [docs/project-handoff-vi.md](docs/project-handoff-vi.md) to understand the product goals, tech stack, models, FE/API/CLI flows, and feature status.
-2. Read [README.md](README.md) for installation, backend/frontend startup, and main CLI commands.
-3. Read [docs/refactor-feature-plan.md](docs/refactor-feature-plan.md) if you need phase status or pending work.
-4. For a specific backend feature, read the endpoint in `voicekit/api.py` first, then inspect the corresponding module.
+1. Read [backend/docs/project-handoff-vi.md](backend/docs/project-handoff-vi.md) to understand the product goals, tech stack, models, FE/API/CLI flows, and feature status.
+2. Read [backend/README.md](backend/README.md) for installation, backend/frontend startup, and main CLI commands.
+3. Read [backend/docs/refactor-feature-plan.md](backend/docs/refactor-feature-plan.md) if you need phase status or pending work.
+4. For a specific backend feature, read the endpoint in `backend/api.py` first, then inspect the corresponding module.
 5. For frontend work, read `frontend/src/components/studio/StudioContext.tsx` before the page file because it owns state and API actions.
 
 ## Project Overview
@@ -56,14 +56,14 @@ Guidance for agents and developers working in the `omnivoice-kit` repository.
 
 Backend:
 
-- Python package in `voicekit/`.
-- FastAPI app in `voicekit/api.py`.
-- CLI in `voicekit/cli.py`.
+- Python package in `backend/`.
+- FastAPI app in `backend/api.py`.
+- CLI in `backend/cli.py`.
 - Model runtime: OmniVoice/PyTorch.
 - ASR: `faster-whisper`.
 - Audio/video: `soundfile`, `numpy`, FFmpeg helpers.
-- Local settings: `data/settings.json`.
-- Local model cache: `models/`.
+- Local settings: `backend/data/settings.json`.
+- Local model cache: `backend/models/`.
 - Jobs/history: PostgreSQL/Supabase when `VOICEKIT_DATABASE_URL` is configured.
 
 Frontend:
@@ -76,20 +76,20 @@ Frontend:
 
 ## Key Backend Modules
 
-- `voicekit/core.py`: model loading, device/dtype selection, prompts, speaker-id/ref-audio/voice-design TTS.
-- `voicekit/emotion_tts.py`: emotion tag parsing, per-segment rendering, audio concatenation.
-- `voicekit/api.py`: FastAPI endpoints.
-- `voicekit/cli.py`: CLI subcommands.
-- `voicekit/profiles.py`: `VoiceProfileStore` and `speakers.json` compatibility.
-- `voicekit/model_store.py`: model status/install/cache.
-- `voicekit/asr.py`: transcription.
-- `voicekit/subtitles.py`: SRT/VTT import/export.
-- `voicekit/translation.py`: translation providers.
-- `voicekit/dubbing.py`: dubbing pipeline.
-- `voicekit/diarization.py`: pyannote diarization.
-- `voicekit/dictation.py`: realtime dictation helpers.
-- `voicekit/jobs.py`: queue worker/store.
-- `voicekit/settings.py`: app settings.
+- `backend/core.py`: model loading, device/dtype selection, prompts, speaker-id/ref-audio/voice-design TTS.
+- `backend/emotion_tts.py`: emotion tag parsing, per-segment rendering, audio concatenation.
+- `backend/api.py`: FastAPI endpoints.
+- `backend/cli.py`: CLI subcommands.
+- `backend/profiles.py`: `VoiceProfileStore` and `backend/speakers.json` compatibility.
+- `backend/model_store.py`: model status/install/cache.
+- `backend/asr.py`: transcription.
+- `backend/subtitles.py`: SRT/VTT import/export.
+- `backend/translation.py`: translation providers.
+- `backend/dubbing.py`: dubbing pipeline.
+- `backend/diarization.py`: pyannote diarization.
+- `backend/dictation.py`: realtime dictation helpers.
+- `backend/jobs.py`: queue worker/store.
+- `backend/settings.py`: app settings.
 
 ## Frontend Value/Label Contract
 
@@ -102,7 +102,7 @@ Important: localized UI labels are display-only. Backend-facing values must rema
 - Emotion tag picker:
   - Display: localized labels such as `Thì thầm`, `Hào hứng`, `Suy tư`.
   - Inserted script value: `[whisper]`, `[excited]`, `[thoughtful]`.
-  - Backend parses those values through `DEFAULT_TAG_ALIASES` in `voicekit/emotion_tts.py`.
+  - Backend parses those values through `DEFAULT_TAG_ALIASES` in `backend/emotion_tts.py`.
 - Voice dropdown:
   - Display: `voice.name || voice.id`.
   - Value: `voice.id`.
@@ -121,8 +121,8 @@ Frontend:
 
 Backend:
 
-- Endpoint: `create_emotion_script_speech()` in `voicekit/api.py`.
-- Renderer: `render_emotion_tts_speaker_id()` in `voicekit/emotion_tts.py`.
+- Endpoint: `create_emotion_script_speech()` in `backend/api.py`.
+- Renderer: `render_emotion_tts_speaker_id()` in `backend/emotion_tts.py`.
 - Default tag mapping:
   - `whisper` -> `whisper`
   - `excited` -> `high pitch`
@@ -138,7 +138,8 @@ This is v1: tags are mapped to OmniVoice instruct strings; this is not native mo
 Backend:
 
 ```bash
-uv run uvicorn voicekit.api:app --host 127.0.0.1 --port 8000
+cd backend
+uv run uvicorn backend.api:app --host 127.0.0.1 --port 8000
 ```
 
 Frontend:
@@ -161,14 +162,15 @@ When using an ngrok/Colab backend, set `NEXT_PUBLIC_API_BASE_URL` to the backend
 Backend syntax:
 
 ```bash
-python -m py_compile voicekit/api.py voicekit/emotion_tts.py
+python -m py_compile backend/api.py backend/emotion_tts.py
 ```
 
 CLI smoke:
 
 ```bash
-uv run python -m voicekit.cli --help
-uv run python -m voicekit.cli emotion-script --help
+cd backend
+uv run python -m backend.cli --help
+uv run python -m backend.cli emotion-script --help
 ```
 
 Frontend build:
@@ -191,15 +193,15 @@ pnpm build
 - Do not change API contracts unless required.
 - Do not turn display labels into backend values.
 - Do not commit generated models, cache files, output media, or generated audio.
-- Do not delete `models/`, `data/`, or `outputs/` unless the user explicitly asks.
+- Do not delete `backend/models/`, `backend/data/`, or `backend/outputs/` unless the user explicitly asks.
 - Do not revert user changes.
 - Whenever adding or updating a feature, update the relevant documentation in `docs/` in the same change.
 - For frontend changes, follow the existing MUI/context patterns.
-- For backend changes, prefer existing helpers in `voicekit/*` before adding new abstractions.
+- For backend changes, prefer existing helpers in `backend/*` before adding new abstractions.
 
 ## Related Docs
 
-- [docs/project-handoff-vi.md](docs/project-handoff-vi.md): full handoff document.
-- [docs/omnivoice-kit-feature-notes.md](docs/omnivoice-kit-feature-notes.md): product feature spec and vision.
-- [docs/refactor-feature-plan.md](docs/refactor-feature-plan.md): roadmap and phase status.
+- [backend/docs/project-handoff-vi.md](backend/docs/project-handoff-vi.md): full handoff document.
+- [backend/docs/omnivoice-kit-feature-notes.md](backend/docs/omnivoice-kit-feature-notes.md): product feature spec and vision.
+- [backend/docs/refactor-feature-plan.md](backend/docs/refactor-feature-plan.md): roadmap and phase status.
 - [frontend/README.md](frontend/README.md): frontend setup and configuration.

@@ -1,0 +1,50 @@
+[project]
+name = "omnivoice-voice-clone-kit"
+version = "0.1.0"
+description = "Standalone voice cloning toolkit built on OmniVoice"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+  "torch==2.11.0",
+  "torchaudio==2.11.0",
+  "omnivoice==0.1.5",
+  "fastapi==0.136.1",
+  "gradio==6.14.0",
+  "soundfile==0.13.1",
+  "uvicorn==0.46.0",
+  "websockets==15.0.1",
+  "python-multipart==0.0.27",
+  "psycopg[binary]==3.2.13",
+  "faster-whisper==1.2.1",
+  "deep-translator==1.11.4",
+  "pyannote-audio==4.0.4",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+  "backend",
+  "backend.app",
+  "backend.app.routers",
+  "backend.app.schemas",
+  "backend.cli",
+  "backend.cli.commands",
+  "backend.domain",
+  "backend.infrastructure",
+  "backend.infrastructure.stores",
+  "backend.legacy",
+  "backend.mcp",
+  "backend.scripts",
+  "backend.services",
+  "backend.stores",
+]
+
+[tool.setuptools.package-dir]
+backend = "."
+
+[project.scripts]
+backend = "backend.cli:main"
+backend-ui = "backend.ui:main"
+backend-mcp = "backend.mcp_server:main"
