@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 
 from backend.app.routers.common import _settings_without_provider_models
 from backend.app.schemas.settings import (
+    ProviderModelChatRequest,
     ProviderModelRequest,
     SettingsRequest,
     TranslationProviderSettingsRequest,
@@ -16,6 +17,7 @@ from backend.domain.settings import (
     merge_translation_provider_config,
     save_settings,
 )
+from backend.services.translation_service import provider_model_chat_completion
 
 router = APIRouter()
 
@@ -162,6 +164,32 @@ def load_provider_model_models(provider_id: str) -> dict:
     return {
         "object": "list",
         "data": models,
+    }
+
+
+@router.post("/v1/provider-models/chat")
+def chat_provider_model(request: ProviderModelChatRequest) -> dict:
+    try:
+        content = provider_model_chat_completion(
+            request.provider_model_id,
+            request.message,
+            model_name=request.model,
+            system_prompt=request.system,
+            temperature=request.temperature,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Provider model request failed: {e}") from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
+    return {
+        "object": "provider_model_chat",
+        "data": {
+            "provider_model_id": request.provider_model_id,
+            "model": request.model,
+            "content": content,
+        },
     }
 
 

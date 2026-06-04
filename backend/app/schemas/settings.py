@@ -30,3 +30,11 @@ class ProviderModelRequest(BaseModel):
     base_url: str = Field(min_length=1)
     api_key: str | None = None
 
+
+class ProviderModelChatRequest(BaseModel):
+    provider_model_id: str = Field(min_length=1)
+    message: str = Field(min_length=1)
+    model: str | None = None
+    system: str | None = None
+    temperature: float = 0.2
+

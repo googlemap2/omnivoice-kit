@@ -575,6 +575,8 @@ curl -X PUT http://127.0.0.1:8000/v1/settings \
 
 Trong UI, cấu hình này nằm ở **Settings** → **Model Providers** và được đọc/ghi trực tiếp từ table `provider_models`, không lưu trong `data/settings.json`. Màn hình luôn hiển thị list provider; nút **Add Provider** mở modal thêm provider, còn nút **Edit** và **Execute** nằm trong provider item. Modal dùng để nhập provider name, base URL và API key, rồi lưu bằng nút **Save**. Nút **Execute** gọi `GET {base_url}/models` qua backend endpoint `POST /v1/provider-models/{provider_id}/models` và hiển thị danh sách model cloud. Provider `id` là UUID. Query DB cho provider models, jobs và generation history nằm trong `backend/stores/`. Runtime local hiện vẫn dùng OmniVoice/Hugging Face cache trừ khi flow gọi model cloud được tích hợp.
 
+Tab **Provider Chat** dùng để test nhanh provider OpenAI-compatible bằng endpoint `POST /v1/provider-models/chat`. Chọn provider/model đã discovery, nhập system prompt và message, backend sẽ gọi `{base_url}/chat/completions`.
+
 Diagnostics và logs:
 
 ```bash

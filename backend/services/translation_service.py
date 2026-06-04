@@ -498,6 +498,7 @@ def _provider_model_chat_completion(
     messages: list[dict[str, str]],
     *,
     model_name: str | None = None,
+    temperature: float = 0.2,
 ) -> str:
     record = get_provider_model_store().get_provider_model(provider_model_id)
     if record is None:
@@ -528,7 +529,7 @@ def _provider_model_chat_completion(
         json={
             "model": selected_model,
             "messages": messages,
-            "temperature": 0.2,
+            "temperature": temperature,
         },
         timeout=120,
     )
@@ -538,6 +539,26 @@ def _provider_model_chat_completion(
     if not isinstance(content, str) or not content.strip():
         raise RuntimeError("Provider model returned an empty translation.")
     return content.strip()
+
+
+def provider_model_chat_completion(
+    provider_model_id: str,
+    message: str,
+    *,
+    model_name: str | None = None,
+    system_prompt: str | None = None,
+    temperature: float = 0.2,
+) -> str:
+    messages: list[dict[str, str]] = []
+    if system_prompt and system_prompt.strip():
+        messages.append({"role": "system", "content": system_prompt.strip()})
+    messages.append({"role": "user", "content": message})
+    return _provider_model_chat_completion(
+        provider_model_id,
+        messages,
+        model_name=model_name,
+        temperature=temperature,
+    )
 
 
 def translate_segments_with_provider_model(

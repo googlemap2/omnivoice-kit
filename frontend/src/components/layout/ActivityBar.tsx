@@ -3,6 +3,7 @@ import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
 import MovieIcon from "@mui/icons-material/Movie";
 import QueueIcon from "@mui/icons-material/Queue";
 import SettingsIcon from "@mui/icons-material/Settings";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
 import SubtitlesIcon from "@mui/icons-material/Subtitles";
 import TranslateIcon from "@mui/icons-material/Translate";
 import { Box, IconButton, Stack, Tooltip } from "@mui/material";
@@ -19,6 +20,7 @@ export function ActivityBar({ workspace }: ActivityBarProps) {
     ["tts", "/speech", <GraphicEqIcon key="tts" />, "Speech"],
     ["transcribe", "/transcription", <SubtitlesIcon key="transcribe" />, "Transcription"],
     ["translate", "/translation", <TranslateIcon key="translate" />, "Translation"],
+    ["provider-chat", "/provider-chat", <SmartToyIcon key="provider-chat" />, "Provider Chat"],
     ["dubbing", "/dubbing", <MovieIcon key="dubbing" />, "Dubbing"],
     ["jobs", "/jobs", <QueueIcon key="jobs" />, "Jobs"],
     ["voices", "/voices", <LibraryMusicIcon key="voices" />, "Voices"],
