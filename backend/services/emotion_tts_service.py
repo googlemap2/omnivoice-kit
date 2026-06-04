@@ -7,7 +7,12 @@ import numpy as np
 import soundfile as sf
 
 from backend.domain.audio import EFFECT_PRESETS, apply_effect_preset
-from backend.services.speech_service import get_profile_store, load_model, load_voice_clone_prompt
+from backend.services.speech_service import (
+    align_voice_clone_prompt_to_model,
+    get_profile_store,
+    load_model,
+    load_voice_clone_prompt,
+)
 
 
 DEFAULT_TAG_ALIASES = {
@@ -147,6 +152,7 @@ def render_emotion_tts_speaker_id(
         raise ValueError("No text segments were found after parsing tags.")
 
     model = load_model(model_id, device)
+    voice_clone_prompt = align_voice_clone_prompt_to_model(voice_clone_prompt, model)
     sample_rate = int(model.sampling_rate)
     gap_samples = int(max(gap_ms, 0) * sample_rate / 1000)
     gap_audio = np.zeros(gap_samples, dtype=np.float32) if gap_samples > 0 else None

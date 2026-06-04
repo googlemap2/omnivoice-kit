@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -165,11 +166,51 @@ def get_model(model_arg: str | None):
     return model
 
 
+def model_tensor_options(model: Any) -> tuple[torch.device | None, torch.dtype | None]:
+    try:
+        parameter = next(model.parameters())
+        return parameter.device, parameter.dtype
+    except Exception:
+        pass
+    device = getattr(model, "device", None)
+    dtype = getattr(model, "dtype", None)
+    return device, dtype
+
+
+def align_voice_clone_prompt_to_model(voice_clone_prompt: Any, model: Any) -> Any:
+    tokens = getattr(voice_clone_prompt, "ref_audio_tokens", None)
+    if not isinstance(tokens, torch.Tensor):
+        return voice_clone_prompt
+
+    device, dtype = model_tensor_options(model)
+    target_dtype = dtype if dtype is not None and torch.is_floating_point(tokens) else None
+    aligned_tokens = tokens.to(device=device, dtype=target_dtype)
+    if aligned_tokens is tokens:
+        return voice_clone_prompt
+
+    try:
+        return replace(voice_clone_prompt, ref_audio_tokens=aligned_tokens)
+    except Exception:
+        try:
+            return voice_clone_prompt.__class__(
+                ref_audio_tokens=aligned_tokens,
+                ref_text=getattr(voice_clone_prompt, "ref_text", ""),
+                ref_rms=float(getattr(voice_clone_prompt, "ref_rms", 0.1)),
+            )
+        except Exception:
+            voice_clone_prompt.ref_audio_tokens = aligned_tokens
+            return voice_clone_prompt
+
+
 def run_generate(
     model_arg: str | None = None, effect_preset: str | None = "raw", **kwargs
 ):
     try:
         model = get_model(model_arg)
+        if kwargs.get("voice_clone_prompt") is not None:
+            kwargs["voice_clone_prompt"] = align_voice_clone_prompt_to_model(
+                kwargs["voice_clone_prompt"], model
+            )
         audio = model.generate(**kwargs)[0]
         processed_audio = apply_effect_preset(audio, effect_preset)
         return (model.sampling_rate, to_wav16(processed_audio)), "Done."
