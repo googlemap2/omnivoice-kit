@@ -55,7 +55,7 @@ Backend không được bundle vào desktop trong giai đoạn này. Desktop ch�
 
 - FastAPI server hiện có.
 - Desktop gọi các endpoint:
-  - `/v1/health`
+  - `/health`
   - `/v1/audio/transcriptions`
   - `/v1/translation`
   - `/v1/audio/speech`
@@ -94,14 +94,14 @@ Ví dụ format tối thiểu:
 
 Mục tiêu: tạo được app desktop mở lên, cấu hình backend URL và test kết nối.
 
-- [ ] Tạo folder `desktop/`.
-- [ ] Scaffold Tauri 2 + React + Vite + TypeScript.
-- [ ] Thêm màn hình onboarding/settings cho Backend URL.
-- [ ] Lưu Backend URL vào local app config.
-- [ ] Gọi `/v1/health` để test connection.
-- [ ] Hiển thị trạng thái backend: connected, disconnected, error message.
-- [ ] Tạo API client dùng runtime Backend URL.
-- [ ] Thêm dev script chạy desktop app.
+- [x] Tạo folder `desktop/`.
+- [x] Scaffold Tauri 2 + React + Vite + TypeScript.
+- [x] Thêm màn hình onboarding/settings cho Backend URL.
+- [x] Lưu Backend URL vào local app config.
+- [x] Gọi `/health` để test connection.
+- [x] Hiển thị trạng thái backend: connected, disconnected, error message.
+- [x] Tạo API client dùng runtime Backend URL.
+- [x] Thêm dev script chạy desktop app.
 
 Success criteria:
 
@@ -233,7 +233,7 @@ Success criteria:
 Backend cần ổn định các điểm sau để desktop gọi tốt:
 
 - CORS cho desktop/web origins.
-- `/v1/health` trả nhanh, không load model.
+- `/health` trả nhanh, không load model.
 - Job API đủ rõ: status, progress, result, error.
 - File output URL có thể truy cập từ desktop.
 - Error response thống nhất dạng `{"detail": "..."}` hoặc schema rõ hơn.
