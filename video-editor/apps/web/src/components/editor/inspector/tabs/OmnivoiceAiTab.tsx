@@ -62,6 +62,17 @@ const TARGET_LANGUAGES = [
   { value: "ru", label: "Russian" },
 ];
 
+const TTS_MODELS = [
+  "kjanh/KhanhTTS-OmniVoice",
+  "k2-fsa/OmniVoice",
+];
+
+const TTS_EFFECT_PRESETS = [
+  { value: "raw", label: "Raw" },
+  { value: "normalize", label: "Normalize" },
+  { value: "broadcast", label: "Broadcast" },
+] as const;
+
 export interface OmnivoiceAiTabProps {
   clipId: string;
   clipType: string | null;
@@ -136,6 +147,10 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
     React.useState(false);
   const [ttsLanguage, setTtsLanguage] = React.useState("auto");
   const [ttsVoiceId, setTtsVoiceId] = React.useState("");
+  const [ttsModel, setTtsModel] = React.useState(TTS_MODELS[0]);
+  const [ttsEffectPreset, setTtsEffectPreset] = React.useState<
+    "raw" | "normalize" | "broadcast"
+  >("raw");
   const [ttsSpeed, setTtsSpeed] = React.useState(1);
   const [ttsVoices, setTtsVoices] = React.useState<OmniVoiceVoice[]>([]);
   const [isLoadingTtsVoices, setIsLoadingTtsVoices] = React.useState(false);
@@ -201,10 +216,12 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
       JSON.stringify({
         text: text.trim(),
         voice: ttsVoiceId,
+        model: ttsModel,
         language: ttsLanguage !== "auto" ? ttsLanguage : "",
+        effectPreset: ttsEffectPreset,
         speed: ttsSpeed,
       }),
-    [ttsLanguage, ttsSpeed, ttsVoiceId],
+    [ttsEffectPreset, ttsLanguage, ttsModel, ttsSpeed, ttsVoiceId],
   );
 
   const setGeneratedTtsAudio = React.useCallback(
@@ -230,8 +247,10 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
       const blob = await generateOmniVoiceSpeech({
         text: normalizedText,
         voice: ttsVoiceId,
+        model: ttsModel,
         language: ttsLanguage !== "auto" ? ttsLanguage : undefined,
         speed: ttsSpeed,
+        effectPreset: ttsEffectPreset,
       });
       setGeneratedTtsAudio(blob, requestKey);
       toast.success("OmniVoice TTS generated", "Audio is ready.");
@@ -245,7 +264,15 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
     } finally {
       setIsGeneratingTts(false);
     }
-  }, [buildTtsRequestKey, setGeneratedTtsAudio, ttsLanguage, ttsSpeed, ttsVoiceId]);
+  }, [
+    buildTtsRequestKey,
+    setGeneratedTtsAudio,
+    ttsEffectPreset,
+    ttsLanguage,
+    ttsModel,
+    ttsSpeed,
+    ttsVoiceId,
+  ]);
 
   const handleGenerateOmniVoiceTts = React.useCallback(async () => {
     await generateTtsFromText(ttsText);
@@ -283,8 +310,10 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
           const blob = await generateOmniVoiceSpeech({
             text,
             voice: ttsVoiceId,
+            model: ttsModel,
             language: ttsLanguage !== "auto" ? ttsLanguage : undefined,
             speed: ttsSpeed,
+            effectPreset: ttsEffectPreset,
           });
           const file = new File(
             [blob],
@@ -321,7 +350,9 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
             updateClipMetadata(addedClip.id, {
               omnivoiceTtsText: text,
               omnivoiceTtsVoiceId: ttsVoiceId,
+              omnivoiceTtsModel: ttsModel,
               omnivoiceTtsLanguage: ttsLanguage,
+              omnivoiceTtsEffectPreset: ttsEffectPreset,
               omnivoiceTtsSpeed: ttsSpeed,
             });
           }
@@ -346,6 +377,8 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
       importMedia,
       renameTrack,
       ttsLanguage,
+      ttsModel,
+      ttsEffectPreset,
       ttsSpeed,
       ttsVoiceId,
       updateClipMetadata,
@@ -419,7 +452,9 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
       updateClipMetadata(addedClip.id, {
         omnivoiceTtsText: ttsText.trim(),
         omnivoiceTtsVoiceId: ttsVoiceId,
+        omnivoiceTtsModel: ttsModel,
         omnivoiceTtsLanguage: ttsLanguage,
+        omnivoiceTtsEffectPreset: ttsEffectPreset,
         omnivoiceTtsSpeed: ttsSpeed,
       });
     }
@@ -429,6 +464,8 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
     ttsAudio,
     ttsFileName,
     ttsLanguage,
+    ttsModel,
+    ttsEffectPreset,
     ttsSpeed,
     ttsText,
     ttsVoiceId,
@@ -447,8 +484,10 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
         blob = await generateOmniVoiceSpeech({
           text: normalizedText,
           voice: ttsVoiceId,
+          model: ttsModel,
           language: ttsLanguage !== "auto" ? ttsLanguage : undefined,
           speed: ttsSpeed,
+          effectPreset: ttsEffectPreset,
         });
         setGeneratedTtsAudio(blob, requestKey);
       }
@@ -460,7 +499,9 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
       updateClipMetadata(selectedAudioClip.id, {
         omnivoiceTtsText: normalizedText,
         omnivoiceTtsVoiceId: ttsVoiceId,
+        omnivoiceTtsModel: ttsModel,
         omnivoiceTtsLanguage: ttsLanguage,
+        omnivoiceTtsEffectPreset: ttsEffectPreset,
         omnivoiceTtsSpeed: ttsSpeed,
       });
       toast.success(
@@ -484,6 +525,8 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
     ttsAudioRequestKey,
     ttsFileName,
     ttsLanguage,
+    ttsModel,
+    ttsEffectPreset,
     ttsSpeed,
     ttsText,
     ttsVoiceId,
@@ -518,7 +561,7 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
               </div>
             </div>
           <InspectorSection
-            title="Transcription and TTS"
+            title="Transcribe to captions"
             sectionId="omnivoice-backend"
             defaultOpen
           >
@@ -764,6 +807,86 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
                 </span>
               </label>
 
+              {mapTtsToTimelineAfterTranscription && (
+                <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                  <div>
+                    <label className="text-[10px] text-text-secondary block mb-1">
+                      TTS Model
+                    </label>
+                    <Select
+                      value={ttsModel}
+                      onValueChange={setTtsModel}
+                      disabled={isTranscribing || isGeneratingTts}
+                    >
+                      <SelectTrigger className="w-full bg-background-secondary border-border text-text-primary text-[11px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background-secondary border-border">
+                        {TTS_MODELS.map((model) => (
+                          <SelectItem key={model} value={model}>
+                            {model}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-text-secondary block mb-1">
+                      TTS Voice
+                    </label>
+                    <Select
+                      value={ttsVoiceId || "none"}
+                      onValueChange={(value) =>
+                        setTtsVoiceId(value === "none" ? "" : value)
+                      }
+                      disabled={
+                        isTranscribing || isGeneratingTts || isLoadingTtsVoices
+                      }
+                    >
+                      <SelectTrigger className="w-full bg-background-secondary border-border text-text-primary text-[11px]">
+                        <SelectValue placeholder="Select voice" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background-secondary border-border">
+                        <SelectItem value="none">Select voice</SelectItem>
+                        {ttsVoices.map((voice) => (
+                          <SelectItem key={voice.id} value={voice.id}>
+                            {voice.name || voice.id}
+                            {voice.language ? ` · ${voice.language}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-text-secondary block mb-1">
+                      Effect Preset
+                    </label>
+                    <Select
+                      value={ttsEffectPreset}
+                      onValueChange={(value) =>
+                        setTtsEffectPreset(
+                          value as "raw" | "normalize" | "broadcast",
+                        )
+                      }
+                      disabled={isTranscribing || isGeneratingTts}
+                    >
+                      <SelectTrigger className="w-full bg-background-secondary border-border text-text-primary text-[11px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background-secondary border-border">
+                        {TTS_EFFECT_PRESETS.map((preset) => (
+                          <SelectItem key={preset.value} value={preset.value}>
+                            {preset.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
               {transcriptionProgress ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -807,8 +930,15 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
                 </>
               )}
 
-              <div className="my-4 h-px bg-border" />
+            </div>
+          </InspectorSection>
 
+          <InspectorSection
+            title="Transcript text to speech"
+            sectionId="omnivoice-tts"
+            defaultOpen={false}
+          >
+            <div className="space-y-3">
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
                 <div className="mb-1 flex items-center gap-2">
                   <Volume2 size={14} className="text-primary" />
@@ -873,7 +1003,7 @@ export const OmnivoiceAiTab: React.FC<OmnivoiceAiTabProps> = ({
                     {ttsVoices.map((voice) => (
                       <SelectItem key={voice.id} value={voice.id}>
                         {voice.name || voice.id}
-                        {voice.language ? ` Â· ${voice.language}` : ""}
+                        {voice.language ? ` · ${voice.language}` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>

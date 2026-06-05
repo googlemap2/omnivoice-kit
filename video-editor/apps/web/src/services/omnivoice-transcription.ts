@@ -287,8 +287,10 @@ export async function fetchOmniVoiceVoices(): Promise<OmniVoiceVoice[]> {
 export async function generateOmniVoiceSpeech(options: {
   text: string;
   voice: string;
+  model?: string;
   language?: string;
   speed?: number;
+  effectPreset?: "raw" | "normalize" | "broadcast";
 }): Promise<Blob> {
   const response = await fetch(`${getApiBaseUrl()}/v1/audio/speech/emotion-script`, {
     method: "POST",
@@ -297,13 +299,13 @@ export async function generateOmniVoiceSpeech(options: {
       "ngrok-skip-browser-warning": "true",
     },
     body: JSON.stringify({
-      model: DEFAULT_TTS_MODEL,
+      model: options.model || DEFAULT_TTS_MODEL,
       input: options.text,
       voice: options.voice,
       response_format: "wav",
       language: options.language || undefined,
       speed: options.speed ?? 1,
-      effect_preset: "raw",
+      effect_preset: options.effectPreset || "raw",
     }),
   });
 
