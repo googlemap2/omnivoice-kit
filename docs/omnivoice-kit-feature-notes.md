@@ -27,9 +27,9 @@ provider.
 
 | Area | Technology |
 |---|---|
-| Desktop app | Tauri 2, Rust |
-| Frontend app | React 19, Vite 8 |
-| Video editor workspace | OpenCut upstream (`video-editor/`), Bun + Turbo |
+| Desktop app | OpenCut desktop GPUI in progress; Tauri no longer the selected base for `video-editor/` |
+| Frontend app | OpenCut web: Next.js 16, React 19 |
+| Video editor workspace | `OpenCut-app/OpenCut` tag `v0.3.0` in `video-editor/`, Bun + Turbo |
 | Frontend state | Zustand, TanStack Query |
 | Data-heavy UI | TanStack Table, TanStack Virtual |
 | UI primitives | Radix UI, lucide-react, TailwindCSS 4 |
@@ -39,7 +39,7 @@ provider.
 | Python environment | uv |
 | JavaScript runtime/package manager | Bun |
 
-Current `video-editor/` integration status: OpenCut rewrite route `/` contains an OmniVoice backend test panel for backend URL settings, health/memory diagnostics, model unload, file transcription, and emotion-script TTS preview/download. Full timeline integration is pending.
+Current `video-editor/` integration status: OpenCut `v0.3.0` is installed and builds. OmniVoice has not yet been wired into the editor UI after replacing the workspace; next work should add OmniVoice tools inside the existing assets/properties/timeline flow, not as a standalone config page.
 | Audio processing | torchaudio, soundfile, pydub, pedalboard |
 | Video/audio processing | FFmpeg |
 | ML runtime | PyTorch, transformers, CTranslate2 |

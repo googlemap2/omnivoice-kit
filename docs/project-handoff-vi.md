@@ -114,17 +114,18 @@ API liên quan model:
 
 ## 5.1 Video editor workspace
 
-- `video-editor/` hiện dùng upstream `opencut-app/opencut` thay cho editor OpenReel/custom trước đó.
+- `video-editor/` hiện dùng đúng upstream `OpenCut-app/OpenCut` tại tag `v0.3.0`.
+- Đây là bản OpenCut có editor web thực tế: route `/projects`, route `/editor/[project_id]`, assets panel, preview panel, timeline panel, properties panel.
 - Runtime/package manager: Bun workspace + Turbo; app chính là `@opencut/web` trong `video-editor/apps/web`.
-- OmniVoice integration hiện tại nằm ở route `/` của `video-editor`: setting backend URL, health/memory/unload, transcription upload, emotion-script TTS preview/download.
-- API client: `video-editor/apps/web/src/services/omnivoice.ts`.
+- OmniVoice chưa được tích hợp vào OpenCut `v0.3.0` sau khi thay repo. Không còn route config OmniVoice riêng trong `video-editor`.
 - Lệnh chính:
   - `cd video-editor`
-  - `bun install --frozen-lockfile`
+  - `bun install`
+  - `Copy-Item apps/web/.env.example apps/web/.env.local` nếu chưa có env local
   - `bun run dev:web`
-  - `bun run build`
-- Lưu ý: upstream OpenCut hiện là rewrite mới; README upstream ghi bản production hiện tại nằm ở `opencut-app/opencut-classic`. Chưa tích hợp lại OmniVoice tools vào OpenCut workspace mới.
-- Đánh giá chi tiết `opencut-classic` và kế hoạch tích hợp OmniVoice nằm ở `docs/opencut-classic-integration-handoff.md`.
+  - `bun run build:web`
+- Validation gần nhất: `bun run build:web` pass sau khi tạo `apps/web/.env.local` từ `.env.example`.
+- Kế hoạch tích hợp OmniVoice vào OpenCut editor nằm ở `docs/opencut-classic-integration-handoff.md`.
 
 ## 6. Luồng chạy local
 
