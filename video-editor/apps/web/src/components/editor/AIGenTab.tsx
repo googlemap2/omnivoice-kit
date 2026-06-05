@@ -173,8 +173,8 @@ export const AIGenTab: React.FC = () => {
           />
           <FeatureCard
             icon={Subtitles}
-            title="Auto Captions"
-            description="Automatically generate subtitles from audio"
+            title="Browser Auto Captions"
+            description="Generate captions with browser speech recognition"
             iconColor="text-purple-400"
             iconBg="bg-purple-500/20"
             activeBorder="border-purple-500/50"

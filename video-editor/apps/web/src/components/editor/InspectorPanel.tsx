@@ -12,7 +12,13 @@ import {
   CAPTION_ANIMATION_STYLES,
   getAnimationStyleDisplayName,
 } from "@openreel/core";
-import { generateOmniVoiceCaptions } from "../../services/omnivoice-transcription";
+import {
+  fetchOmniVoiceProviderModels,
+  fetchOmniVoiceTranslationProviders,
+  generateOmniVoiceCaptions,
+  type OmniVoiceProviderModel,
+  type OmniVoiceTranslationProvider,
+} from "../../services/omnivoice-transcription";
 import { mergeEditingTemplateControlValues } from "./panels/EditingTemplateControls";
 import {
   getAudioBridgeEffects,
@@ -109,7 +115,20 @@ export const InspectorPanel: React.FC = () => {
   const [transcriptionProgress, setTranscriptionProgress] =
     useState<WhisperTranscriptionProgress | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcriptLanguage, setTranscriptLanguage] = useState("auto");
   const [targetLanguage, setTargetLanguage] = useState("none");
+  const [translationEngine, setTranslationEngine] = useState<
+    "translation-provider" | "model-provider"
+  >("translation-provider");
+  const [translationProvider, setTranslationProvider] = useState("default");
+  const [providerModelId, setProviderModelId] = useState("none");
+  const [providerModelName, setProviderModelName] = useState("auto");
+  const [translationProviders, setTranslationProviders] = useState<
+    OmniVoiceTranslationProvider[]
+  >([]);
+  const [providerModels, setProviderModels] = useState<
+    OmniVoiceProviderModel[]
+  >([]);
   const [defaultAnimationStyle, setDefaultAnimationStyle] =
     useState<CaptionAnimationStyle>("word-highlight");
   const [expandedRecipeApplicationId, setExpandedRecipeApplicationId] =
@@ -124,6 +143,29 @@ export const InspectorPanel: React.FC = () => {
   useEffect(() => {
     setExpandedRecipeApplicationId(null);
   }, [selectedClipIds.join("|")]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadOmniVoiceOptions = async () => {
+      const [providers, models] = await Promise.all([
+        fetchOmniVoiceTranslationProviders(),
+        fetchOmniVoiceProviderModels(),
+      ]);
+      if (cancelled) return;
+
+      setTranslationProviders(providers);
+      setProviderModels(models);
+    };
+
+    loadOmniVoiceOptions().catch((error) => {
+      console.warn("[OmniVoice] Could not load provider options:", error);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Check if a subtitle is selected
   const selectedSubtitleId = useMemo(() => {
@@ -569,7 +611,28 @@ export const InspectorPanel: React.FC = () => {
         regularClip,
         mediaItem,
         {
-          targetLanguage: targetLanguage !== "none" ? targetLanguage : undefined,
+          language:
+            transcriptLanguage !== "auto" ? transcriptLanguage : undefined,
+          targetLanguage:
+            targetLanguage !== "none" ? targetLanguage : undefined,
+          translationProvider:
+            targetLanguage !== "none" &&
+            translationEngine === "translation-provider" &&
+            translationProvider !== "default"
+              ? translationProvider
+              : undefined,
+          providerModelId:
+            targetLanguage !== "none" &&
+            translationEngine === "model-provider" &&
+            providerModelId !== "none"
+              ? providerModelId
+              : undefined,
+          providerModelName:
+            targetLanguage !== "none" &&
+            translationEngine === "model-provider" &&
+            providerModelName !== "auto"
+              ? providerModelName
+              : undefined,
           animationStyle: defaultAnimationStyle,
         },
         setTranscriptionProgress,
@@ -609,7 +672,12 @@ export const InspectorPanel: React.FC = () => {
     getClip,
     addSubtitle,
     defaultAnimationStyle,
+    transcriptLanguage,
     targetLanguage,
+    translationEngine,
+    translationProvider,
+    providerModelId,
+    providerModelName,
   ]);
 
   const handleSRTImport = useCallback(
@@ -943,8 +1011,20 @@ export const InspectorPanel: React.FC = () => {
                 showVideoEffects={showVideoEffects}
                 transcriptionProgress={transcriptionProgress}
                 isTranscribing={isTranscribing}
+                transcriptLanguage={transcriptLanguage}
+                setTranscriptLanguage={setTranscriptLanguage}
                 targetLanguage={targetLanguage}
                 setTargetLanguage={setTargetLanguage}
+                translationEngine={translationEngine}
+                setTranslationEngine={setTranslationEngine}
+                translationProvider={translationProvider}
+                setTranslationProvider={setTranslationProvider}
+                providerModelId={providerModelId}
+                setProviderModelId={setProviderModelId}
+                providerModelName={providerModelName}
+                setProviderModelName={setProviderModelName}
+                translationProviders={translationProviders}
+                providerModels={providerModels}
                 defaultAnimationStyle={defaultAnimationStyle}
                 setDefaultAnimationStyle={setDefaultAnimationStyle}
                 handleGenerateSubtitles={handleGenerateSubtitles}

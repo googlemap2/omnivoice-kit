@@ -20,7 +20,31 @@ interface OmniVoiceSegment {
 interface GenerateCaptionOptions {
   language?: string;
   targetLanguage?: string;
+  translationProvider?: string;
+  providerModelId?: string;
+  providerModelName?: string;
   animationStyle?: CaptionAnimationStyle;
+}
+
+export interface OmniVoiceTranslationProvider {
+  id: string;
+  name?: string;
+  provider_type?: string;
+  available?: boolean;
+  message?: string | null;
+}
+
+export interface OmniVoiceProviderModel {
+  id: string;
+  provider_name?: string;
+  provider_type?: string;
+  transcription_model?: string | null;
+  speech_model?: string | null;
+  config?: {
+    available_models?: string[];
+    translation_model?: string;
+    chat_model?: string;
+  } | null;
 }
 
 const getApiBaseUrl = (): string => {
@@ -158,6 +182,9 @@ export async function generateOmniVoiceCaptions(
   appendOptional(formData, "source_language", options.language);
   appendOptional(formData, "translate", Boolean(options.targetLanguage));
   appendOptional(formData, "target_language", options.targetLanguage);
+  appendOptional(formData, "translation_provider", options.translationProvider);
+  appendOptional(formData, "provider_model_id", options.providerModelId);
+  appendOptional(formData, "provider_model_name", options.providerModelName);
 
   onProgress?.({
     phase: "transcribing",
@@ -193,4 +220,36 @@ export async function generateOmniVoiceCaptions(
     .filter((subtitle): subtitle is Subtitle => Boolean(subtitle));
 
   return subtitles;
+}
+
+export async function fetchOmniVoiceTranslationProviders(): Promise<
+  OmniVoiceTranslationProvider[]
+> {
+  const response = await fetch(`${getApiBaseUrl()}/v1/translation/providers`, {
+    headers: {
+      "ngrok-skip-browser-warning": "true",
+    },
+  });
+  if (!response.ok) return [];
+
+  const payload = (await response.json()) as {
+    data?: OmniVoiceTranslationProvider[];
+  };
+  return Array.isArray(payload.data) ? payload.data : [];
+}
+
+export async function fetchOmniVoiceProviderModels(): Promise<
+  OmniVoiceProviderModel[]
+> {
+  const response = await fetch(`${getApiBaseUrl()}/v1/provider-models`, {
+    headers: {
+      "ngrok-skip-browser-warning": "true",
+    },
+  });
+  if (!response.ok) return [];
+
+  const payload = (await response.json()) as {
+    data?: OmniVoiceProviderModel[];
+  };
+  return Array.isArray(payload.data) ? payload.data : [];
 }

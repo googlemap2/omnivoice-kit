@@ -1,9 +1,33 @@
 import React, { useCallback, useRef, useState } from "react";
 import {
-  Search, Image as ImageIcon, Film, Music, Plus, Upload, Trash2,
-  Square, Circle, Triangle, Star, ArrowRight, Hexagon, FileCode, AlertTriangle,
-  RefreshCw, Palette, LayoutGrid, Grid2x2, List, Sparkles, Video,
-  Type, Shapes, Wand2, LayoutTemplate, Zap, Shuffle,
+  Search,
+  Image as ImageIcon,
+  Film,
+  Music,
+  Plus,
+  Upload,
+  Trash2,
+  Square,
+  Circle,
+  Triangle,
+  Star,
+  ArrowRight,
+  Hexagon,
+  FileCode,
+  AlertTriangle,
+  RefreshCw,
+  Palette,
+  LayoutGrid,
+  Grid2x2,
+  List,
+  Sparkles,
+  Video,
+  Type,
+  Shapes,
+  Wand2,
+  LayoutTemplate,
+  Zap,
+  Shuffle,
 } from "lucide-react";
 import {
   BACKGROUND_PRESETS,
@@ -24,7 +48,10 @@ import {
 } from "./panels/EffectsTransitionsPanel";
 import { useTtsAudioStore } from "../../stores/tts-store";
 import { toast } from "../../stores/notification-store";
-import { saveFileHandle, saveDirectoryHandle } from "../../services/media-storage";
+import {
+  saveFileHandle,
+  saveDirectoryHandle,
+} from "../../services/media-storage";
 import {
   Input,
   ScrollArea,
@@ -32,9 +59,6 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-  
-  
-  
 } from "@openreel/ui";
 import { KieAIImageDialog } from "./kieai/KieAIImageDialog";
 import { loadMediaBlob } from "../../services/media-storage";
@@ -121,11 +145,6 @@ const TAB_ICONS: Record<AssetsTab, React.ElementType> = {
   templates: LayoutTemplate,
 };
 
-
-
-
-
-
 const MediaThumbnail: React.FC<{
   item: MediaItem;
   isSelected: boolean;
@@ -180,30 +199,33 @@ const MediaThumbnail: React.FC<{
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const iconColor = item.type === "audio"
-    ? "text-primary/50"
-    : item.type === "image"
+  const iconColor =
+    item.type === "audio"
       ? "text-primary/50"
-      : "text-status-info/50";
+      : item.type === "image"
+        ? "text-primary/50"
+        : "text-status-info/50";
 
   const borderClass = item.kieaiError
     ? "border-red-500 ring-1 ring-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]"
     : item.isPending
-    ? "border-purple-500 ring-1 ring-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]"
-    : item.isPlaceholder
-      ? "border-yellow-500 ring-1 ring-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.3)]"
-      : isSelected
-        ? "border-primary ring-1 ring-primary/50 shadow-[0_0_10px_rgba(34,197,94,0.2)]"
-        : "border-border hover:border-text-secondary";
+      ? "border-purple-500 ring-1 ring-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]"
+      : item.isPlaceholder
+        ? "border-yellow-500 ring-1 ring-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.3)]"
+        : isSelected
+          ? "border-primary ring-1 ring-primary/50 shadow-[0_0_10px_rgba(34,197,94,0.2)]"
+          : "border-border hover:border-text-secondary";
 
   const hoverOverlay = (
     <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center gap-2 animate-in fade-in duration-200">
       {item.kieaiError ? (
         <button
-          onClick={(e) => { e.stopPropagation(); onRetryKieAI?.(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRetryKieAI?.();
+          }}
           title="Generation failed — click to retry"
-          className="p-2 bg-red-500/20 rounded-full hover:bg-red-500/40 backdrop-blur-sm transition-colors"
-        >
+          className="p-2 bg-red-500/20 rounded-full hover:bg-red-500/40 backdrop-blur-sm transition-colors">
           <RefreshCw size={14} className="text-red-400" />
         </button>
       ) : item.isPending ? (
@@ -213,17 +235,21 @@ const MediaThumbnail: React.FC<{
       ) : item.isPlaceholder ? (
         <>
           <button
-            onClick={(e) => { e.stopPropagation(); onReplace(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onReplace();
+            }}
             title="Replace asset"
-            className="p-2 bg-yellow-500/20 rounded-full hover:bg-yellow-500/40 backdrop-blur-sm transition-colors"
-          >
+            className="p-2 bg-yellow-500/20 rounded-full hover:bg-yellow-500/40 backdrop-blur-sm transition-colors">
             <RefreshCw size={14} className="text-yellow-500" />
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
             title="Delete"
-            className="p-2 bg-red-500/20 rounded-full hover:bg-red-500/40 backdrop-blur-sm transition-colors"
-          >
+            className="p-2 bg-red-500/20 rounded-full hover:bg-red-500/40 backdrop-blur-sm transition-colors">
             <Trash2 size={14} className="text-red-400" />
           </button>
         </>
@@ -231,25 +257,31 @@ const MediaThumbnail: React.FC<{
         <>
           {item.type === "image" && onKieAI && (
             <button
-              onClick={(e) => { e.stopPropagation(); onKieAI(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onKieAI();
+              }}
               title="Create with KieAI"
-              className="p-2 bg-purple-500/20 rounded-full hover:bg-purple-500/40 backdrop-blur-sm transition-colors"
-            >
+              className="p-2 bg-purple-500/20 rounded-full hover:bg-purple-500/40 backdrop-blur-sm transition-colors">
               <Sparkles size={14} className="text-purple-300" />
             </button>
           )}
           <button
-            onClick={(e) => { e.stopPropagation(); onAddToTimeline(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToTimeline();
+            }}
             title="Add to timeline"
-            className="p-2 bg-primary/20 rounded-full hover:bg-primary/40 backdrop-blur-sm transition-colors"
-          >
+            className="p-2 bg-primary/20 rounded-full hover:bg-primary/40 backdrop-blur-sm transition-colors">
             <Plus size={14} className="text-primary" />
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
             title="Delete"
-            className="p-2 bg-red-500/20 rounded-full hover:bg-red-500/40 backdrop-blur-sm transition-colors"
-          >
+            className="p-2 bg-red-500/20 rounded-full hover:bg-red-500/40 backdrop-blur-sm transition-colors">
             <Trash2 size={14} className="text-red-400" />
           </button>
         </>
@@ -262,124 +294,148 @@ const MediaThumbnail: React.FC<{
     return (
       <ContextMenu>
         <ContextMenuTrigger asChild>
-      <div
-        draggable
-        onDragStart={onDragStart}
-        onClick={onSelect}
-        onDoubleClick={(e) => { e.stopPropagation(); onAddToTimeline(); }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className={`flex items-center gap-3 px-2 py-1.5 rounded-lg border-2 cursor-pointer transition-all group ${borderClass}`}
-      >
-        {/* Small thumbnail */}
-        <div className="w-12 h-8 rounded bg-background-tertiary relative overflow-hidden flex-shrink-0">
-          {item.thumbnailUrl ? (
-            <img src={item.thumbnailUrl} alt={item.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Icon size={14} className={iconColor} />
-            </div>
-          )}
-          {item.kieaiError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-red-500/10">
-              <AlertTriangle size={12} className="text-red-400" />
-            </div>
-          )}
-          {!item.kieaiError && item.isPending && (
-            <div className="absolute inset-0 flex items-center justify-center bg-purple-500/10">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-400 border-t-transparent" />
-            </div>
-          )}
-          {!item.kieaiError && !item.isPending && item.isPlaceholder && (
-            <div className="absolute inset-0 flex items-center justify-center bg-yellow-500/10">
-              <AlertTriangle size={12} className="text-yellow-500/70" />
-            </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
           <div
-            className={`text-[11px] truncate font-medium ${isSelected ? "text-primary" : "text-text-primary"}`}
-            title={item.name}
-          >
-            {item.name}
-          </div>
-          <div className="flex items-center gap-1.5 text-[9px] text-text-muted">
-            {item.metadata?.duration && <span>{formatDuration(item.metadata.duration)}</span>}
-            {item.metadata?.duration && formatResolution() && <span>•</span>}
-            {formatResolution() && <span>{formatResolution()}</span>}
-            {(item.metadata?.duration || formatResolution()) && formatFileSize(item.metadata?.fileSize) && <span>•</span>}
-            {formatFileSize(item.metadata?.fileSize) && <span>{formatFileSize(item.metadata?.fileSize)}</span>}
-          </div>
-        </div>
+            draggable
+            onDragStart={onDragStart}
+            onClick={onSelect}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              onAddToTimeline();
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className={`flex items-center gap-3 px-2 py-1.5 rounded-lg border-2 cursor-pointer transition-all group ${borderClass}`}>
+            {/* Small thumbnail */}
+            <div className="w-12 h-8 rounded bg-background-tertiary relative overflow-hidden flex-shrink-0">
+              {item.thumbnailUrl ? (
+                <img
+                  src={item.thumbnailUrl}
+                  alt={item.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Icon size={14} className={iconColor} />
+                </div>
+              )}
+              {item.kieaiError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-red-500/10">
+                  <AlertTriangle size={12} className="text-red-400" />
+                </div>
+              )}
+              {!item.kieaiError && item.isPending && (
+                <div className="absolute inset-0 flex items-center justify-center bg-purple-500/10">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-400 border-t-transparent" />
+                </div>
+              )}
+              {!item.kieaiError && !item.isPending && item.isPlaceholder && (
+                <div className="absolute inset-0 flex items-center justify-center bg-yellow-500/10">
+                  <AlertTriangle size={12} className="text-yellow-500/70" />
+                </div>
+              )}
+            </div>
 
-        {/* Hover actions */}
-        {isHovered && (
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {item.kieaiError ? (
-              <button
-                onClick={(e) => { e.stopPropagation(); onRetryKieAI?.(); }}
-                title="Retry generation"
-                className="p-1 bg-red-500/20 rounded hover:bg-red-500/40 transition-colors"
-              >
-                <RefreshCw size={12} className="text-red-400" />
-              </button>
-            ) : item.isPending ? (
-              <div className="p-1" title="Generating…">
-                <div className="h-3 w-3 animate-spin rounded-full border-2 border-purple-400 border-t-transparent" />
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div
+                className={`text-[11px] truncate font-medium ${isSelected ? "text-primary" : "text-text-primary"}`}
+                title={item.name}>
+                {item.name}
               </div>
-            ) : item.isPlaceholder ? (
-              <>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onReplace(); }}
-                  title="Replace asset"
-                  className="p-1 bg-yellow-500/20 rounded hover:bg-yellow-500/40 transition-colors"
-                >
-                  <RefreshCw size={12} className="text-yellow-500" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                  title="Delete"
-                  className="p-1 bg-red-500/20 rounded hover:bg-red-500/40 transition-colors"
-                >
-                  <Trash2 size={12} className="text-red-400" />
-                </button>
-              </>
-            ) : (
-              <>
-                {item.type === "image" && onKieAI && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onKieAI(); }}
-                    title="Create with KieAI"
-                    className="p-1 bg-purple-500/20 rounded hover:bg-purple-500/40 transition-colors"
-                  >
-                    <Sparkles size={12} className="text-purple-300" />
-                  </button>
+              <div className="flex items-center gap-1.5 text-[9px] text-text-muted">
+                {item.metadata?.duration && (
+                  <span>{formatDuration(item.metadata.duration)}</span>
                 )}
-                <button
-                  onClick={(e) => { e.stopPropagation(); onAddToTimeline(); }}
-                  title="Add to timeline"
-                  className="p-1 bg-primary/20 rounded hover:bg-primary/40 transition-colors"
-                >
-                  <Plus size={12} className="text-primary" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                  title="Delete"
-                  className="p-1 bg-red-500/20 rounded hover:bg-red-500/40 transition-colors"
-                >
-                  <Trash2 size={12} className="text-red-400" />
-                </button>
-              </>
+                {item.metadata?.duration && formatResolution() && (
+                  <span>•</span>
+                )}
+                {formatResolution() && <span>{formatResolution()}</span>}
+                {(item.metadata?.duration || formatResolution()) &&
+                  formatFileSize(item.metadata?.fileSize) && <span>•</span>}
+                {formatFileSize(item.metadata?.fileSize) && (
+                  <span>{formatFileSize(item.metadata?.fileSize)}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Hover actions */}
+            {isHovered && (
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {item.kieaiError ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRetryKieAI?.();
+                    }}
+                    title="Retry generation"
+                    className="p-1 bg-red-500/20 rounded hover:bg-red-500/40 transition-colors">
+                    <RefreshCw size={12} className="text-red-400" />
+                  </button>
+                ) : item.isPending ? (
+                  <div className="p-1" title="Generating…">
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-purple-400 border-t-transparent" />
+                  </div>
+                ) : item.isPlaceholder ? (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onReplace();
+                      }}
+                      title="Replace asset"
+                      className="p-1 bg-yellow-500/20 rounded hover:bg-yellow-500/40 transition-colors">
+                      <RefreshCw size={12} className="text-yellow-500" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete();
+                      }}
+                      title="Delete"
+                      className="p-1 bg-red-500/20 rounded hover:bg-red-500/40 transition-colors">
+                      <Trash2 size={12} className="text-red-400" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {item.type === "image" && onKieAI && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onKieAI();
+                        }}
+                        title="Create with KieAI"
+                        className="p-1 bg-purple-500/20 rounded hover:bg-purple-500/40 transition-colors">
+                        <Sparkles size={12} className="text-purple-300" />
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddToTimeline();
+                      }}
+                      title="Add to timeline"
+                      className="p-1 bg-primary/20 rounded hover:bg-primary/40 transition-colors">
+                      <Plus size={12} className="text-primary" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete();
+                      }}
+                      title="Delete"
+                      className="p-1 bg-red-500/20 rounded hover:bg-red-500/40 transition-colors">
+                      <Trash2 size={12} className="text-red-400" />
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {isSelected && (
+              <div className="w-2 h-2 bg-primary rounded-full shadow-[0_0_8px_#22c55e] flex-shrink-0" />
             )}
           </div>
-        )}
-
-        {isSelected && (
-          <div className="w-2 h-2 bg-primary rounded-full shadow-[0_0_8px_#22c55e] flex-shrink-0" />
-        )}
-      </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
           {item.type === "image" && onKieAI && (
@@ -388,11 +444,20 @@ const MediaThumbnail: React.FC<{
               Create with KieAI
             </ContextMenuItem>
           )}
-          <ContextMenuItem onClick={(e) => { (e as React.MouseEvent).stopPropagation?.(); onAddToTimeline(); }}>
+          <ContextMenuItem
+            onClick={(e) => {
+              (e as React.MouseEvent).stopPropagation?.();
+              onAddToTimeline();
+            }}>
             <Plus size={13} className="mr-2" />
             Add to Timeline
           </ContextMenuItem>
-          <ContextMenuItem onClick={(e) => { (e as React.MouseEvent).stopPropagation?.(); onDelete(); }} className="text-red-400 focus:text-red-400">
+          <ContextMenuItem
+            onClick={(e) => {
+              (e as React.MouseEvent).stopPropagation?.();
+              onDelete();
+            }}
+            className="text-red-400 focus:text-red-400">
             <Trash2 size={13} className="mr-2" />
             Delete
           </ContextMenuItem>
@@ -407,130 +472,136 @@ const MediaThumbnail: React.FC<{
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-    <div className="flex flex-col">
-      {/* Thumbnail container */}
-      <div
-        draggable
-        onDragStart={onDragStart}
-        onClick={onSelect}
-        onDoubleClick={(e) => {
-          e.stopPropagation();
-          onAddToTimeline();
-        }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className={`aspect-video bg-background-tertiary rounded-lg border-2 relative group cursor-pointer transition-all overflow-hidden shadow-sm ${borderClass}`}
-      >
-        {/* Thumbnail or placeholder */}
-        {item.thumbnailUrl ? (
-          <img
-            src={item.thumbnailUrl}
-            alt={item.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-background-tertiary">
-            <Icon size={thumbnailIconSize} className={iconColor} />
-          </div>
-        )}
-
-        {/* Audio waveform placeholder */}
-        {item.type === "audio" && (
-          <div className="absolute top-1/2 left-0 right-0 h-4 flex items-center gap-px px-2 -translate-y-1/2">
-            {[...Array(10)].map((_, i) => (
-              <div
-                key={i}
-                className="flex-1 bg-primary/30 rounded-full"
-                style={{ height: `${Math.random() * 100}%` }}
+        <div className="flex flex-col">
+          {/* Thumbnail container */}
+          <div
+            draggable
+            onDragStart={onDragStart}
+            onClick={onSelect}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              onAddToTimeline();
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className={`aspect-video bg-background-tertiary rounded-lg border-2 relative group cursor-pointer transition-all overflow-hidden shadow-sm ${borderClass}`}>
+            {/* Thumbnail or placeholder */}
+            {item.thumbnailUrl ? (
+              <img
+                src={item.thumbnailUrl}
+                alt={item.name}
+                className="w-full h-full object-cover"
               />
-            ))}
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-background-tertiary">
+                <Icon size={thumbnailIconSize} className={iconColor} />
+              </div>
+            )}
+
+            {/* Audio waveform placeholder */}
+            {item.type === "audio" && (
+              <div className="absolute top-1/2 left-0 right-0 h-4 flex items-center gap-px px-2 -translate-y-1/2">
+                {[...Array(10)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 bg-primary/30 rounded-full"
+                    style={{ height: `${Math.random() * 100}%` }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* KieAI Error Badge */}
+            {item.kieaiError && (
+              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-red-500 rounded text-[8px] text-white font-bold flex items-center gap-1">
+                <AlertTriangle size={8} />
+                Failed
+              </div>
+            )}
+
+            {/* Pending KieAI Badge */}
+            {!item.kieaiError && item.isPending && (
+              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-purple-500 rounded text-[8px] text-white font-bold flex items-center gap-1">
+                <div className="h-2 w-2 animate-spin rounded-full border border-white border-t-transparent" />
+                AI
+              </div>
+            )}
+
+            {/* Missing Asset Badge */}
+            {!item.kieaiError && !item.isPending && item.isPlaceholder && (
+              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-yellow-500 rounded text-[8px] text-black font-bold flex items-center gap-1">
+                <AlertTriangle size={10} />
+                Missing
+              </div>
+            )}
+
+            {/* Duration badge on thumbnail */}
+            {item.metadata?.duration && (
+              <div className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/70 rounded text-[9px] text-white font-mono">
+                {formatDuration(item.metadata.duration)}
+              </div>
+            )}
+
+            {/* Error overlay */}
+            {item.kieaiError && !isHovered && (
+              <div className="absolute inset-0 flex items-center justify-center bg-red-500/10">
+                <AlertTriangle
+                  size={viewMode === "small" ? 20 : 32}
+                  className="text-red-400/60"
+                />
+              </div>
+            )}
+
+            {/* Pending overlay */}
+            {!item.kieaiError && item.isPending && !isHovered && (
+              <div className="absolute inset-0 flex items-center justify-center bg-purple-500/10">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-400 border-t-transparent" />
+              </div>
+            )}
+
+            {/* Warning icon overlay for placeholders */}
+            {!item.kieaiError &&
+              !item.isPending &&
+              item.isPlaceholder &&
+              !isHovered && (
+                <div className="absolute inset-0 flex items-center justify-center bg-yellow-500/10">
+                  <AlertTriangle
+                    size={viewMode === "small" ? 20 : 32}
+                    className="text-yellow-500/50"
+                  />
+                </div>
+              )}
+
+            {/* Hover overlay with actions */}
+            {isHovered && hoverOverlay}
+
+            {/* Selection indicator */}
+            {isSelected && (
+              <div className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full shadow-[0_0_8px_#22c55e]" />
+            )}
           </div>
-        )}
 
-        {/* KieAI Error Badge */}
-        {item.kieaiError && (
-          <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-red-500 rounded text-[8px] text-white font-bold flex items-center gap-1">
-            <AlertTriangle size={8} />
-            Failed
+          {/* Metadata below thumbnail */}
+          <div className="mt-1.5 px-0.5">
+            <div
+              className={`text-[10px] truncate font-medium ${
+                isSelected ? "text-primary" : "text-text-primary"
+              }`}
+              title={item.name}>
+              {item.name}
+            </div>
+            {viewMode === "large" && (
+              <div className="flex items-center gap-1.5 text-[9px] text-text-muted mt-0.5">
+                {formatResolution() && <span>{formatResolution()}</span>}
+                {formatResolution() &&
+                  formatFileSize(item.metadata?.fileSize) && <span>•</span>}
+                {formatFileSize(item.metadata?.fileSize) && (
+                  <span>{formatFileSize(item.metadata?.fileSize)}</span>
+                )}
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Pending KieAI Badge */}
-        {!item.kieaiError && item.isPending && (
-          <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-purple-500 rounded text-[8px] text-white font-bold flex items-center gap-1">
-            <div className="h-2 w-2 animate-spin rounded-full border border-white border-t-transparent" />
-            AI
-          </div>
-        )}
-
-        {/* Missing Asset Badge */}
-        {!item.kieaiError && !item.isPending && item.isPlaceholder && (
-          <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-yellow-500 rounded text-[8px] text-black font-bold flex items-center gap-1">
-            <AlertTriangle size={10} />
-            Missing
-          </div>
-        )}
-
-        {/* Duration badge on thumbnail */}
-        {item.metadata?.duration && (
-          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/70 rounded text-[9px] text-white font-mono">
-            {formatDuration(item.metadata.duration)}
-          </div>
-        )}
-
-        {/* Error overlay */}
-        {item.kieaiError && !isHovered && (
-          <div className="absolute inset-0 flex items-center justify-center bg-red-500/10">
-            <AlertTriangle size={viewMode === "small" ? 20 : 32} className="text-red-400/60" />
-          </div>
-        )}
-
-        {/* Pending overlay */}
-        {!item.kieaiError && item.isPending && !isHovered && (
-          <div className="absolute inset-0 flex items-center justify-center bg-purple-500/10">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-400 border-t-transparent" />
-          </div>
-        )}
-
-        {/* Warning icon overlay for placeholders */}
-        {!item.kieaiError && !item.isPending && item.isPlaceholder && !isHovered && (
-          <div className="absolute inset-0 flex items-center justify-center bg-yellow-500/10">
-            <AlertTriangle size={viewMode === "small" ? 20 : 32} className="text-yellow-500/50" />
-          </div>
-        )}
-
-        {/* Hover overlay with actions */}
-        {isHovered && hoverOverlay}
-
-        {/* Selection indicator */}
-        {isSelected && (
-          <div className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full shadow-[0_0_8px_#22c55e]" />
-        )}
-      </div>
-
-      {/* Metadata below thumbnail */}
-      <div className="mt-1.5 px-0.5">
-        <div
-          className={`text-[10px] truncate font-medium ${
-            isSelected ? "text-primary" : "text-text-primary"
-          }`}
-          title={item.name}
-        >
-          {item.name}
         </div>
-        {viewMode === "large" && (
-          <div className="flex items-center gap-1.5 text-[9px] text-text-muted mt-0.5">
-            {formatResolution() && <span>{formatResolution()}</span>}
-            {formatResolution() && formatFileSize(item.metadata?.fileSize) && (
-              <span>•</span>
-            )}
-            {formatFileSize(item.metadata?.fileSize) && (
-              <span>{formatFileSize(item.metadata?.fileSize)}</span>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
         {item.type === "image" && onKieAI && (
@@ -543,7 +614,9 @@ const MediaThumbnail: React.FC<{
           <Plus size={13} className="mr-2" />
           Add to Timeline
         </ContextMenuItem>
-        <ContextMenuItem onClick={() => onDelete()} className="text-red-400 focus:text-red-400">
+        <ContextMenuItem
+          onClick={() => onDelete()}
+          className="text-red-400 focus:text-red-400">
           <Trash2 size={13} className="mr-2" />
           Delete
         </ContextMenuItem>
@@ -565,8 +638,7 @@ const EmptyState: React.FC<{ onImport: () => void }> = ({ onImport }) => (
     </p>
     <button
       onClick={onImport}
-      className="px-4 py-2 bg-background-elevated hover:bg-background-tertiary border border-border text-text-primary text-xs font-medium rounded-lg transition-all hover:border-primary/50"
-    >
+      className="px-4 py-2 bg-background-elevated hover:bg-background-tertiary border border-border text-text-primary text-xs font-medium rounded-lg transition-all hover:border-primary/50">
       Import Media
     </button>
   </div>
@@ -583,14 +655,22 @@ export const AssetsPanel: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTabRaw] = useState<AssetsTab>("media");
-  const ttsHasUnsaved = useTtsAudioStore((s) => s.generatedAudio !== null && !s.isAudioSaved);
+  const ttsHasUnsaved = useTtsAudioStore(
+    (s) => s.generatedAudio !== null && !s.isAudioSaved,
+  );
 
-  const setActiveTab = useCallback((tab: AssetsTab) => {
-    if (activeTab === "ai" && tab !== "ai" && ttsHasUnsaved) {
-      toast.warning("Unsaved audio discarded", "Save to media or download next time to keep it.");
-    }
-    setActiveTabRaw(tab);
-  }, [activeTab, ttsHasUnsaved]);
+  const setActiveTab = useCallback(
+    (tab: AssetsTab) => {
+      if (activeTab === "ai" && tab !== "ai" && ttsHasUnsaved) {
+        toast.warning(
+          "Unsaved audio discarded",
+          "Save to media or download next time to keep it.",
+        );
+      }
+      setActiveTabRaw(tab);
+    },
+    [activeTab, ttsHasUnsaved],
+  );
 
   const [isDragOver, setIsDragOver] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -611,7 +691,10 @@ export const AssetsPanel: React.FC = () => {
   >("all");
 
   // KieAI image generation dialog
-  const [kieaiDialog, setKieaiDialog] = useState<{ file: File; previewUrl: string | null } | null>(null);
+  const [kieaiDialog, setKieaiDialog] = useState<{
+    file: File;
+    previewUrl: string | null;
+  } | null>(null);
 
   // Project store
   const {
@@ -692,7 +775,11 @@ export const AssetsPanel: React.FC = () => {
               .filter((item) => item.kind === "file")
               .map(async (item) => {
                 try {
-                  const handle = await (item as DataTransferItem & { getAsFileSystemHandle(): Promise<FileSystemHandle> }).getAsFileSystemHandle();
+                  const handle = await (
+                    item as DataTransferItem & {
+                      getAsFileSystemHandle(): Promise<FileSystemHandle>;
+                    }
+                  ).getAsFileSystemHandle();
                   if (handle.kind === "file") {
                     const fileHandle = handle as FileSystemFileHandle;
                     const file = await fileHandle.getFile();
@@ -763,31 +850,54 @@ export const AssetsPanel: React.FC = () => {
 
   const handleRelinkFromFolder = useCallback(async () => {
     if (!("showDirectoryPicker" in window)) {
-      toast.error("Folder picker not supported", "Please relink assets individually using the refresh button on each missing asset.");
+      toast.error(
+        "Folder picker not supported",
+        "Please relink assets individually using the refresh button on each missing asset.",
+      );
       return;
     }
     let dirHandle: FileSystemDirectoryHandle;
     try {
-      dirHandle = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker();
+      dirHandle = await (
+        window as unknown as {
+          showDirectoryPicker: () => Promise<FileSystemDirectoryHandle>;
+        }
+      ).showDirectoryPicker();
     } catch {
       return; // user cancelled
     }
 
     const { project } = useProjectStore.getState();
-    const placeholders = project.mediaLibrary.items.filter((item) => item.isPlaceholder);
+    const placeholders = project.mediaLibrary.items.filter(
+      (item) => item.isPlaceholder,
+    );
     if (placeholders.length === 0) return;
 
     // Persist the directory handle for future auto-restore
-    try { await saveDirectoryHandle(project.id, dirHandle); } catch { /* best-effort */ }
+    try {
+      await saveDirectoryHandle(project.id, dirHandle);
+    } catch {
+      /* best-effort */
+    }
 
     // Build a name:size → {File, handle} map for reliable matching
-    const fileMap = new Map<string, { file: File; handle: FileSystemFileHandle }>();
-    const entries = (dirHandle as unknown as { entries: () => AsyncIterableIterator<[string, FileSystemHandle]> }).entries();
+    const fileMap = new Map<
+      string,
+      { file: File; handle: FileSystemFileHandle }
+    >();
+    const entries = (
+      dirHandle as unknown as {
+        entries: () => AsyncIterableIterator<[string, FileSystemHandle]>;
+      }
+    ).entries();
     for await (const [, fh] of entries) {
       if ((fh as FileSystemHandle).kind === "file") {
         const fileHandle = fh as FileSystemFileHandle;
         const file = await fileHandle.getFile();
-        fileMap.set(`${file.name.toLowerCase()}:${file.size}`, { file, handle: fileHandle });
+        fileMap.set(`${file.name.toLowerCase()}:${file.size}`, {
+          file,
+          handle: fileHandle,
+        });
       }
     }
 
@@ -803,7 +913,15 @@ export const AssetsPanel: React.FC = () => {
         setImportProgress(`Relinking ${item.name}…`);
         try {
           // Save individual file handle for future auto-restore
-          try { await saveFileHandle(entry.file.name, entry.file.size, entry.handle); } catch { /* best-effort */ }
+          try {
+            await saveFileHandle(
+              entry.file.name,
+              entry.file.size,
+              entry.handle,
+            );
+          } catch {
+            /* best-effort */
+          }
           await replaceMediaAsset(item.id, entry.file, dirHandle.name);
           linked++;
         } catch (err) {
@@ -815,9 +933,14 @@ export const AssetsPanel: React.FC = () => {
     setImportProgress("");
 
     if (linked > 0) {
-      toast.success(`Relinked ${linked} of ${placeholders.length} asset${placeholders.length !== 1 ? "s" : ""}`);
+      toast.success(
+        `Relinked ${linked} of ${placeholders.length} asset${placeholders.length !== 1 ? "s" : ""}`,
+      );
     } else {
-      toast.error("No matches found", "None of the files in the selected folder matched the missing assets by filename.");
+      toast.error(
+        "No matches found",
+        "None of the files in the selected folder matched the missing assets by filename.",
+      );
     }
   }, [replaceMediaAsset]);
 
@@ -882,7 +1005,11 @@ export const AssetsPanel: React.FC = () => {
         const projectHeight = currentProject.settings.height;
 
         if (videoWidth !== projectWidth || videoHeight !== projectHeight) {
-          setAspectRatioDialogData({ videoWidth, videoHeight, itemToAdd: item });
+          setAspectRatioDialogData({
+            videoWidth,
+            videoHeight,
+            itemToAdd: item,
+          });
           setShowAspectRatioDialog(true);
           return;
         }
@@ -930,24 +1057,34 @@ export const AssetsPanel: React.FC = () => {
     try {
       const blob = await loadMediaBlob(item.id);
       if (!blob) {
-        toast.error("Asset not found", "Cannot load the image data for this asset.");
+        toast.error(
+          "Asset not found",
+          "Cannot load the image data for this asset.",
+        );
         return;
       }
-      const mimeType = blob.type || (item.name.match(/\.png$/i) ? "image/png" : "image/jpeg");
+      const mimeType =
+        blob.type || (item.name.match(/\.png$/i) ? "image/png" : "image/jpeg");
       const file = new File([blob], item.name, { type: mimeType as string });
       setKieaiDialog({ file, previewUrl: item.thumbnailUrl });
     } catch (err) {
       console.error("[KieAI] Failed to load media blob:", err);
-      toast.error("Failed to open KieAI", err instanceof Error ? err.message : "Unknown error");
+      toast.error(
+        "Failed to open KieAI",
+        err instanceof Error ? err.message : "Unknown error",
+      );
     }
   }, []);
 
-  const handleRetryKieAI = useCallback((item: MediaItem) => {
-    if (!item.kieaiTaskId) return;
-    // Reset error state and re-activate polling
-    setKieAIItemState(item.id, true, false);
-    retryTask(item.kieaiTaskId);
-  }, [retryTask, setKieAIItemState]);
+  const handleRetryKieAI = useCallback(
+    (item: MediaItem) => {
+      if (!item.kieaiTaskId) return;
+      // Reset error state and re-activate polling
+      setKieAIItemState(item.id, true, false);
+      retryTask(item.kieaiTaskId);
+    },
+    [retryTask, setKieAIItemState],
+  );
 
   const renderSectionContent = (tab: AssetsTab): React.ReactNode => {
     switch (tab) {
@@ -956,7 +1093,10 @@ export const AssetsPanel: React.FC = () => {
           <div className="flex min-h-0 flex-1 flex-col border-t border-border/70">
             <div className="px-4 pt-3 pb-3 flex items-center gap-2">
               <div className="relative flex-1">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted z-10" />
+                <Search
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted z-10"
+                />
                 <Input
                   type="text"
                   value={searchQuery}
@@ -966,11 +1106,19 @@ export const AssetsPanel: React.FC = () => {
                 />
               </div>
               <div className="flex items-center bg-background-tertiary border border-border rounded-lg p-0.5">
-                {([
-                  { mode: "large" as const, icon: LayoutGrid, title: "Large icons" },
-                  { mode: "small" as const, icon: Grid2x2, title: "Small icons" },
+                {[
+                  {
+                    mode: "large" as const,
+                    icon: LayoutGrid,
+                    title: "Large icons",
+                  },
+                  {
+                    mode: "small" as const,
+                    icon: Grid2x2,
+                    title: "Small icons",
+                  },
                   { mode: "list" as const, icon: List, title: "List view" },
-                ]).map(({ mode, icon: ViewIcon, title }) => (
+                ].map(({ mode, icon: ViewIcon, title }) => (
                   <button
                     key={mode}
                     onClick={() => setMediaViewMode(mode)}
@@ -979,8 +1127,7 @@ export const AssetsPanel: React.FC = () => {
                       mediaViewMode === mode
                         ? "bg-background-elevated text-text-primary"
                         : "text-text-muted hover:text-text-secondary"
-                    }`}
-                  >
+                    }`}>
                     <ViewIcon size={13} />
                   </button>
                 ))}
@@ -995,8 +1142,7 @@ export const AssetsPanel: React.FC = () => {
                     showOnlyMissing
                       ? "bg-yellow-500/10 border-yellow-500 text-yellow-500"
                       : "bg-background-tertiary border-border text-text-secondary hover:border-yellow-500/50"
-                  }`}
-                >
+                  }`}>
                   <div className="flex items-center gap-2">
                     <AlertTriangle size={14} />
                     <span>Show Only Missing Assets</span>
@@ -1007,8 +1153,7 @@ export const AssetsPanel: React.FC = () => {
                 </button>
                 <button
                   onClick={handleRelinkFromFolder}
-                  className="w-full px-3 py-2 rounded-lg border border-yellow-500/40 bg-yellow-500/5 text-yellow-500 text-xs font-medium transition-all hover:bg-yellow-500/15 flex items-center gap-2"
-                >
+                  className="w-full px-3 py-2 rounded-lg border border-yellow-500/40 bg-yellow-500/5 text-yellow-500 text-xs font-medium transition-all hover:bg-yellow-500/15 flex items-center gap-2">
                   <RefreshCw size={14} />
                   <span>Relink from Folder…</span>
                 </button>
@@ -1019,19 +1164,19 @@ export const AssetsPanel: React.FC = () => {
               className={`min-h-0 flex-1 ${isDragOver ? "bg-primary/5" : ""}`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-            >
+              onDragLeave={handleDragLeave}>
               <div className="px-4 pb-4 relative">
                 {filteredItems.length === 0 ? (
                   <EmptyState onImport={triggerFileInput} />
                 ) : (
-                  <div className={
-                    mediaViewMode === "list"
-                      ? "flex flex-col gap-1.5"
-                      : mediaViewMode === "small"
-                        ? "grid grid-cols-3 gap-2"
-                        : "grid grid-cols-2 gap-3"
-                  }>
+                  <div
+                    className={
+                      mediaViewMode === "list"
+                        ? "flex flex-col gap-1.5"
+                        : mediaViewMode === "small"
+                          ? "grid grid-cols-3 gap-2"
+                          : "grid grid-cols-2 gap-3"
+                    }>
                     {filteredItems.map((item) => (
                       <MediaThumbnail
                         key={item.id}
@@ -1043,29 +1188,47 @@ export const AssetsPanel: React.FC = () => {
                         onReplace={() => handleReplaceAsset(item.id)}
                         onDragStart={(e) => handleItemDragStart(e, item)}
                         onAddToTimeline={() => handleAddToTimeline(item)}
-                        onKieAI={item.type === "image" && !item.isPending && !item.kieaiError ? () => handleOpenKieAI(item) : undefined}
-                        onRetryKieAI={item.kieaiError && item.kieaiTaskId ? () => handleRetryKieAI(item) : undefined}
+                        onKieAI={
+                          item.type === "image" &&
+                          !item.isPending &&
+                          !item.kieaiError
+                            ? () => handleOpenKieAI(item)
+                            : undefined
+                        }
+                        onRetryKieAI={
+                          item.kieaiError && item.kieaiTaskId
+                            ? () => handleRetryKieAI(item)
+                            : undefined
+                        }
                       />
                     ))}
                     {mediaViewMode === "list" ? (
                       <button
                         onClick={triggerFileInput}
-                        className="flex items-center gap-3 px-2 py-1.5 rounded-lg border-2 border-dashed border-border hover:border-text-secondary cursor-pointer transition-all group"
-                      >
+                        className="flex items-center gap-3 px-2 py-1.5 rounded-lg border-2 border-dashed border-border hover:border-text-secondary cursor-pointer transition-all group">
                         <div className="w-12 h-8 rounded bg-background-tertiary flex items-center justify-center flex-shrink-0">
-                          <Upload size={14} className="text-text-muted group-hover:text-text-secondary transition-colors" />
+                          <Upload
+                            size={14}
+                            className="text-text-muted group-hover:text-text-secondary transition-colors"
+                          />
                         </div>
-                        <span className="text-[11px] text-text-muted group-hover:text-text-secondary transition-colors font-medium">Add media</span>
+                        <span className="text-[11px] text-text-muted group-hover:text-text-secondary transition-colors font-medium">
+                          Add media
+                        </span>
                       </button>
                     ) : (
                       <div className="flex flex-col">
                         <button
                           onClick={triggerFileInput}
-                          className="aspect-video bg-background-tertiary rounded-lg border-2 border-dashed border-border hover:border-text-secondary relative flex items-center justify-center cursor-pointer transition-all overflow-hidden shadow-sm group"
-                        >
+                          className="aspect-video bg-background-tertiary rounded-lg border-2 border-dashed border-border hover:border-text-secondary relative flex items-center justify-center cursor-pointer transition-all overflow-hidden shadow-sm group">
                           <div className="flex flex-col items-center gap-1.5">
-                            <Upload size={mediaViewMode === "small" ? 16 : 20} className="text-text-muted group-hover:text-text-secondary transition-colors" />
-                            <span className="text-[10px] text-text-muted group-hover:text-text-secondary transition-colors">Add media</span>
+                            <Upload
+                              size={mediaViewMode === "small" ? 16 : 20}
+                              className="text-text-muted group-hover:text-text-secondary transition-colors"
+                            />
+                            <span className="text-[10px] text-text-muted group-hover:text-text-secondary transition-colors">
+                              Add media
+                            </span>
                           </div>
                         </button>
                       </div>
@@ -1097,21 +1260,20 @@ export const AssetsPanel: React.FC = () => {
                     </h4>
                   </div>
                   <div className="flex gap-1.5 mb-3 flex-wrap">
-                    {(["all", "solid", "gradient", "mesh", "pattern"] as const).map(
-                      (cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => setBackgroundCategory(cat)}
-                          className={`px-2.5 py-1 text-[10px] rounded-md transition-all ${
-                            backgroundCategory === cat
-                              ? "bg-primary text-white"
-                              : "bg-background-tertiary text-text-muted hover:text-text-secondary"
-                          }`}
-                        >
-                          {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                        </button>
-                      ),
-                    )}
+                    {(
+                      ["all", "solid", "gradient", "mesh", "pattern"] as const
+                    ).map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setBackgroundCategory(cat)}
+                        className={`px-2.5 py-1 text-[10px] rounded-md transition-all ${
+                          backgroundCategory === cat
+                            ? "bg-primary text-white"
+                            : "bg-background-tertiary text-text-muted hover:text-text-secondary"
+                        }`}>
+                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                      </button>
+                    ))}
                   </div>
                   <div className="grid grid-cols-4 gap-2">
                     {filteredBackgrounds.map((preset) => (
@@ -1121,8 +1283,7 @@ export const AssetsPanel: React.FC = () => {
                         disabled={generatingBackground !== null}
                         className="aspect-square rounded-lg border border-border hover:border-primary/50 transition-all overflow-hidden relative group disabled:opacity-50"
                         title={preset.name}
-                        style={{ background: preset.thumbnail }}
-                      >
+                        style={{ background: preset.thumbnail }}>
                         {generatingBackground === preset.id && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1150,7 +1311,11 @@ export const AssetsPanel: React.FC = () => {
                         icon: Square,
                         label: "Rectangle",
                       },
-                      { type: "circle" as ShapeType, icon: Circle, label: "Circle" },
+                      {
+                        type: "circle" as ShapeType,
+                        icon: Circle,
+                        label: "Circle",
+                      },
                       {
                         type: "triangle" as ShapeType,
                         icon: Triangle,
@@ -1187,8 +1352,7 @@ export const AssetsPanel: React.FC = () => {
                           }
                         }}
                         className="aspect-square bg-background-tertiary rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-1 group"
-                        title={shape.label}
-                      >
+                        title={shape.label}>
                         <shape.icon
                           size={20}
                           className="text-text-secondary group-hover:text-primary transition-colors"
@@ -1206,19 +1370,47 @@ export const AssetsPanel: React.FC = () => {
                     3D Objects
                   </h4>
                   <div className="grid grid-cols-3 gap-2">
-                    {([
-                      { type: "mesh-cube" as ShapeType, label: "Cube", icon: "□" },
-                      { type: "mesh-sphere" as ShapeType, label: "Sphere", icon: "○" },
-                      { type: "mesh-torus" as ShapeType, label: "Torus", icon: "◯" },
-                      { type: "mesh-cone" as ShapeType, label: "Cone", icon: "△" },
-                      { type: "mesh-cylinder" as ShapeType, label: "Cylinder", icon: "▯" },
-                      { type: "mesh-icosahedron" as ShapeType, label: "Icosahedron", icon: "◆" },
-                    ]).map((mesh) => (
+                    {[
+                      {
+                        type: "mesh-cube" as ShapeType,
+                        label: "Cube",
+                        icon: "□",
+                      },
+                      {
+                        type: "mesh-sphere" as ShapeType,
+                        label: "Sphere",
+                        icon: "○",
+                      },
+                      {
+                        type: "mesh-torus" as ShapeType,
+                        label: "Torus",
+                        icon: "◯",
+                      },
+                      {
+                        type: "mesh-cone" as ShapeType,
+                        label: "Cone",
+                        icon: "△",
+                      },
+                      {
+                        type: "mesh-cylinder" as ShapeType,
+                        label: "Cylinder",
+                        icon: "▯",
+                      },
+                      {
+                        type: "mesh-icosahedron" as ShapeType,
+                        label: "Icosahedron",
+                        icon: "◆",
+                      },
+                    ].map((mesh) => (
                       <button
                         key={mesh.type}
                         onClick={async () => {
                           const state = useProjectStore.getState();
-                          const { createShapeClip, addTrack, updateClipRotate3D } = state;
+                          const {
+                            createShapeClip,
+                            addTrack,
+                            updateClipRotate3D,
+                          } = state;
                           const tracksBefore = state.project.timeline.tracks;
                           await addTrack("graphics", 0);
                           const tracksAfter =
@@ -1247,8 +1439,7 @@ export const AssetsPanel: React.FC = () => {
                           }
                         }}
                         className="aspect-square bg-background-tertiary rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-1 group"
-                        title={mesh.label}
-                      >
+                        title={mesh.label}>
                         <span className="text-2xl text-text-secondary group-hover:text-primary transition-colors leading-none">
                           {mesh.icon}
                         </span>
@@ -1291,8 +1482,7 @@ export const AssetsPanel: React.FC = () => {
                       };
                       input.click();
                     }}
-                    className="w-full py-3 bg-background-tertiary rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 group"
-                  >
+                    className="w-full py-3 bg-background-tertiary rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 group">
                     <FileCode
                       size={16}
                       className="text-text-secondary group-hover:text-primary transition-colors"
@@ -1315,12 +1505,14 @@ export const AssetsPanel: React.FC = () => {
                           onClick={async () => {
                             const state = useProjectStore.getState();
                             const { createStickerClip, addTrack } = state;
-                            const { stickerLibrary } = await import("@openreel/core");
+                            const { stickerLibrary } =
+                              await import("@openreel/core");
 
                             const tracksBefore = state.project.timeline.tracks;
                             await addTrack("graphics", 0);
                             const tracksAfter =
-                              useProjectStore.getState().project.timeline.tracks;
+                              useProjectStore.getState().project.timeline
+                                .tracks;
                             const newGraphicsTrack = tracksAfter.find(
                               (t) =>
                                 t.type === "graphics" &&
@@ -1343,8 +1535,7 @@ export const AssetsPanel: React.FC = () => {
                               createStickerClip(clip);
                             }
                           }}
-                          className="aspect-square bg-background-tertiary rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center text-xl cursor-pointer"
-                        >
+                          className="aspect-square bg-background-tertiary rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center text-xl cursor-pointer">
                           {emoji}
                         </button>
                       ),
@@ -1377,8 +1568,7 @@ export const AssetsPanel: React.FC = () => {
                       createTextClip(newTextTrack.id, 0, "New Title");
                     }
                   }}
-                  className="w-full py-4 bg-background-tertiary rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-center"
-                >
+                  className="w-full py-4 bg-background-tertiary rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-center">
                   <span className="text-lg font-bold text-text-primary">
                     Add Title
                   </span>
@@ -1458,8 +1648,7 @@ export const AssetsPanel: React.FC = () => {
                           );
                         }
                       }}
-                      className="py-3 bg-background-tertiary rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-xs text-text-secondary hover:text-text-primary"
-                    >
+                      className="py-3 bg-background-tertiary rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-xs text-text-secondary hover:text-text-primary">
                       {preset.name}
                     </button>
                   ))}
@@ -1506,10 +1695,9 @@ export const AssetsPanel: React.FC = () => {
   return (
     <div
       data-tour="assets"
-      className="w-full min-w-0 bg-bg-1 flex flex-col h-full relative"
-    >
+      className="w-full min-w-0 bg-bg-1 flex flex-col h-full relative">
       {/* ── Horizontal tool nav (icon + label, top) ──────────── */}
-      <div className="flex items-stretch gap-0.5 px-2 pt-2 pb-1 border-b border-border bg-bg-1 overflow-x-auto scrollbar-none shrink-0">
+      <div className="flex items-stretch gap-0.5 px-2 pt-2 pb-1 border-b border-border bg-bg-1 overflow-x-auto shrink-0">
         {ASSETS_TABS.map((tab) => {
           const Icon = TAB_ICONS[tab.value];
           const isActive = activeTab === tab.value;
@@ -1522,15 +1710,13 @@ export const AssetsPanel: React.FC = () => {
                 isActive
                   ? "text-accent"
                   : "text-fg-3 hover:text-fg hover:bg-hover"
-              }`}
-            >
+              }`}>
               <span
                 className={`w-7 h-7 grid place-items-center rounded-md transition-colors ${
                   isActive
                     ? "bg-accent-soft text-accent"
                     : "text-fg-2 group-hover:text-fg"
-                }`}
-              >
+                }`}>
                 <Icon size={17} strokeWidth={1.6} />
               </span>
               <span className={isActive ? "text-accent" : ""}>{tab.label}</span>
@@ -1554,8 +1740,7 @@ export const AssetsPanel: React.FC = () => {
             <button
               onClick={triggerFileInput}
               title="Import media"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent text-accent-fg font-semibold text-[11.5px] hover:bg-accent-strong transition-colors"
-            >
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent text-accent-fg font-semibold text-[11.5px] hover:bg-accent-strong transition-colors">
               <Plus size={12} />
               <span>Import</span>
             </button>
