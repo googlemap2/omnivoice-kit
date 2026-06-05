@@ -21,7 +21,7 @@ export const InspectorTabs: React.FC<InspectorTabsProps> = ({ tabs, activeId, on
     <div
       role="tablist"
       aria-label="Inspector tabs"
-      className="flex items-center gap-0.5 px-2 border-b border-border overflow-x-auto scrollbar-none shrink-0"
+      className="flex min-w-0 max-w-full items-center gap-0.5 overflow-x-auto overflow-y-hidden border-b border-border px-2 pb-1 shrink-0 custom-scrollbar"
     >
       {tabs.map((tab, index) => {
         const Icon = tab.icon;
@@ -35,7 +35,7 @@ export const InspectorTabs: React.FC<InspectorTabsProps> = ({ tabs, activeId, on
             onClick={() => onSelect(tab.id)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={cn(
-              "flex items-center gap-1.5 px-2.5 py-2 text-[12px] font-medium whitespace-nowrap transition-colors border-b-2 -mb-px",
+              "flex shrink-0 items-center gap-1.5 px-2.5 py-2 text-[12px] font-medium whitespace-nowrap transition-colors border-b-2 -mb-px",
               active
                 ? "text-accent border-accent"
                 : "text-fg-3 border-transparent hover:text-fg",
