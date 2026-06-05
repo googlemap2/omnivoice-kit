@@ -38,6 +38,8 @@ provider.
 | Local database | SQLite |
 | Python environment | uv |
 | JavaScript runtime/package manager | Bun |
+
+Current `video-editor/` integration status: OpenCut rewrite route `/` contains an OmniVoice backend test panel for backend URL settings, health/memory diagnostics, model unload, file transcription, and emotion-script TTS preview/download. Full timeline integration is pending.
 | Audio processing | torchaudio, soundfile, pydub, pedalboard |
 | Video/audio processing | FFmpeg |
 | ML runtime | PyTorch, transformers, CTranslate2 |

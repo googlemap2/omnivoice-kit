@@ -19,11 +19,11 @@ git clone --depth 1 https://github.com/opencut-app/opencut-classic.git external/
 
 ## 1. Kết luận kỹ thuật
 
-`opencut-classic` là lựa chọn phù hợp hơn `opencut-app/opencut` hiện tại nếu mục tiêu ngắn hạn là có video editor web đầy đủ để tích hợp OmniVoice.
+`opencut-classic` là lựa chọn phù hợp hơn `opencut-app/opencut` hiện tại nếu mục tiêu ngắn hạn là có video editor web đầy đủ để tích hợp OmniVoice vào timeline.
 
 Lý do:
 
-- `opencut-app/opencut` hiện là rewrite mới, app web còn rất mỏng.
+- `opencut-app/opencut` hiện là rewrite mới, app web còn rất mỏng. Trong repo này, route `/` của `video-editor` đã có OmniVoice backend test panel, nhưng chưa có timeline editor.
 - `opencut-classic` đã có editor thực tế:
   - Media import.
   - Timeline nhiều track.

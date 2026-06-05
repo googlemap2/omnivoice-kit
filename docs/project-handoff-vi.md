@@ -116,6 +116,8 @@ API liên quan model:
 
 - `video-editor/` hiện dùng upstream `opencut-app/opencut` thay cho editor OpenReel/custom trước đó.
 - Runtime/package manager: Bun workspace + Turbo; app chính là `@opencut/web` trong `video-editor/apps/web`.
+- OmniVoice integration hiện tại nằm ở route `/` của `video-editor`: setting backend URL, health/memory/unload, transcription upload, emotion-script TTS preview/download.
+- API client: `video-editor/apps/web/src/services/omnivoice.ts`.
 - Lệnh chính:
   - `cd video-editor`
   - `bun install --frozen-lockfile`
