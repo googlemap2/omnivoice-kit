@@ -32,9 +32,7 @@ CORS_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://5365fbfj-3000.asse.devtunnels.ms",
-    "http://127.0.0.1:1420",
-    "http://localhost:1420",
-    "tauri://localhost",
+    "http://localhost:5173",
     # Add your frontend/ngrok domains here, for example:
     # "https://your-frontend-domain.ngrok-free.dev",
 ]
