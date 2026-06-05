@@ -123,6 +123,7 @@ export interface ProjectState {
   importMedia: (file: File) => Promise<ActionResult>;
   deleteMedia: (mediaId: string) => Promise<ActionResult>;
   replaceMediaAsset: (mediaId: string, file: File, sourceFolder?: string) => Promise<ActionResult>;
+  replaceClipMediaAsset: (clipId: string, file: File) => Promise<ActionResult>;
   renameMedia: (mediaId: string, name: string) => Promise<ActionResult>;
   getMediaItem: (mediaId: string) => MediaItem | undefined;
   /** Add a pending placeholder for a background KieAI task */
@@ -2073,6 +2074,48 @@ export const useProjectStore = create<ProjectState>()(
             },
           };
         }
+      },
+
+      replaceClipMediaAsset: async (clipId: string, file: File) => {
+        const clip = get().getClip(clipId);
+        if (!clip) {
+          return {
+            success: false,
+            error: {
+              code: "CLIP_NOT_FOUND" as const,
+              message: "Clip not found",
+            },
+          };
+        }
+
+        const importResult = await get().importMedia(file);
+        if (!importResult.success || !importResult.actionId) {
+          return importResult;
+        }
+
+        const mediaItem = get().getMediaItem(importResult.actionId);
+        const mediaDuration = mediaItem?.metadata.duration || clip.duration;
+        const { project } = get();
+        const updatedProject = updateProjectClip(project, clipId, (currentClip) => ({
+          ...currentClip,
+          mediaId: importResult.actionId!,
+          duration: mediaDuration,
+          inPoint: 0,
+          outPoint: mediaDuration,
+        }));
+
+        if (!updatedProject) {
+          return {
+            success: false,
+            error: {
+              code: "CLIP_NOT_FOUND" as const,
+              message: "Clip not found",
+            },
+          };
+        }
+
+        set({ project: updatedProject });
+        return { success: true, actionId: importResult.actionId };
       },
 
       renameMedia: async (mediaId: string, name: string) => {

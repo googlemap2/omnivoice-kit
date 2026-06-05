@@ -143,7 +143,7 @@ export const AiTab: React.FC<AiTabProps> = ({
   isApplyingSelectedClipEffect,
 }) => {
   const importMedia = useProjectStore((state) => state.importMedia);
-  const replaceMediaAsset = useProjectStore((state) => state.replaceMediaAsset);
+  const replaceClipMediaAsset = useProjectStore((state) => state.replaceClipMediaAsset);
   const getClip = useProjectStore((state) => state.getClip);
   const updateClipMetadata = useProjectStore((state) => state.updateClipMetadata);
   const addClipToNewTrack = useProjectStore((state) => state.addClipToNewTrack);
@@ -163,6 +163,7 @@ export const AiTab: React.FC<AiTabProps> = ({
   const [isGeneratingTts, setIsGeneratingTts] = React.useState(false);
   const [ttsAudio, setTtsAudio] = React.useState<Blob | null>(null);
   const [ttsAudioUrl, setTtsAudioUrl] = React.useState<string | null>(null);
+  const [ttsAudioRequestKey, setTtsAudioRequestKey] = React.useState<string | null>(null);
   const [isPlayingTts, setIsPlayingTts] = React.useState(false);
   const ttsAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const selectedProviderModel = providerModels.find(
@@ -216,12 +217,24 @@ export const AiTab: React.FC<AiTabProps> = ({
     setTtsText(selectedAudioTtsText);
   }, [clipId, clipType, selectedAudioTtsText]);
 
+  const buildTtsRequestKey = React.useCallback(
+    (text: string) =>
+      JSON.stringify({
+        text: text.trim(),
+        voice: ttsVoiceId,
+        language: ttsLanguage !== "auto" ? ttsLanguage : "",
+        speed: ttsSpeed,
+      }),
+    [ttsLanguage, ttsSpeed, ttsVoiceId],
+  );
+
   const setGeneratedTtsAudio = React.useCallback(
-    (blob: Blob) => {
+    (blob: Blob, requestKey: string) => {
       if (ttsAudioUrl) URL.revokeObjectURL(ttsAudioUrl);
       const nextUrl = URL.createObjectURL(blob);
       setTtsAudio(blob);
       setTtsAudioUrl(nextUrl);
+      setTtsAudioRequestKey(requestKey);
       if (ttsAudioRef.current) {
         ttsAudioRef.current.src = nextUrl;
       }
@@ -230,26 +243,30 @@ export const AiTab: React.FC<AiTabProps> = ({
   );
 
   const generateTtsFromText = React.useCallback(async (text: string) => {
-    if (!text.trim() || !ttsVoiceId) return;
+    const normalizedText = text.trim();
+    if (!normalizedText || !ttsVoiceId) return null;
+    const requestKey = buildTtsRequestKey(normalizedText);
     setIsGeneratingTts(true);
     try {
       const blob = await generateOmniVoiceSpeech({
-        text: text.trim(),
+        text: normalizedText,
         voice: ttsVoiceId,
         language: ttsLanguage !== "auto" ? ttsLanguage : undefined,
         speed: ttsSpeed,
       });
-      setGeneratedTtsAudio(blob);
+      setGeneratedTtsAudio(blob, requestKey);
       toast.success("OmniVoice TTS generated", "Audio is ready.");
+      return blob;
     } catch (error) {
       toast.error(
         "OmniVoice TTS failed",
         error instanceof Error ? error.message : "Could not generate speech.",
       );
+      return null;
     } finally {
       setIsGeneratingTts(false);
     }
-  }, [setGeneratedTtsAudio, ttsLanguage, ttsSpeed, ttsVoiceId]);
+  }, [buildTtsRequestKey, setGeneratedTtsAudio, ttsLanguage, ttsSpeed, ttsVoiceId]);
 
   const handleGenerateOmniVoiceTts = React.useCallback(async () => {
     await generateTtsFromText(ttsText);
@@ -440,28 +457,33 @@ export const AiTab: React.FC<AiTabProps> = ({
   ]);
 
   const handleReplaceSelectedAudioWithTts = React.useCallback(async () => {
-    if (!selectedAudioClip || !ttsText.trim() || !ttsVoiceId) return;
+    const normalizedText = ttsText.trim();
+    if (!selectedAudioClip || !normalizedText || !ttsVoiceId) return;
 
     setIsGeneratingTts(true);
     try {
-      const blob = await generateOmniVoiceSpeech({
-        text: ttsText.trim(),
-        voice: ttsVoiceId,
-        language: ttsLanguage !== "auto" ? ttsLanguage : undefined,
-        speed: ttsSpeed,
-      });
+      const requestKey = buildTtsRequestKey(normalizedText);
+      let blob = ttsAudioRequestKey === requestKey ? ttsAudio : null;
+      if (!blob) {
+        blob = await generateOmniVoiceSpeech({
+          text: normalizedText,
+          voice: ttsVoiceId,
+          language: ttsLanguage !== "auto" ? ttsLanguage : undefined,
+          speed: ttsSpeed,
+        });
+        setGeneratedTtsAudio(blob, requestKey);
+      }
       const file = new File([blob], ttsFileName(), { type: "audio/wav" });
-      const result = await replaceMediaAsset(selectedAudioClip.mediaId, file);
+      const result = await replaceClipMediaAsset(selectedAudioClip.id, file);
       if (!result.success) {
         throw new Error(String(result.error || "Could not replace selected audio."));
       }
       updateClipMetadata(selectedAudioClip.id, {
-        omnivoiceTtsText: ttsText.trim(),
+        omnivoiceTtsText: normalizedText,
         omnivoiceTtsVoiceId: ttsVoiceId,
         omnivoiceTtsLanguage: ttsLanguage,
         omnivoiceTtsSpeed: ttsSpeed,
       });
-      setGeneratedTtsAudio(blob);
       toast.success(
         "Selected audio replaced",
         "The selected audio clip now uses the regenerated OmniVoice TTS.",
@@ -475,9 +497,12 @@ export const AiTab: React.FC<AiTabProps> = ({
       setIsGeneratingTts(false);
     }
   }, [
-    replaceMediaAsset,
+    buildTtsRequestKey,
+    replaceClipMediaAsset,
     selectedAudioClip,
     setGeneratedTtsAudio,
+    ttsAudio,
+    ttsAudioRequestKey,
     ttsFileName,
     ttsLanguage,
     ttsSpeed,
@@ -931,20 +956,28 @@ export const AiTab: React.FC<AiTabProps> = ({
                 ) : (
                   <>
                     <Volume2 size={14} />
-                    Generate Speech with OmniVoice
+                    {clipType === "audio"
+                      ? "Preview regenerated audio"
+                      : "Generate Speech with OmniVoice"}
                   </>
                 )}
               </button>
 
               {clipType === "audio" && selectedAudioClip && (
-                <button
-                  onClick={handleReplaceSelectedAudioWithTts}
-                  disabled={isGeneratingTts || !ttsText.trim() || !ttsVoiceId}
-                  className="w-full py-2 bg-background-tertiary hover:bg-background-tertiary/80 border border-border text-text-primary rounded-lg text-[11px] font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Volume2 size={14} />
-                  Regenerate and replace selected audio
-                </button>
+                <>
+                  <button
+                    onClick={handleReplaceSelectedAudioWithTts}
+                    disabled={isGeneratingTts || !ttsText.trim() || !ttsVoiceId}
+                    className="w-full py-2 bg-background-tertiary hover:bg-background-tertiary/80 border border-border text-text-primary rounded-lg text-[11px] font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Volume2 size={14} />
+                    Replace selected audio with preview
+                  </button>
+                  <p className="text-[10px] leading-4 text-text-muted">
+                    Preview first to verify voice. Replace uses the preview audio when
+                    text, voice, language, and speed still match.
+                  </p>
+                </>
               )}
 
               {ttsAudio && (
