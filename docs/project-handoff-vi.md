@@ -343,9 +343,11 @@ Input:
 - Có `RotatingFileHandler` và redaction cho token/API key/secret/password.
 - API:
   - `GET /v1/diagnostics`
+  - `GET /v1/diagnostics/memory`
   - `GET /v1/logs?limit=200`
   - `DELETE /v1/logs`
 - Diagnostics gồm system info, Python executable, torch/CUDA/MPS status, ffmpeg/ffprobe, model cache path/status/size.
+- Colab RAM policy: `VOICEKIT_KEEP_MODELS_LOADED=false` mặc định; API TTS lẻ release model sau request, emotion-script TTS dùng một model tạm trong request rồi release. Có thể bật cache riêng bằng `VOICEKIT_CACHE_TTS=true` hoặc `VOICEKIT_CACHE_EMOTION_TTS=true`. `POST /v1/models/unload` clear cache thủ công, có thể lọc theo `feature`.
 - UI: tab `Diagnostics` trong `frontend/src/app/(studio)/settings/page.tsx`.
 
 Output formats:
@@ -650,6 +652,7 @@ Model/settings:
 
 - `GET /v1/model-status`
 - `POST /v1/model-status/install`
+- `POST /v1/models/unload`
 - `GET /v1/settings`
 - `PUT /v1/settings`
 

@@ -135,12 +135,14 @@ def _cuda_memory_info() -> dict[str, Any]:
 
 def _loaded_model_info() -> dict[str, Any]:
     try:
+        from backend.services.model_cache_policy import cache_policy_snapshot
         from backend.services.speech_service import MODEL_CACHE
     except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}"}
     return {
         "omnivoice_models": list(MODEL_CACHE.keys()),
         "omnivoice_model_count": len(MODEL_CACHE),
+        "cache_policy": cache_policy_snapshot(),
     }
 
 
@@ -192,4 +194,12 @@ def diagnostics_snapshot() -> dict[str, Any]:
             "path": str(LOG_FILE.resolve()),
             "exists": LOG_FILE.exists(),
         },
+    }
+
+
+def memory_snapshot() -> dict[str, Any]:
+    return {
+        "process_memory": _process_memory_info(),
+        "cuda_memory": _cuda_memory_info(),
+        "loaded_models": _loaded_model_info(),
     }

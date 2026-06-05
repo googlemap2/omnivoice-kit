@@ -9,10 +9,13 @@ import soundfile as sf
 from backend.domain.audio import EFFECT_PRESETS, apply_effect_preset
 from backend.services.speech_service import (
     align_voice_clone_prompt_to_model,
+    get_feature_model,
     get_profile_store,
     load_model,
     load_voice_clone_prompt,
+    release_torch_memory,
 )
+from backend.services.model_cache_policy import should_cache_model
 
 
 DEFAULT_TAG_ALIASES = {
@@ -151,50 +154,60 @@ def render_emotion_tts_speaker_id(
     if not segments:
         raise ValueError("No text segments were found after parsing tags.")
 
-    model = load_model(model_id, device)
-    voice_clone_prompt = align_voice_clone_prompt_to_model(voice_clone_prompt, model)
-    sample_rate = int(model.sampling_rate)
-    gap_samples = int(max(gap_ms, 0) * sample_rate / 1000)
-    gap_audio = np.zeros(gap_samples, dtype=np.float32) if gap_samples > 0 else None
+    cache_model = should_cache_model("emotion_tts") and device is None
+    model = (
+        get_feature_model("emotion_tts", model_id)
+        if cache_model
+        else load_model(model_id, device)
+    )
+    try:
+        voice_clone_prompt = align_voice_clone_prompt_to_model(voice_clone_prompt, model)
+        sample_rate = int(model.sampling_rate)
+        gap_samples = int(max(gap_ms, 0) * sample_rate / 1000)
+        gap_audio = np.zeros(gap_samples, dtype=np.float32) if gap_samples > 0 else None
 
-    rendered: list[np.ndarray] = []
-    debug_segments: list[dict] = []
-    for idx, segment in enumerate(segments):
-        instruct = _resolve_instruct(segment.tag, tag_aliases, default_instruct)
-        audio = model.generate(
-            text=segment.text,
-            language=chosen_language,
-            voice_clone_prompt=voice_clone_prompt,
-            instruct=instruct,
-            num_step=num_step,
-            guidance_scale=guidance_scale,
-            speed=speed,
-            duration=duration,
-            denoise=denoise,
-            preprocess_prompt=preprocess_prompt,
-            postprocess_output=postprocess_output,
-        )[0]
-        audio = apply_effect_preset(audio, effect_preset).astype(np.float32)
-        rendered.append(audio)
-        if gap_audio is not None and idx < len(segments) - 1:
-            rendered.append(gap_audio)
-        debug_segments.append(
-            {
-                "index": idx,
-                "tag": segment.tag,
-                "instruct": instruct,
-                "text": segment.text,
-                "samples": int(audio.shape[0]),
-            }
-        )
+        rendered: list[np.ndarray] = []
+        debug_segments: list[dict] = []
+        for idx, segment in enumerate(segments):
+            instruct = _resolve_instruct(segment.tag, tag_aliases, default_instruct)
+            audio = model.generate(
+                text=segment.text,
+                language=chosen_language,
+                voice_clone_prompt=voice_clone_prompt,
+                instruct=instruct,
+                num_step=num_step,
+                guidance_scale=guidance_scale,
+                speed=speed,
+                duration=duration,
+                denoise=denoise,
+                preprocess_prompt=preprocess_prompt,
+                postprocess_output=postprocess_output,
+            )[0]
+            audio = apply_effect_preset(audio, effect_preset).astype(np.float32)
+            rendered.append(audio)
+            if gap_audio is not None and idx < len(segments) - 1:
+                rendered.append(gap_audio)
+            debug_segments.append(
+                {
+                    "index": idx,
+                    "tag": segment.tag,
+                    "instruct": instruct,
+                    "text": segment.text,
+                    "samples": int(audio.shape[0]),
+                }
+            )
 
-    merged = np.concatenate(rendered, axis=0) if rendered else np.zeros(1, dtype=np.float32)
-    return {
-        "sample_rate": sample_rate,
-        "audio": merged,
-        "segments": debug_segments,
-        "tag_aliases": tag_aliases,
-    }
+        merged = np.concatenate(rendered, axis=0) if rendered else np.zeros(1, dtype=np.float32)
+        return {
+            "sample_rate": sample_rate,
+            "audio": merged,
+            "segments": debug_segments,
+            "tag_aliases": tag_aliases,
+        }
+    finally:
+        if not cache_model:
+            del model
+            release_torch_memory()
 
 
 def load_tag_aliases(tag_map_path: str | None) -> dict[str, str]:

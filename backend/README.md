@@ -581,6 +581,7 @@ Diagnostics và logs:
 
 ```bash
 curl http://127.0.0.1:8000/v1/diagnostics
+curl http://127.0.0.1:8000/v1/diagnostics/memory
 curl "http://127.0.0.1:8000/v1/logs?limit=200"
 curl -X DELETE http://127.0.0.1:8000/v1/logs
 ```
@@ -588,6 +589,15 @@ curl -X DELETE http://127.0.0.1:8000/v1/logs
 Trong `/v1/diagnostics`, xem `data.runtime.process_memory.rss_bytes` để biết RAM process đang dùng,
 `data.runtime.loaded_models.omnivoice_models` để biết model OmniVoice nào đang được giữ trong cache,
 và `data.runtime.cuda_memory.devices[].reserved_bytes` để kiểm tra GPU memory PyTorch đang giữ.
+
+Policy tối ưu RAM cho Colab:
+
+- `VOICEKIT_KEEP_MODELS_LOADED=false` là mặc định. API TTS lẻ load model trong request rồi release PyTorch memory sau khi generate xong.
+- Emotion-script TTS load một model tạm cho toàn bộ request, dùng lại cho các đoạn trong script, rồi release sau khi build response.
+- Có thể bật cache riêng từng feature bằng `VOICEKIT_CACHE_TTS=true` hoặc `VOICEKIT_CACHE_EMOTION_TTS=true`. Nếu không set riêng, các feature dùng fallback từ `VOICEKIT_KEEP_MODELS_LOADED`.
+- Chỉ đặt `VOICEKIT_KEEP_MODELS_LOADED=true` khi ưu tiên latency hơn RAM.
+- Dùng `GET /v1/diagnostics/memory` để xem nhanh RAM process, CUDA memory và model đang cache.
+- Dùng `POST /v1/models/unload` để clear toàn bộ OmniVoice cache, hoặc gửi `{"feature":"tts"}`, `{"feature":"emotion_tts"}`, `{"repo_id":"k2-fsa/OmniVoice"}` để unload theo feature/model.
 
 Cài model mặc định nếu còn thiếu:
 

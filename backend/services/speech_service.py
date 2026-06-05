@@ -1,4 +1,5 @@
 import json
+import gc
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,7 @@ from backend.infrastructure.model_store import (
 from backend.paths import ASSETS_DIR, SPEAKERS_PATH as DEFAULT_SPEAKERS_PATH
 from backend.services.voice_profile_service import VoiceProfileStore
 from backend.infrastructure.stores.histories import try_record_generation
+from backend.services.model_cache_policy import keep_models_loaded, should_cache_model
 
 SPEAKERS_PATH = DEFAULT_SPEAKERS_PATH
 VALID_INSTRUCTS_EN = [
@@ -104,6 +106,55 @@ DTYPE = torch.float16 if DEVICE in ("cuda", "mps") else torch.float32
 MODEL_CACHE: dict[str, Any] = {}
 
 
+def _cache_key(feature: str, model_arg: str | None) -> str:
+    model_name = (model_arg or DEFAULT_MODEL_ID).strip()
+    feature_key = feature.strip().lower().replace("-", "_")
+    return f"{feature_key}:{model_name}"
+
+
+def release_torch_memory() -> None:
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        try:
+            torch.cuda.ipc_collect()
+        except Exception:
+            pass
+    mps = getattr(torch, "mps", None)
+    if mps and hasattr(mps, "empty_cache"):
+        try:
+            mps.empty_cache()
+        except Exception:
+            pass
+
+
+def unload_cached_models(
+    model_arg: str | None = None,
+    feature: str | None = None,
+) -> dict[str, Any]:
+    feature_prefix = f"{feature.strip().lower().replace('-', '_')}:" if feature else None
+    model_name = model_arg.strip() if model_arg else None
+    if model_name or feature_prefix:
+        keys = [
+            key
+            for key in MODEL_CACHE
+            if (feature_prefix is None or key.startswith(feature_prefix))
+            and (model_name is None or key.endswith(f":{model_name}"))
+        ]
+        unloaded = keys
+        for key in keys:
+            MODEL_CACHE.pop(key, None)
+    else:
+        unloaded = list(MODEL_CACHE.keys())
+        MODEL_CACHE.clear()
+    release_torch_memory()
+    return {
+        "unloaded_models": unloaded,
+        "remaining_models": list(MODEL_CACHE.keys()),
+        "keep_models_loaded": keep_models_loaded(),
+    }
+
+
 def load_voice_clone_prompt(prompt_path: str | Path):
     from omnivoice.models.omnivoice import VoiceClonePrompt
     from backend.paths import resolve_path
@@ -157,13 +208,17 @@ def load_model(model_arg: str | None, device_arg: str | None = None):
     return OmniVoice.from_pretrained(model_source, device_map=device, dtype=dtype)
 
 
-def get_model(model_arg: str | None):
-    model_name = (model_arg or DEFAULT_MODEL_ID).strip()
-    if model_name in MODEL_CACHE:
-        return MODEL_CACHE[model_name]
-    model = load_model(model_name)
-    MODEL_CACHE[model_name] = model
+def get_feature_model(feature: str, model_arg: str | None):
+    key = _cache_key(feature, model_arg)
+    if key in MODEL_CACHE:
+        return MODEL_CACHE[key]
+    model = load_model(model_arg)
+    MODEL_CACHE[key] = model
     return model
+
+
+def get_model(model_arg: str | None):
+    return get_feature_model("tts", model_arg)
 
 
 def model_tensor_options(model: Any) -> tuple[torch.device | None, torch.dtype | None]:
@@ -205,17 +260,24 @@ def align_voice_clone_prompt_to_model(voice_clone_prompt: Any, model: Any) -> An
 def run_generate(
     model_arg: str | None = None, effect_preset: str | None = "raw", **kwargs
 ):
+    temporary_model = not should_cache_model("tts")
+    model = None
     try:
-        model = get_model(model_arg)
+        model = load_model(model_arg) if temporary_model else get_model(model_arg)
         if kwargs.get("voice_clone_prompt") is not None:
             kwargs["voice_clone_prompt"] = align_voice_clone_prompt_to_model(
                 kwargs["voice_clone_prompt"], model
             )
         audio = model.generate(**kwargs)[0]
+        sample_rate = int(model.sampling_rate)
         processed_audio = apply_effect_preset(audio, effect_preset)
-        return (model.sampling_rate, to_wav16(processed_audio)), "Done."
+        return (sample_rate, to_wav16(processed_audio)), "Done."
     except Exception as e:
         return None, f"Error: {type(e).__name__}: {e}"
+    finally:
+        if temporary_model:
+            del model
+            release_torch_memory()
 
 
 def build_instruct_from_items(items):
@@ -450,7 +512,12 @@ def create_speaker_id(speaker_id, ref_audio, ref_text, language, save_format):
     out_dir.mkdir(parents=True, exist_ok=True)
     ext = ".npy" if save_format == "npy" else ".pt"
     out_path = out_dir / f"{speaker_key}{ext}"
-    model = get_model(DEFAULT_MODEL_ID)
+    temporary_model = not should_cache_model("tts")
+    model = (
+        load_model(DEFAULT_MODEL_ID)
+        if temporary_model
+        else get_model(DEFAULT_MODEL_ID)
+    )
 
     try:
         prompt = model.create_voice_clone_prompt(
@@ -459,6 +526,9 @@ def create_speaker_id(speaker_id, ref_audio, ref_text, language, save_format):
             preprocess_prompt=True,
         )
     except Exception as e:
+        if temporary_model:
+            del model
+            release_torch_memory()
         return f"Error: {type(e).__name__}: {e}"
 
     try:
@@ -485,6 +555,10 @@ def create_speaker_id(speaker_id, ref_audio, ref_text, language, save_format):
         )
     except Exception as e:
         return f"Error: {type(e).__name__}: {e}"
+    finally:
+        if temporary_model:
+            del model
+            release_torch_memory()
 
     return f"Created speaker_id '{speaker_key}' at {out_path}."
 

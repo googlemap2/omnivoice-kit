@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Body, HTTPException
 
-from backend.app.schemas.models import ModelInstallRequest
-from backend.services.speech_service import OMNIVOICE_MODEL_CHOICES
+from backend.app.schemas.models import ModelInstallRequest, ModelUnloadRequest
+from backend.services.speech_service import OMNIVOICE_MODEL_CHOICES, unload_cached_models
 from backend.infrastructure.model_store import install_model, list_model_statuses
 from backend.domain.settings import load_settings
 
@@ -44,4 +44,19 @@ def install_model_endpoint(request: ModelInstallRequest) -> dict:
         "object": "model_status",
         "data": status.to_dict(),
         "message": "Model is installed." if status.installed else "Model install finished but files are incomplete.",
+    }
+
+
+@router.post("/v1/models/unload")
+def unload_models_endpoint(
+    request: ModelUnloadRequest | None = Body(default=None),
+) -> dict:
+    data = unload_cached_models(
+        model_arg=request.repo_id if request else None,
+        feature=request.feature if request else None,
+    )
+    return {
+        "object": "model_unload",
+        "data": data,
+        "message": "Model cache unloaded.",
     }
