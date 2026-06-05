@@ -125,7 +125,7 @@ API liên quan model:
   - `bun run dev:web`
   - `bun run build:web`
 - Validation gần nhất: `bun run build:web` pass sau khi tạo `apps/web/.env.local` từ `.env.example`.
-- Kế hoạch tích hợp OmniVoice vào OpenCut editor nằm ở `docs/opencut-classic-integration-handoff.md`.
+- Kế hoạch tích hợp OmniVoice vào OpenCut editor nằm ở `docs/opencut-integration-handoff.md`.
 
 ## 6. Luồng chạy local
 
