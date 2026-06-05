@@ -112,6 +112,18 @@ API liên quan model:
 - `frontend/src/types/api.ts`: shared API types.
 - `frontend/src/types/studio.ts`: workspace/mode types.
 
+## 5.1 Video editor workspace
+
+- `video-editor/` hiện dùng upstream `opencut-app/opencut` thay cho editor OpenReel/custom trước đó.
+- Runtime/package manager: Bun workspace + Turbo; app chính là `@opencut/web` trong `video-editor/apps/web`.
+- Lệnh chính:
+  - `cd video-editor`
+  - `bun install --frozen-lockfile`
+  - `bun run dev:web`
+  - `bun run build`
+- Lưu ý: upstream OpenCut hiện là rewrite mới; README upstream ghi bản production hiện tại nằm ở `opencut-app/opencut-classic`. Chưa tích hợp lại OmniVoice tools vào OpenCut workspace mới.
+- Đánh giá chi tiết `opencut-classic` và kế hoạch tích hợp OmniVoice nằm ở `docs/opencut-classic-integration-handoff.md`.
+
 ## 6. Luồng chạy local
 
 Backend:

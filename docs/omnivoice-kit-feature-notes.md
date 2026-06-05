@@ -29,6 +29,7 @@ provider.
 |---|---|
 | Desktop app | Tauri 2, Rust |
 | Frontend app | React 19, Vite 8 |
+| Video editor workspace | OpenCut upstream (`video-editor/`), Bun + Turbo |
 | Frontend state | Zustand, TanStack Query |
 | Data-heavy UI | TanStack Table, TanStack Virtual |
 | UI primitives | Radix UI, lucide-react, TailwindCSS 4 |
