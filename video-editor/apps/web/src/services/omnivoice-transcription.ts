@@ -26,6 +26,11 @@ interface GenerateCaptionOptions {
   animationStyle?: CaptionAnimationStyle;
 }
 
+export interface OmniVoiceCaptionResult {
+  subtitles: Subtitle[];
+  transcriptText: string;
+}
+
 export interface OmniVoiceTranslationProvider {
   id: string;
   name?: string;
@@ -45,6 +50,13 @@ export interface OmniVoiceProviderModel {
     translation_model?: string;
     chat_model?: string;
   } | null;
+}
+
+export interface OmniVoiceVoice {
+  id: string;
+  name?: string;
+  language?: string | null;
+  favorite?: boolean;
 }
 
 const getApiBaseUrl = (): string => {
@@ -165,7 +177,7 @@ export async function generateOmniVoiceCaptions(
   mediaItem: MediaItem,
   options: GenerateCaptionOptions,
   onProgress?: (progress: WhisperTranscriptionProgress) => void,
-): Promise<Subtitle[]> {
+): Promise<OmniVoiceCaptionResult> {
   onProgress?.({
     phase: "extracting",
     progress: 0,
@@ -219,7 +231,10 @@ export async function generateOmniVoiceCaptions(
     )
     .filter((subtitle): subtitle is Subtitle => Boolean(subtitle));
 
-  return subtitles;
+  return {
+    subtitles,
+    transcriptText: segments.map((segment) => segment.text.trim()).join("\n").trim(),
+  };
 }
 
 export async function fetchOmniVoiceTranslationProviders(): Promise<
@@ -252,4 +267,48 @@ export async function fetchOmniVoiceProviderModels(): Promise<
     data?: OmniVoiceProviderModel[];
   };
   return Array.isArray(payload.data) ? payload.data : [];
+}
+
+export async function fetchOmniVoiceVoices(): Promise<OmniVoiceVoice[]> {
+  const response = await fetch(`${getApiBaseUrl()}/v1/voices`, {
+    headers: {
+      "ngrok-skip-browser-warning": "true",
+    },
+  });
+  if (!response.ok) return [];
+
+  const payload = (await response.json()) as {
+    data?: OmniVoiceVoice[];
+  };
+  return Array.isArray(payload.data) ? payload.data : [];
+}
+
+export async function generateOmniVoiceSpeech(options: {
+  text: string;
+  voice: string;
+  language?: string;
+  speed?: number;
+}): Promise<Blob> {
+  const response = await fetch(`${getApiBaseUrl()}/v1/audio/speech`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+    },
+    body: JSON.stringify({
+      input: options.text,
+      voice: options.voice,
+      response_format: "wav",
+      language: options.language || undefined,
+      speed: options.speed ?? 1,
+      effect_preset: "raw",
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OmniVoice TTS failed: ${response.status} ${errorText}`);
+  }
+
+  return response.blob();
 }

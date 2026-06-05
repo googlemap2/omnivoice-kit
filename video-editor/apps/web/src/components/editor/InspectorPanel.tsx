@@ -4,7 +4,7 @@ import { useProjectStore } from "../../stores/project-store";
 import { useTimelineStore } from "../../stores/timeline-store";
 import { useUIStore } from "../../stores/ui-store";
 import { useEngineStore } from "../../stores/engine-store";
-import type { Transform, EditingTemplatePrimitive } from "@openreel/core";
+import type { Transform, EditingTemplatePrimitive, Subtitle } from "@openreel/core";
 import {
   ChromaKeyEngine,
   type WhisperTranscriptionProgress,
@@ -585,7 +585,9 @@ export const InspectorPanel: React.FC = () => {
     updateVideoEffect,
   ]);
 
-  const handleGenerateSubtitles = useCallback(async () => {
+  const handleGenerateSubtitles = useCallback(async (options?: {
+    onTranscriptText?: (text: string, subtitles: Subtitle[]) => Promise<void> | void;
+  }) => {
     if (!selectedClip || isTranscribing) return;
 
     const mediaItem = getMediaItem(selectedClip.mediaId);
@@ -607,7 +609,7 @@ export const InspectorPanel: React.FC = () => {
         throw new Error("Could not find clip data");
       }
 
-      const subtitles = await generateOmniVoiceCaptions(
+      const result = await generateOmniVoiceCaptions(
         regularClip,
         mediaItem,
         {
@@ -637,9 +639,14 @@ export const InspectorPanel: React.FC = () => {
         },
         setTranscriptionProgress,
       );
+      const subtitles = result.subtitles;
 
       for (const subtitle of subtitles) {
         await addSubtitle(subtitle);
+      }
+
+      if (result.transcriptText && options?.onTranscriptText) {
+        await options.onTranscriptText(result.transcriptText, subtitles);
       }
 
       setTranscriptionProgress({
