@@ -1,109 +1,70 @@
-name: Bug Report
-description: Report a bug or issue with OpenReel
-title: "[Bug]: "
-labels: ["needs-claude-review", "type-bug"]
+name: Bug report
+description: Create a report to help us improve
+title: "[BUG] "
+labels: bug
 body:
-  - type: markdown
+  - type: input
+    id: Platform
     attributes:
-      value: |
-        Thanks for taking the time to report a bug! This issue will be reviewed by Claude AI within 24 hours.
-
-  - type: textarea
-    id: description
-    attributes:
-      label: Bug Description
-      description: A clear and concise description of what the bug is
-      placeholder: When I click the export button, nothing happens...
+      label: Platform
+      description: Please enter the platform on which you encountered the bug.
+      placeholder: e.g. Windows 11, Ubuntu 14.04
     validations:
       required: true
-
-  - type: textarea
-    id: reproduction
+  - type: input
+    id: Browser
     attributes:
-      label: Steps to Reproduce
-      description: Step-by-step instructions to reproduce the issue
+      label: Browser
+      description: Please enter the browser on which you encountered the bug.
+      placeholder: e.g. Chrome 137, Firefox 137, Safari 17
+    validations:
+      required: true
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current Behavior
+      description: A concise description of what you're experiencing.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: A concise description of what you expected to happen.
+    validations:
+      required: false
+  - type: dropdown
+    id: recurrence-probability
+    attributes:
+      label: Recurrence Probability
+      description: How often does this bug occur?
+      options:
+        - Always
+        - Usually
+        - Sometimes
+        - Seldom
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps To Reproduce
+      description: Steps to reproduce the behavior.
       placeholder: |
-        1. Open the editor
-        2. Import a video file
-        3. Click 'Export'
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
         4. See error
     validations:
       required: true
-
   - type: textarea
-    id: expected
+    id: additional-context
     attributes:
-      label: Expected Behavior
-      description: What should happen instead?
-      placeholder: The export dialog should open...
+      label: Anything else?
+      description: |
+        Links? References? Anything that will give us more context about the issue you are encountering!
+
+        Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
     validations:
-      required: true
-
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual Behavior
-      description: What actually happens?
-      placeholder: Nothing happens, console shows error...
-    validations:
-      required: true
-
-  - type: input
-    id: browser
-    attributes:
-      label: Browser
-      description: Which browser are you using?
-      placeholder: "Chrome 120"
-    validations:
-      required: true
-
-  - type: input
-    id: os
-    attributes:
-      label: Operating System
-      description: What OS are you on?
-      placeholder: "macOS 14.2"
-    validations:
-      required: true
-
-  - type: textarea
-    id: console
-    attributes:
-      label: Console Errors
-      description: Any errors in the browser console? (Press F12 to open DevTools)
-      placeholder: |
-        TypeError: Cannot read property 'export' of undefined
-        at exportVideo (export-engine.ts:45)
-      render: shell
-
-  - type: textarea
-    id: screenshots
-    attributes:
-      label: Screenshots/Videos
-      description: Add screenshots or screen recordings if applicable
-      placeholder: Drag and drop images/videos here
-
-  - type: dropdown
-    id: severity
-    attributes:
-      label: Severity
-      description: How severe is this issue?
-      options:
-        - Critical (Blocks all functionality)
-        - High (Major feature broken)
-        - Medium (Minor feature broken)
-        - Low (Cosmetic or minor inconvenience)
-    validations:
-      required: true
-
-  - type: checkboxes
-    id: checklist
-    attributes:
-      label: Pre-submission Checklist
-      options:
-        - label: I have searched existing issues to ensure this isn't a duplicate
-          required: true
-        - label: I have checked the browser console for errors
-          required: true
-        - label: I am using a supported browser (Chrome 94+ or Edge 94+)
-          required: true
+      required: false
