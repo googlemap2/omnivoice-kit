@@ -62,6 +62,7 @@ import { AnimateTab } from "./inspector/tabs/AnimateTab";
 import { StyleTab } from "./inspector/tabs/StyleTab";
 import { EffectsTab } from "./inspector/tabs/EffectsTab";
 import { AiTab } from "./inspector/tabs/AiTab";
+import { OmnivoiceAiTab } from "./inspector/tabs/OmnivoiceAiTab";
 
 // Initialize engines as singletons
 const chromaKeyEngine = new ChromaKeyEngine({ width: 1920, height: 1080 });
@@ -1016,6 +1017,19 @@ export const InspectorPanel: React.FC = () => {
                 showVideoControls={showVideoControls}
                 showAudioEffects={showAudioEffects}
                 showVideoEffects={showVideoEffects}
+                handleRemoveBackground={handleRemoveBackground}
+                handleEnhanceAudio={handleEnhanceAudio}
+                handleAutoColor={handleAutoColor}
+                isEnhancingAudio={isEnhancingAudio}
+                audioEnhanced={audioEnhanced}
+                isApplyingSelectedClipEffect={isApplyingSelectedClipEffect}
+              />
+            </InspectorTabPanel>
+
+            <InspectorTabPanel tab="omnivoice-ai" active={activeTab}>
+              <OmnivoiceAiTab
+                clipId={clipId}
+                clipType={clipType}
                 transcriptionProgress={transcriptionProgress}
                 isTranscribing={isTranscribing}
                 transcriptLanguage={transcriptLanguage}
@@ -1037,12 +1051,6 @@ export const InspectorPanel: React.FC = () => {
                 handleGenerateSubtitles={handleGenerateSubtitles}
                 handleSRTImport={handleSRTImport}
                 srtInputRef={srtInputRef}
-                handleRemoveBackground={handleRemoveBackground}
-                handleEnhanceAudio={handleEnhanceAudio}
-                handleAutoColor={handleAutoColor}
-                isEnhancingAudio={isEnhancingAudio}
-                audioEnhanced={audioEnhanced}
-                isApplyingSelectedClipEffect={isApplyingSelectedClipEffect}
               />
             </InspectorTabPanel>
 

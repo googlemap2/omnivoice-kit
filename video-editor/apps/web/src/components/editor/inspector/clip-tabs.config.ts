@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Move, Palette, Wand2, Volume2, Gauge, Film, Sparkles, Type } from "lucide-react";
+import { Bot, Move, Palette, Wand2, Volume2, Gauge, Film, Sparkles, Type } from "lucide-react";
 
 export type InspectorTabId =
   | "transform"
@@ -9,6 +9,7 @@ export type InspectorTabId =
   | "speed"
   | "animate"
   | "ai"
+  | "omnivoice-ai"
   | "style";
 
 export type InspectorClipType =
@@ -34,13 +35,14 @@ export const TAB_DEFS: Record<InspectorTabId, InspectorTabDef> = {
   speed: { id: "speed", label: "Speed", icon: Gauge },
   animate: { id: "animate", label: "Animate", icon: Film },
   ai: { id: "ai", label: "AI", icon: Sparkles },
+  "omnivoice-ai": { id: "omnivoice-ai", label: "OmnivoiceAI", icon: Bot },
   style: { id: "style", label: "Style", icon: Type },
 };
 
 const TABS_BY_CLIP_TYPE: Record<InspectorClipType, InspectorTabId[]> = {
-  video: ["transform", "color", "effects", "audio", "speed", "animate", "ai"],
+  video: ["transform", "color", "effects", "audio", "speed", "animate", "omnivoice-ai", "ai"],
   image: ["transform", "color", "effects", "speed", "animate", "ai"],
-  audio: ["audio", "speed", "ai"],
+  audio: ["audio", "speed", "omnivoice-ai", "ai"],
   text: ["transform", "style", "effects", "animate"],
   shape: ["transform", "style", "effects", "animate"],
   svg: ["transform", "style", "effects", "animate"],
