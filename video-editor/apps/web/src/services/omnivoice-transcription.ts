@@ -10,26 +10,11 @@ import { useSettingsStore } from "../stores/settings-store";
 const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
 const DEFAULT_ASR_MODEL = "Systran/faster-whisper-large-v3";
 
-interface OmniVoiceWord {
-  word?: string;
-  text?: string;
-  start: number | null;
-  end: number | null;
-}
-
 interface OmniVoiceSegment {
   id?: number | string;
   start: number;
   end: number;
   text: string;
-  words?: OmniVoiceWord[];
-}
-
-interface OmniVoiceTranscriptionResponse {
-  text?: string;
-  language?: string | null;
-  duration?: number | null;
-  segments?: OmniVoiceSegment[];
 }
 
 interface GenerateCaptionOptions {
@@ -69,6 +54,48 @@ const appendOptional = (
   formData.append(key, String(value));
 };
 
+const parseSrtTimestamp = (value: string): number | null => {
+  const match = value.trim().match(/^(\d{2}):(\d{2}):(\d{2}),(\d{3})$/);
+  if (!match) return null;
+
+  const [, hours, minutes, seconds, milliseconds] = match;
+  return (
+    Number(hours) * 3600 +
+    Number(minutes) * 60 +
+    Number(seconds) +
+    Number(milliseconds) / 1000
+  );
+};
+
+const parseSrt = (srt: string): OmniVoiceSegment[] => {
+  return srt
+    .replace(/\r\n/g, "\n")
+    .split(/\n{2,}/)
+    .map((block): OmniVoiceSegment | null => {
+      const lines = block
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const timingIndex = lines.findIndex((line) => line.includes("-->"));
+      if (timingIndex === -1) return null;
+
+      const [startRaw, endRaw] = lines[timingIndex]
+        .split("-->")
+        .map((part) => part.trim().split(/\s+/)[0]);
+      const start = parseSrtTimestamp(startRaw || "");
+      const end = parseSrtTimestamp(endRaw || "");
+      if (start === null || end === null || end <= start) return null;
+
+      return {
+        id: lines[0],
+        start,
+        end,
+        text: lines.slice(timingIndex + 1).join("\n").trim(),
+      };
+    })
+    .filter((segment): segment is OmniVoiceSegment => Boolean(segment?.text));
+};
+
 const toSubtitle = (
   segment: OmniVoiceSegment,
   clip: Clip,
@@ -90,26 +117,6 @@ const toSubtitle = (
   const startTime = clip.startTime + (clippedStart - inPoint);
   const endTime = clip.startTime + (clippedEnd - inPoint);
 
-  const words = (segment.words || [])
-    .filter((word) => word.start !== null && word.end !== null)
-    .map((word) => {
-      const wordStart = Number(word.start);
-      const wordEnd = Number(word.end);
-      return {
-        text: String(word.word || word.text || "").trim(),
-        startTime: clip.startTime + (wordStart - inPoint),
-        endTime: clip.startTime + (wordEnd - inPoint),
-      };
-    })
-    .filter(
-      (word) =>
-        word.text &&
-        Number.isFinite(word.startTime) &&
-        Number.isFinite(word.endTime) &&
-        word.endTime > startTime &&
-        word.startTime < endTime,
-    );
-
   return {
     id: `omnivoice-sub-${segment.id ?? Date.now()}-${Math.random()
       .toString(36)
@@ -117,7 +124,6 @@ const toSubtitle = (
     text: String(segment.text || "").trim(),
     startTime,
     endTime,
-    words: words.length > 0 ? words : undefined,
     animationStyle,
     style: {
       fontFamily: "Inter",
@@ -146,10 +152,10 @@ export async function generateOmniVoiceCaptions(
   const formData = new FormData();
   formData.append("file", file, file.name || mediaItem.name || "media");
   formData.append("model", DEFAULT_ASR_MODEL);
-  formData.append("response_format", "verbose_json");
-  formData.append("word_timestamps", "true");
+  formData.append("response_format", "srt");
 
   appendOptional(formData, "language", options.language);
+  appendOptional(formData, "source_language", options.language);
   appendOptional(formData, "translate", Boolean(options.targetLanguage));
   appendOptional(formData, "target_language", options.targetLanguage);
 
@@ -178,8 +184,8 @@ export async function generateOmniVoiceCaptions(
     message: "Building captions...",
   });
 
-  const payload = (await response.json()) as OmniVoiceTranscriptionResponse;
-  const segments = payload.segments || [];
+  const srt = await response.text();
+  const segments = parseSrt(srt);
   const subtitles = segments
     .map((segment) =>
       toSubtitle(segment, clip, options.animationStyle || "word-highlight"),

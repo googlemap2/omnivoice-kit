@@ -80,6 +80,8 @@ export const InspectorPanel: React.FC = () => {
     importSRT,
     updateSubtitle,
     getSubtitle,
+    getAllTextClips,
+    updateTextTransform,
     getEditingTemplate,
     updateEditingTemplateApplication,
     removeEditingTemplateApplication,
@@ -135,6 +137,79 @@ export const InspectorPanel: React.FC = () => {
     if (!selectedSubtitleId) return null;
     return getSubtitle(selectedSubtitleId) || null;
   }, [selectedSubtitleId, getSubtitle, project.timeline.subtitles]);
+
+  const applyPositionToCaptionTextClips = useCallback(
+    (position: "top" | "center" | "bottom") => {
+      const captionsTrackIds = new Set(
+        project.timeline.tracks
+          .filter((track) => track.type === "text" && track.name === "Captions")
+          .map((track) => track.id),
+      );
+      if (captionsTrackIds.size === 0) return 0;
+
+      const yByPosition = {
+        top: 0.18,
+        center: 0.5,
+        bottom: 0.82,
+      };
+      let updatedCount = 0;
+
+      getAllTextClips()
+        .filter((clip) => captionsTrackIds.has(clip.trackId))
+        .forEach((clip) => {
+          updateTextTransform(clip.id, {
+            position: {
+              x: clip.transform?.position?.x ?? 0.5,
+              y: yByPosition[position],
+            },
+          });
+          updatedCount += 1;
+        });
+
+      return updatedCount;
+    },
+    [getAllTextClips, project.timeline.tracks, updateTextTransform],
+  );
+
+  const updateSelectedSubtitlePosition = useCallback(
+    (position: "top" | "center" | "bottom") => {
+      if (!selectedSubtitle) return;
+      updateSubtitle(selectedSubtitle.id, {
+        style: {
+          ...(selectedSubtitle.style || {}),
+          position,
+        } as typeof selectedSubtitle.style,
+      });
+    },
+    [selectedSubtitle, updateSubtitle],
+  );
+
+  const applySelectedSubtitlePositionToAll = useCallback(() => {
+    if (!selectedSubtitle) return;
+    const position = selectedSubtitle.style?.position || "bottom";
+
+    project.timeline.subtitles.forEach((subtitle) => {
+      updateSubtitle(subtitle.id, {
+        style: {
+          ...(subtitle.style || {}),
+          position,
+        } as typeof subtitle.style,
+      });
+    });
+
+    const textClipCount = applyPositionToCaptionTextClips(position);
+    toast.success(
+      "Caption position applied",
+      `Updated ${project.timeline.subtitles.length + textClipCount} caption${
+        project.timeline.subtitles.length + textClipCount === 1 ? "" : "s"
+      }.`,
+    );
+  }, [
+    applyPositionToCaptionTextClips,
+    project.timeline.subtitles,
+    selectedSubtitle,
+    updateSubtitle,
+  ]);
 
   const selectedTimelineClip = useMemo(() => {
     if (selectedClipIds.length !== 1) return null;
@@ -1005,27 +1080,28 @@ export const InspectorPanel: React.FC = () => {
 
             {/* Subtitle Position */}
             <Section title="Position">
-              <div className="grid grid-cols-3 gap-2">
-                {(["top", "center", "bottom"] as const).map((pos) => (
-                  <button
-                    key={pos}
-                    onClick={() =>
-                      updateSubtitle(selectedSubtitle.id, {
-                        style: {
-                          ...(selectedSubtitle.style || {}),
-                          position: pos,
-                        } as typeof selectedSubtitle.style,
-                      })
-                    }
-                    className={`py-1.5 rounded text-[10px] capitalize transition-colors ${
-                      (selectedSubtitle.style?.position || "bottom") === pos
-                        ? "bg-primary text-white"
-                        : "bg-background-tertiary border border-border text-text-secondary hover:text-text-primary"
-                    }`}
-                  >
-                    {pos}
-                  </button>
-                ))}
+              <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-2">
+                  {(["top", "center", "bottom"] as const).map((pos) => (
+                    <button
+                      key={pos}
+                      onClick={() => updateSelectedSubtitlePosition(pos)}
+                      className={`py-1.5 rounded text-[10px] capitalize transition-colors ${
+                        (selectedSubtitle.style?.position || "bottom") === pos
+                          ? "bg-primary text-white"
+                          : "bg-background-tertiary border border-border text-text-secondary hover:text-text-primary"
+                      }`}
+                    >
+                      {pos}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={applySelectedSubtitlePositionToAll}
+                  className="w-full py-1.5 rounded bg-background-tertiary border border-border text-[10px] text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  Apply position to all captions
+                </button>
               </div>
             </Section>
 

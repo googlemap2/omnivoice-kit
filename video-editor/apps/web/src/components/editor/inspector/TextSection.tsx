@@ -155,6 +155,7 @@ interface TextSectionProps {
 export const TextSection: React.FC<TextSectionProps> = ({ clipId }) => {
   const {
     getTextClip,
+    getAllTextClips,
     updateTextContent,
     updateTextStyle,
     updateTextTransform,
@@ -165,6 +166,19 @@ export const TextSection: React.FC<TextSectionProps> = ({ clipId }) => {
   const textClip = useMemo(
     () => getTextClip(clipId),
     [clipId, getTextClip, project.modifiedAt],
+  );
+
+  const captionsTrackIds = useMemo(
+    () =>
+      new Set(
+        project.timeline.tracks
+          .filter((track) => track.type === "text" && track.name === "Captions")
+          .map((track) => track.id),
+      ),
+    [project.timeline.tracks],
+  );
+  const isCaptionTextClip = Boolean(
+    textClip && captionsTrackIds.has(textClip.trackId),
   );
 
   const defaultStyle: TextStyle = {
@@ -225,6 +239,30 @@ export const TextSection: React.FC<TextSectionProps> = ({ clipId }) => {
   const handleCenterBoth = useCallback(() => {
     updateTextTransform(clipId, { position: { x: 0.5, y: 0.5 } });
   }, [clipId, updateTextTransform]);
+
+  const handleApplyPositionToAllCaptions = useCallback(() => {
+    if (!textClip) return;
+
+    const currentPosition = textClip.transform?.position || { x: 0.5, y: 0.5 };
+    let updatedCount = 0;
+
+    getAllTextClips()
+      .filter((clip) => captionsTrackIds.has(clip.trackId))
+      .forEach((clip) => {
+        updateTextTransform(clip.id, {
+          position: {
+            x: currentPosition.x,
+            y: currentPosition.y,
+          },
+        });
+        updatedCount += 1;
+      });
+
+    toast.success(
+      "Caption position applied",
+      `Updated ${updatedCount} caption${updatedCount === 1 ? "" : "s"}.`,
+    );
+  }, [captionsTrackIds, getAllTextClips, textClip, updateTextTransform]);
 
   const handleCustomFontSelect = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -397,6 +435,14 @@ export const TextSection: React.FC<TextSectionProps> = ({ clipId }) => {
             </button>
           </div>
         </div>
+        {isCaptionTextClip && (
+          <button
+            onClick={handleApplyPositionToAllCaptions}
+            className="w-full py-1.5 rounded bg-background-secondary border border-border text-[10px] text-text-secondary hover:text-text-primary transition-colors"
+          >
+            Apply position to all captions
+          </button>
+        )}
       </div>
 
       <div className="space-y-2 p-3 bg-background-tertiary rounded-lg">
