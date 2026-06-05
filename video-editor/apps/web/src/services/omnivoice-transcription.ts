@@ -9,6 +9,7 @@ import { useSettingsStore } from "../stores/settings-store";
 
 const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
 const DEFAULT_ASR_MODEL = "Systran/faster-whisper-large-v3";
+const DEFAULT_TTS_MODEL = "kjanh/KhanhTTS-OmniVoice";
 
 interface OmniVoiceSegment {
   id?: number | string;
@@ -289,13 +290,14 @@ export async function generateOmniVoiceSpeech(options: {
   language?: string;
   speed?: number;
 }): Promise<Blob> {
-  const response = await fetch(`${getApiBaseUrl()}/v1/audio/speech`, {
+  const response = await fetch(`${getApiBaseUrl()}/v1/audio/speech/emotion-script`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "ngrok-skip-browser-warning": "true",
     },
     body: JSON.stringify({
+      model: DEFAULT_TTS_MODEL,
       input: options.text,
       voice: options.voice,
       response_format: "wav",

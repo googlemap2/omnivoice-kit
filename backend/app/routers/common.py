@@ -1,3 +1,4 @@
+import hashlib
 from io import BytesIO
 from typing import Any
 
@@ -6,6 +7,7 @@ from fastapi import HTTPException
 from fastapi.responses import Response
 
 from backend.domain.settings import AppSettings
+from backend.paths import resolve_path
 from backend.services.subtitle_service import export_subtitle
 from backend.services.translation_service import (
     translate_segments,
@@ -24,7 +26,11 @@ def _settings_without_provider_models(settings: AppSettings) -> AppSettings:
     )
 
 
-def _wav_response(audio: tuple[int, Any] | None, detail: str = "Generation failed.") -> Response:
+def _wav_response(
+    audio: tuple[int, Any] | None,
+    detail: str = "Generation failed.",
+    headers: dict[str, str] | None = None,
+) -> Response:
     if audio is None:
         raise HTTPException(status_code=400, detail=detail)
     sampling_rate, samples = audio
@@ -33,8 +39,41 @@ def _wav_response(audio: tuple[int, Any] | None, detail: str = "Generation faile
     return Response(
         content=buffer.getvalue(),
         media_type="audio/wav",
-        headers={"Content-Disposition": 'attachment; filename="speech.wav"'},
+        headers={
+            "Content-Disposition": 'attachment; filename="speech.wav"',
+            **(headers or {}),
+        },
     )
+
+
+def _voice_prompt_debug(profile: Any) -> dict[str, Any]:
+    prompt_path = resolve_path(profile.prompt_path) if profile.prompt_path else None
+    prompt_sha256 = None
+    if prompt_path and prompt_path.exists() and prompt_path.is_file():
+        digest = hashlib.sha256()
+        with prompt_path.open("rb") as file:
+            for chunk in iter(lambda: file.read(1024 * 1024), b""):
+                digest.update(chunk)
+        prompt_sha256 = digest.hexdigest()
+
+    return {
+        "prompt_resolved_path": str(prompt_path) if prompt_path else None,
+        "prompt_exists": bool(prompt_path and prompt_path.exists()),
+        "prompt_sha256": prompt_sha256,
+    }
+
+
+def _voice_debug_headers(profile: Any, *, model: str | None = None) -> dict[str, str]:
+    prompt_debug = _voice_prompt_debug(profile)
+    headers = {
+        "X-OmniVoice-Voice": str(profile.id),
+        "X-OmniVoice-Prompt-Exists": "true" if prompt_debug["prompt_exists"] else "false",
+    }
+    if model:
+        headers["X-OmniVoice-Model"] = model
+    if prompt_debug["prompt_sha256"]:
+        headers["X-OmniVoice-Prompt-Sha256"] = str(prompt_debug["prompt_sha256"])
+    return headers
 
 
 def _translated_transcription_payload(
@@ -118,6 +157,7 @@ def _voice_profile_dict(profile: Any) -> dict[str, Any]:
         "type": profile.type,
         "language": profile.language,
         "prompt_path": profile.prompt_path,
+        **_voice_prompt_debug(profile),
         "ref_text": profile.ref_text,
         "tags": profile.tags or [],
         "favorite": profile.favorite,

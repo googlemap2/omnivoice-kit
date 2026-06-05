@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse, Response
 
 from backend.app.errors import generation_error as _generation_error
 from backend.app.errors import server_error as _server_error
-from backend.app.routers.common import _wav_response
+from backend.app.routers.common import _voice_debug_headers, _wav_response
 from backend.app.schemas.speech import EmotionSpeechRequest, SpeechRequest, VoiceDesignRequest
 from backend.infrastructure.model_store import DEFAULT_MODEL_ID
 from backend.infrastructure.stores.jobs import get_job_store
@@ -18,6 +18,7 @@ from backend.services.speech_service import (
     generate_clone_with_ref_audio,
     generate_clone_with_speaker_id,
     generate_voice_design,
+    get_profile_store,
 )
 from backend.domain.settings import load_settings
 from backend.paths import DATA_DIR, SPEAKERS_PATH
@@ -64,7 +65,11 @@ def create_speech(request: SpeechRequest) -> Response:
     )
     if audio is None:
         raise _generation_error(status)
-    return _wav_response(audio)
+    profile = get_profile_store().get_profile(request.voice)
+    return _wav_response(
+        audio,
+        headers=_voice_debug_headers(profile, model=request.model) if profile else None,
+    )
 
 
 @router.post("/v1/audio/speech/clone")
@@ -236,4 +241,8 @@ def create_emotion_script_speech(request: EmotionSpeechRequest) -> Response:
         )
     except Exception as e:
         raise _server_error(e) from e
-    return _wav_response((result["sample_rate"], result["audio"]))
+    profile = get_profile_store(SPEAKERS_PATH).get_profile(request.voice)
+    return _wav_response(
+        (result["sample_rate"], result["audio"]),
+        headers=_voice_debug_headers(profile, model=request.model) if profile else None,
+    )

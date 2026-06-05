@@ -1070,6 +1070,7 @@ export const InspectorPanel: React.FC = () => {
 
             <InspectorTabPanel tab="speed" active={activeTab}>
               <SpeedTab
+                clipType={clipType}
                 showVideoControls={showVideoControls}
                 selectedClip={selectedClip}
               />

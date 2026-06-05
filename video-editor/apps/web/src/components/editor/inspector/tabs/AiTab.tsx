@@ -143,6 +143,9 @@ export const AiTab: React.FC<AiTabProps> = ({
   isApplyingSelectedClipEffect,
 }) => {
   const importMedia = useProjectStore((state) => state.importMedia);
+  const replaceMediaAsset = useProjectStore((state) => state.replaceMediaAsset);
+  const getClip = useProjectStore((state) => state.getClip);
+  const updateClipMetadata = useProjectStore((state) => state.updateClipMetadata);
   const addClipToNewTrack = useProjectStore((state) => state.addClipToNewTrack);
   const addTrack = useProjectStore((state) => state.addTrack);
   const addClip = useProjectStore((state) => state.addClip);
@@ -165,6 +168,11 @@ export const AiTab: React.FC<AiTabProps> = ({
   const selectedProviderModel = providerModels.find(
     (model) => model.id === providerModelId,
   );
+  const selectedAudioClip = clipType === "audio" ? getClip(clipId) : undefined;
+  const selectedAudioTtsText =
+    typeof selectedAudioClip?.metadata?.omnivoiceTtsText === "string"
+      ? selectedAudioClip.metadata.omnivoiceTtsText
+      : "";
   const providerModelNames = [
     ...(selectedProviderModel?.config?.available_models || []),
     selectedProviderModel?.config?.translation_model,
@@ -202,6 +210,11 @@ export const AiTab: React.FC<AiTabProps> = ({
       if (ttsAudioUrl) URL.revokeObjectURL(ttsAudioUrl);
     };
   }, [ttsAudioUrl]);
+
+  React.useEffect(() => {
+    if (clipType !== "audio") return;
+    setTtsText(selectedAudioTtsText);
+  }, [clipId, clipType, selectedAudioTtsText]);
 
   const setGeneratedTtsAudio = React.useCallback(
     (blob: Blob) => {
@@ -299,6 +312,23 @@ export const AiTab: React.FC<AiTabProps> = ({
               String(clipResult.error || `Could not add TTS segment ${index + 1}.`),
             );
           }
+
+          const addedClip = useProjectStore
+            .getState()
+            .project.timeline.tracks.find((track) => track.id === ttsTrack.id)
+            ?.clips.find(
+              (clip) =>
+                clip.mediaId === mediaResult.actionId &&
+                clip.startTime === subtitle.startTime,
+            );
+          if (addedClip) {
+            updateClipMetadata(addedClip.id, {
+              omnivoiceTtsText: text,
+              omnivoiceTtsVoiceId: ttsVoiceId,
+              omnivoiceTtsLanguage: ttsLanguage,
+              omnivoiceTtsSpeed: ttsSpeed,
+            });
+          }
         }
 
         toast.success(
@@ -314,7 +344,16 @@ export const AiTab: React.FC<AiTabProps> = ({
         setIsGeneratingTts(false);
       }
     },
-    [addClip, addTrack, importMedia, renameTrack, ttsLanguage, ttsSpeed, ttsVoiceId],
+    [
+      addClip,
+      addTrack,
+      importMedia,
+      renameTrack,
+      ttsLanguage,
+      ttsSpeed,
+      ttsVoiceId,
+      updateClipMetadata,
+    ],
   );
 
   const handleGenerateTranscript = React.useCallback(async () => {
@@ -376,7 +415,76 @@ export const AiTab: React.FC<AiTabProps> = ({
       return;
     }
     await addClipToNewTrack(result.actionId);
-  }, [addClipToNewTrack, importMedia, ttsAudio, ttsFileName]);
+    const addedClip = useProjectStore
+      .getState()
+      .project.timeline.tracks.flatMap((track) => track.clips)
+      .find((clip) => clip.mediaId === result.actionId);
+    if (addedClip) {
+      updateClipMetadata(addedClip.id, {
+        omnivoiceTtsText: ttsText.trim(),
+        omnivoiceTtsVoiceId: ttsVoiceId,
+        omnivoiceTtsLanguage: ttsLanguage,
+        omnivoiceTtsSpeed: ttsSpeed,
+      });
+    }
+  }, [
+    addClipToNewTrack,
+    importMedia,
+    ttsAudio,
+    ttsFileName,
+    ttsLanguage,
+    ttsSpeed,
+    ttsText,
+    ttsVoiceId,
+    updateClipMetadata,
+  ]);
+
+  const handleReplaceSelectedAudioWithTts = React.useCallback(async () => {
+    if (!selectedAudioClip || !ttsText.trim() || !ttsVoiceId) return;
+
+    setIsGeneratingTts(true);
+    try {
+      const blob = await generateOmniVoiceSpeech({
+        text: ttsText.trim(),
+        voice: ttsVoiceId,
+        language: ttsLanguage !== "auto" ? ttsLanguage : undefined,
+        speed: ttsSpeed,
+      });
+      const file = new File([blob], ttsFileName(), { type: "audio/wav" });
+      const result = await replaceMediaAsset(selectedAudioClip.mediaId, file);
+      if (!result.success) {
+        throw new Error(String(result.error || "Could not replace selected audio."));
+      }
+      updateClipMetadata(selectedAudioClip.id, {
+        omnivoiceTtsText: ttsText.trim(),
+        omnivoiceTtsVoiceId: ttsVoiceId,
+        omnivoiceTtsLanguage: ttsLanguage,
+        omnivoiceTtsSpeed: ttsSpeed,
+      });
+      setGeneratedTtsAudio(blob);
+      toast.success(
+        "Selected audio replaced",
+        "The selected audio clip now uses the regenerated OmniVoice TTS.",
+      );
+    } catch (error) {
+      toast.error(
+        "Replace audio failed",
+        error instanceof Error ? error.message : "Could not replace selected audio.",
+      );
+    } finally {
+      setIsGeneratingTts(false);
+    }
+  }, [
+    replaceMediaAsset,
+    selectedAudioClip,
+    setGeneratedTtsAudio,
+    ttsFileName,
+    ttsLanguage,
+    ttsSpeed,
+    ttsText,
+    ttsVoiceId,
+    updateClipMetadata,
+  ]);
 
   const handleDownloadTts = React.useCallback(() => {
     if (!ttsAudio) return;
@@ -390,7 +498,7 @@ export const AiTab: React.FC<AiTabProps> = ({
 
   return (
     <>
-      {clipType === "video" && (
+      {(clipType === "video" || clipType === "audio") && (
         <>
           <InspectorSection
             title="OmniVoice Backend"
@@ -403,31 +511,37 @@ export const AiTab: React.FC<AiTabProps> = ({
                 onEnded={() => setIsPlayingTts(false)}
                 className="hidden"
               />
-              <input
-                ref={srtInputRef}
-                type="file"
-                accept=".srt,text/srt,text/plain"
-                onChange={handleSRTImport}
-                className="hidden"
-              />
-              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
-                <div className="mb-1 flex items-center gap-2">
-                  <Captions size={14} className="text-primary" />
-                  <span className="text-[11px] font-semibold text-primary">
-                    Transcribe to captions
-                  </span>
-                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide text-primary">
-                    API
-                  </span>
-                </div>
-                <p className="text-[10px] leading-4 text-text-muted">
-                  Uses OmniVoice backend endpoint{" "}
-                  <span className="font-mono text-text-secondary">
-                    /v1/audio/transcriptions
-                  </span>
-                  .
-                </p>
-              </div>
+              {clipType === "video" && (
+                <>
+                  <input
+                    ref={srtInputRef}
+                    type="file"
+                    accept=".srt,text/srt,text/plain"
+                    onChange={handleSRTImport}
+                    className="hidden"
+                  />
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+                    <div className="mb-1 flex items-center gap-2">
+                      <Captions size={14} className="text-primary" />
+                      <span className="text-[11px] font-semibold text-primary">
+                        Transcribe to captions
+                      </span>
+                      <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide text-primary">
+                        API
+                      </span>
+                    </div>
+                    <p className="text-[10px] leading-4 text-text-muted">
+                      Uses OmniVoice backend endpoint{" "}
+                      <span className="font-mono text-text-secondary">
+                        /v1/audio/transcriptions
+                      </span>
+                      .
+                    </p>
+                  </div>
+                </>
+              )}
+              {clipType === "video" && (
+                <>
               <div>
                 <label className="text-[10px] text-text-secondary block mb-1">
                   Transcript Language
@@ -610,6 +724,29 @@ export const AiTab: React.FC<AiTabProps> = ({
                 </Select>
               </div>
 
+              <label className="flex items-start gap-2 rounded-lg border border-border bg-background-secondary p-2">
+                <input
+                  type="checkbox"
+                  checked={mapTtsToTimelineAfterTranscription}
+                  onChange={(event) => {
+                    setMapTtsToTimelineAfterTranscription(event.target.checked);
+                    if (event.target.checked) {
+                      setSynthesizeTranscriptAfterTranscription(false);
+                    }
+                  }}
+                  disabled={isTranscribing || isGeneratingTts}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="block text-[10px] font-medium text-text-primary">
+                    Map TTS to timeline by caption timing
+                  </span>
+                  <span className="block text-[9px] leading-4 text-text-muted">
+                    Generates one TTS audio clip per caption and places each clip at its SRT start time.
+                  </span>
+                </span>
+              </label>
+
               {transcriptionProgress ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -650,6 +787,8 @@ export const AiTab: React.FC<AiTabProps> = ({
                   Generate with OmniVoice
                 </button>
               )}
+                </>
+              )}
 
               <div className="my-4 h-px bg-border" />
 
@@ -672,6 +811,8 @@ export const AiTab: React.FC<AiTabProps> = ({
                 </p>
               </div>
 
+              {clipType === "video" && (
+                <>
               <label className="flex items-start gap-2 rounded-lg border border-border bg-background-secondary p-2">
                 <input
                   type="checkbox"
@@ -695,28 +836,8 @@ export const AiTab: React.FC<AiTabProps> = ({
                 </span>
               </label>
 
-              <label className="flex items-start gap-2 rounded-lg border border-border bg-background-secondary p-2">
-                <input
-                  type="checkbox"
-                  checked={mapTtsToTimelineAfterTranscription}
-                  onChange={(event) => {
-                    setMapTtsToTimelineAfterTranscription(event.target.checked);
-                    if (event.target.checked) {
-                      setSynthesizeTranscriptAfterTranscription(false);
-                    }
-                  }}
-                  disabled={isTranscribing || isGeneratingTts}
-                  className="mt-0.5"
-                />
-                <span>
-                  <span className="block text-[10px] font-medium text-text-primary">
-                    Map TTS to timeline by caption timing
-                  </span>
-                  <span className="block text-[9px] leading-4 text-text-muted">
-                    Generates one TTS audio clip per caption and places each clip at its SRT start time.
-                  </span>
-                </span>
-              </label>
+                </>
+              )}
 
               <div>
                 <label className="text-[10px] text-text-secondary block mb-1">
@@ -815,6 +936,17 @@ export const AiTab: React.FC<AiTabProps> = ({
                 )}
               </button>
 
+              {clipType === "audio" && selectedAudioClip && (
+                <button
+                  onClick={handleReplaceSelectedAudioWithTts}
+                  disabled={isGeneratingTts || !ttsText.trim() || !ttsVoiceId}
+                  className="w-full py-2 bg-background-tertiary hover:bg-background-tertiary/80 border border-border text-text-primary rounded-lg text-[11px] font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Volume2 size={14} />
+                  Regenerate and replace selected audio
+                </button>
+              )}
+
               {ttsAudio && (
                 <AudioResult
                   generatedAudio={ttsAudio}
@@ -830,6 +962,7 @@ export const AiTab: React.FC<AiTabProps> = ({
             </div>
           </InspectorSection>
 
+          {clipType === "video" && (
           <InspectorSection
             title="Caption File Tools"
             sectionId="caption-file-tools"
@@ -849,6 +982,7 @@ export const AiTab: React.FC<AiTabProps> = ({
               </p>
             </div>
           </InspectorSection>
+          )}
         </>
       )}
 

@@ -9,22 +9,29 @@ interface SpeedTabClip {
 }
 
 export interface SpeedTabProps {
+  clipType: string | null;
   showVideoControls: boolean;
   selectedClip: SpeedTabClip | null;
 }
 
 export const SpeedTab: React.FC<SpeedTabProps> = ({
+  clipType,
   showVideoControls,
   selectedClip,
 }) => {
+  const isMediaClip =
+    selectedClip &&
+    !selectedClip.mediaId.startsWith("text-") &&
+    !selectedClip.mediaId.startsWith("shape-") &&
+    !selectedClip.mediaId.startsWith("svg-") &&
+    !selectedClip.mediaId.startsWith("sticker-");
+  const showSpeedControls =
+    isMediaClip &&
+    (showVideoControls || clipType === "audio");
+
   return (
     <>
-      {showVideoControls &&
-        selectedClip &&
-        !selectedClip.mediaId.startsWith("text-") &&
-        !selectedClip.mediaId.startsWith("shape-") &&
-        !selectedClip.mediaId.startsWith("svg-") &&
-        !selectedClip.mediaId.startsWith("sticker-") && (
+      {showSpeedControls && selectedClip && (
           <>
             <InspectorSection
               title="Speed & Direction"
@@ -36,11 +43,8 @@ export const SpeedTab: React.FC<SpeedTabProps> = ({
           </>
         )}
       {showVideoControls &&
-        selectedClip &&
-        !selectedClip.mediaId.startsWith("text-") &&
-        !selectedClip.mediaId.startsWith("shape-") &&
-        !selectedClip.mediaId.startsWith("svg-") &&
-        !selectedClip.mediaId.startsWith("sticker-") && (
+        isMediaClip &&
+        selectedClip && (
           <InspectorSection
             title="Stabilization"
             sectionId="stabilization"
@@ -50,11 +54,8 @@ export const SpeedTab: React.FC<SpeedTabProps> = ({
           </InspectorSection>
         )}
       {showVideoControls &&
-        selectedClip &&
-        !selectedClip.mediaId.startsWith("text-") &&
-        !selectedClip.mediaId.startsWith("shape-") &&
-        !selectedClip.mediaId.startsWith("svg-") &&
-        !selectedClip.mediaId.startsWith("sticker-") && (
+        isMediaClip &&
+        selectedClip && (
           <InspectorSection
             title="Speed Curves"
             sectionId="speed-curves"

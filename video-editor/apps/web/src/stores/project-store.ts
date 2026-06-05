@@ -6,6 +6,7 @@ import type {
   MediaItem,
   Track,
   Clip,
+  ClipMetadata,
   AutomationPoint,
   Transition,
   Action,
@@ -188,6 +189,10 @@ export interface ProjectState {
     trimStart: boolean,
   ) => Promise<ActionResult>;
   getClip: (clipId: string) => Clip | undefined;
+  updateClipMetadata: (
+    clipId: string,
+    metadata: Record<string, unknown>,
+  ) => boolean;
   addClipTransition: (transition: Transition) => Transition | null;
   updateClipTransition: (
     transitionId: string,
@@ -1861,8 +1866,6 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       replaceMediaAsset: async (mediaId: string, file: File, sourceFolder?: string) => {
-        const { project } = get();
-
         try {
           const mediaBridge = getMediaBridge();
           if (!mediaBridge.isInitialized()) {
@@ -1974,19 +1977,51 @@ export const useProjectStore = create<ProjectState>()(
             sourceFile: { name: file.name, size: file.size, lastModified: file.lastModified, folder: sourceFolder },
           };
 
-          const updatedItems = project.mediaLibrary.items.map((item) =>
+          const currentProject = get().project;
+          const updatedItems = currentProject.mediaLibrary.items.map((item) =>
             item.id === mediaId ? updatedItem : item,
           );
+          const mediaDuration = updatedItem.metadata.duration || 0;
+          const updatedTracks = currentProject.timeline.tracks.map((track) => ({
+            ...track,
+            clips: track.clips.map((clip) => {
+              if (clip.mediaId !== mediaId || mediaDuration <= 0) {
+                return clip;
+              }
 
-          set({
-            project: {
-              ...project,
-              mediaLibrary: {
-                items: updatedItems,
-              },
-              modifiedAt: Date.now(),
+              return {
+                ...clip,
+                duration: mediaDuration,
+                inPoint: 0,
+                outPoint: mediaDuration,
+              };
+            }),
+          }));
+          const updatedProject = {
+            ...currentProject,
+            mediaLibrary: {
+              ...currentProject.mediaLibrary,
+              items: updatedItems,
             },
-          });
+            timeline: {
+              ...currentProject.timeline,
+              tracks: updatedTracks,
+            },
+            modifiedAt: Date.now(),
+          };
+
+          set({ project: updatedProject });
+
+          try {
+            await saveMediaBlob(
+              updatedProject.id,
+              updatedItem.id,
+              file,
+              updatedItem.metadata,
+            );
+          } catch (err) {
+            console.error("[ProjectStore] Failed to persist replaced media blob:", err);
+          }
 
           if (updatedItem.type === "video" && !updatedItem.thumbnailUrl) {
             setTimeout(async () => {
@@ -2828,6 +2863,24 @@ export const useProjectStore = create<ProjectState>()(
           if (clip) return clip;
         }
         return undefined;
+      },
+
+      updateClipMetadata: (clipId: string, metadata: Record<string, unknown>) => {
+        const { project } = get();
+        const updatedProject = updateProjectClip(project, clipId, (clip) => ({
+          ...clip,
+          metadata: {
+            ...(clip.metadata ?? {}),
+            ...metadata,
+          } as ClipMetadata,
+        }));
+
+        if (!updatedProject) {
+          return false;
+        }
+
+        set({ project: updatedProject });
+        return true;
       },
 
       addClipTransition: (transition: Transition) => {
