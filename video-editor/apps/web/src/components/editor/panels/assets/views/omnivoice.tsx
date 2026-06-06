@@ -11,6 +11,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	Section,
 	SectionContent,
@@ -29,6 +31,8 @@ import {
 	getOmniVoiceApiBaseUrl,
 	transcribeWithOmniVoice,
 } from "@/omnivoice/client";
+
+type OmniVoiceViewTab = "transcript" | "tts";
 
 type ProcessingState =
 	| { status: "idle"; error: string | null; message: string | null }
@@ -64,6 +68,29 @@ function processingReducer(
 }
 
 export function OmniVoiceView() {
+	const [view, setView] = useState<OmniVoiceViewTab>("transcript");
+
+	return (
+		<PanelView title="OmniVoice" contentClassName="px-0 flex flex-col h-full">
+			<div className="px-0 pt-0 flex h-full flex-col">
+				<div className="px-3.5 pt-3">
+					<Tabs value={view} onValueChange={(value) => setView(value as OmniVoiceViewTab)}>
+						<TabsList>
+							<TabsTrigger value="transcript">Transcript</TabsTrigger>
+							<TabsTrigger value="tts">TTS</TabsTrigger>
+						</TabsList>
+					</Tabs>
+				</div>
+				<div className="flex-1 overflow-hidden">
+					{view === "transcript" && <OmniVoiceTranscriptTab />}
+					{view === "tts" && <OmniVoiceTtsTab />}
+				</div>
+			</div>
+		</PanelView>
+	);
+}
+
+function OmniVoiceTranscriptTab() {
 	const editor = useEditor();
 	const [apiBaseUrl] = useState(getOmniVoiceApiBaseUrl);
 	const [model, setModel] = useState(DEFAULT_TRANSCRIPTION_MODEL);
@@ -155,33 +182,51 @@ export function OmniVoiceView() {
 	};
 
 	return (
-		<PanelView title="OmniVoice" contentClassName="px-0 flex flex-col h-full">
-			<Section
-				showTopBorder={false}
-				showBottomBorder={false}
-				className="flex-1"
-			>
-				<SectionContent className="flex flex-col gap-4 h-full pt-1">
-					<SectionFields>
-						<SectionField label="Backend endpoint">
-							<Input value={apiBaseUrl} readOnly />
-						</SectionField>
-						<SectionField label="Transcription model">
-							<Input
-								value={model}
-								onChange={(event) => setModel(event.target.value)}
-							/>
-						</SectionField>
-						<SectionField label="Language">
+		<Section showTopBorder={false} showBottomBorder={false} className="flex-1">
+			<SectionContent className="flex flex-col gap-4 h-full pt-1">
+				<SectionFields>
+					<SectionField label="Transcription model">
+						<Input
+							value={model}
+							onChange={(event) => setModel(event.target.value)}
+						/>
+					</SectionField>
+					<SectionField label="Language">
+						<Select
+							value={selectedLanguage}
+							onValueChange={(value) => handleLanguageChange({ value })}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Select a language" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="auto">Auto detect</SelectItem>
+								{TRANSCRIPTION_LANGUAGES.map((language) => (
+									<SelectItem key={language.code} value={language.code}>
+										{language.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</SectionField>
+					<label className="flex items-center gap-2 text-sm">
+						<input
+							type="checkbox"
+							checked={translate}
+							onChange={(event) => setTranslate(event.target.checked)}
+						/>
+						Translate transcript
+					</label>
+					{translate && (
+						<SectionField label="Target language">
 							<Select
-								value={selectedLanguage}
-								onValueChange={(value) => handleLanguageChange({ value })}
+								value={targetLanguage}
+								onValueChange={setTargetLanguage}
 							>
 								<SelectTrigger>
-									<SelectValue placeholder="Select a language" />
+									<SelectValue placeholder="Select a target language" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="auto">Auto detect</SelectItem>
 									{TRANSCRIPTION_LANGUAGES.map((language) => (
 										<SelectItem key={language.code} value={language.code}>
 											{language.name}
@@ -190,56 +235,53 @@ export function OmniVoiceView() {
 								</SelectContent>
 							</Select>
 						</SectionField>
-						<label className="flex items-center gap-2 text-sm">
-							<input
-								type="checkbox"
-								checked={translate}
-								onChange={(event) => setTranslate(event.target.checked)}
-							/>
-							Translate transcript
-						</label>
-						{translate && (
-							<SectionField label="Target language">
-								<Select
-									value={targetLanguage}
-									onValueChange={setTargetLanguage}
-								>
-									<SelectTrigger>
-										<SelectValue placeholder="Select a target language" />
-									</SelectTrigger>
-									<SelectContent>
-										{TRANSCRIPTION_LANGUAGES.map((language) => (
-											<SelectItem key={language.code} value={language.code}>
-												{language.name}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</SectionField>
-						)}
-					</SectionFields>
+					)}
+				</SectionFields>
 
-					<Button
-						type="button"
-						className="mt-auto w-full"
-						onClick={handleTranscribeTimeline}
-						disabled={isProcessing}
-					>
-						{isProcessing && <Spinner className="mr-1" />}
-						{isProcessing ? processing.step : "Transcribe timeline to captions"}
-					</Button>
-					{error && (
-						<div className="bg-destructive/10 border-destructive/20 rounded-md border p-3">
-							<p className="text-destructive text-sm">{error}</p>
-						</div>
-					)}
-					{message && (
-						<div className="rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3">
-							<p className="text-sm text-emerald-700">{message}</p>
-						</div>
-					)}
-				</SectionContent>
-			</Section>
-		</PanelView>
+				<Button
+					type="button"
+					className="mt-auto w-full"
+					onClick={handleTranscribeTimeline}
+					disabled={isProcessing}
+				>
+					{isProcessing && <Spinner className="mr-1" />}
+					{isProcessing ? processing.step : "Transcribe timeline to captions"}
+				</Button>
+				{error && (
+					<div className="bg-destructive/10 border-destructive/20 rounded-md border p-3">
+						<p className="text-destructive text-sm">{error}</p>
+					</div>
+				)}
+				{message && (
+					<div className="rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3">
+						<p className="text-sm text-emerald-700">{message}</p>
+					</div>
+				)}
+			</SectionContent>
+		</Section>
+	);
+}
+
+function OmniVoiceTtsTab() {
+	return (
+		<Section showTopBorder={false} showBottomBorder={false} className="flex-1">
+			<SectionContent className="flex h-full flex-col gap-4 pt-1">
+				<p className="text-sm text-muted-foreground">
+					TTS uses the OmniVoice backend endpoint from Settings. This tab is split
+					out from Transcript so the editor stays focused.
+				</p>
+				<SectionFields>
+					<SectionField label="Script">
+						<Textarea
+							placeholder="Enter text to synthesize..."
+							className="min-h-40 resize-none"
+						/>
+					</SectionField>
+				</SectionFields>
+				<div className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+					TTS controls are not wired yet.
+				</div>
+			</SectionContent>
+		</Section>
 	);
 }

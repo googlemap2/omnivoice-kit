@@ -39,7 +39,7 @@ provider.
 | Python environment | uv |
 | JavaScript runtime/package manager | Bun |
 
-Current `video-editor/` integration status: OpenCut `v0.3.0` is installed and builds. OmniVoice has a dedicated Assets tab for backend transcription from timeline audio to captions, plus a Settings tab for backend endpoint saved to localStorage key `omnivoice.apiBaseUrl`. TTS timeline integration is still pending.
+Current `video-editor/` integration status: OpenCut `v0.3.0` is installed and builds. OmniVoice has a dedicated Assets tab with Transcript and TTS sub-tabs; backend transcription still reads the endpoint from Settings, where it is saved to localStorage key `omnivoice.apiBaseUrl`. TTS timeline integration is still pending.
 | Audio processing | torchaudio, soundfile, pydub, pedalboard |
 | Video/audio processing | FFmpeg |
 | ML runtime | PyTorch, transformers, CTranslate2 |
