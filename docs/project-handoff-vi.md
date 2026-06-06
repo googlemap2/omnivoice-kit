@@ -469,7 +469,9 @@ Pipeline:
 2. Extract audio bằng FFmpeg.
 3. ASR thành segments.
 4. Optional diarization rồi merge speaker label.
-5. Translate segments.
+5. Translate segments. Dubbing UI có thể dùng translation provider thường hoặc Model Provider;
+   Model Provider translation gửi `provider_model_id` và optional `provider_model_name`
+   tới `/v1/dubbing/dub` hoặc `/v1/dubbing/dub-upload`.
 6. Gán voice profile cho toàn bộ segment hoặc theo `speaker_voice_map`.
 7. Generate TTS từng segment bằng `generate_clone_with_speaker_id()`.
 8. Fit audio vào timing segment bằng padding/trimming đơn giản.

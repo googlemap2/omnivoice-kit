@@ -15,7 +15,7 @@ from backend.services.diarization_service import assign_speakers_to_segments, di
 from backend.infrastructure.media import extract_audio, has_video_stream, mux_video_with_audio
 from backend.infrastructure.model_store import DEFAULT_DIARIZATION_MODEL_ID, DEFAULT_MODEL_ID
 from backend.services.subtitle_service import export_subtitle, from_transcription_result
-from backend.services.translation_service import translate_segments
+from backend.services.translation_service import translate_segments, translate_segments_with_provider_model
 from backend.paths import OUTPUTS_DIR
 
 
@@ -118,6 +118,8 @@ def dub_file(
     target_language: str,
     source_language: str | None = None,
     translation_provider: str | None = None,
+    provider_model_id: str | None = None,
+    provider_model_name: str | None = None,
     output_dir: str | Path = OUTPUTS_DIR / "dubbing",
     folder_name: str | None = None,
     tts_model: str = DEFAULT_MODEL_ID,
@@ -160,12 +162,21 @@ def dub_file(
         )
         subtitle_segments = assign_speakers_to_segments(subtitle_segments, diarized)
     segment_payload = [segment.to_dict() for segment in subtitle_segments]
-    translated = translate_segments(
-        segments=segment_payload,
-        source_language=source_language or transcription.language,
-        target_language=target_language,
-        provider_id=translation_provider,
-    )
+    if provider_model_id:
+        translated = translate_segments_with_provider_model(
+            segments=segment_payload,
+            source_language=source_language or transcription.language,
+            target_language=target_language,
+            provider_model_id=provider_model_id,
+            provider_model_name=provider_model_name,
+        )
+    else:
+        translated = translate_segments(
+            segments=segment_payload,
+            source_language=source_language or transcription.language,
+            target_language=target_language,
+            provider_id=translation_provider,
+        )
     translated_segments = translated.segments or []
 
     sample_rate = 24000

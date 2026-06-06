@@ -294,6 +294,11 @@ uv run backend translate \
 
 ### 3.6 Dub audio/video v1
 
+Translation trong Dubbing UI có thể dùng `Translation provider` hoặc `Model provider`.
+Khi chọn `Model provider`, frontend gửi `provider_model_id` và optional
+`provider_model_name` tới `/v1/dubbing/dub-upload`; backend sẽ dịch segment bằng
+provider OpenAI-compatible đã cấu hình trong Settings -> Model Providers.
+
 Pipeline dubbing v1 chạy tuần tự: extract audio bằng FFmpeg, transcribe, translate,
 generate TTS cho từng segment bằng một voice profile, mix WAV, export SRT/VTT và
 cố gắng mux video nếu input có video stream.

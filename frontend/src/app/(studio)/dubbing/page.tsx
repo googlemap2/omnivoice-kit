@@ -6,12 +6,52 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { Box, Button, Chip, FormControlLabel, IconButton, Paper, Stack, Switch, TextField, Typography } from "@mui/material";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { WorkspaceShell } from "../../../components/layout/WorkspaceShell";
 import { useStudio } from "../../../components/studio/StudioContext";
 import { SelectField } from "../../../components/ui/SelectField";
+import { apiJson } from "../../../lib/api";
+import type { ProviderModel } from "../../../types/api";
 
 export default function DubbingPage() {
   const studio = useStudio();
+  const [providerModels, setProviderModels] = useState<ProviderModel[]>([]);
+  const dubbingProviderModelId = studio.dubbingProviderModelId;
+  const setDubbingProviderModelId = studio.setDubbingProviderModelId;
+  const availableProviders = studio.providers.filter((provider) => provider.available);
+  const activeProviderModel =
+    providerModels.find((provider) => provider.id === studio.dubbingProviderModelId) || providerModels[0] || null;
+  const activeProviderModelOptions = useMemo(() => {
+    const availableModels = activeProviderModel?.config?.available_models;
+    return Array.isArray(availableModels)
+      ? availableModels
+          .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+          .map((id) => ({ id, label: id }))
+      : [];
+  }, [activeProviderModel]);
+
+  const refreshProviderModels = useCallback(async () => {
+    try {
+      const result = await apiJson<{ data: ProviderModel[] }>("/v1/provider-models");
+      setProviderModels(result.data);
+      if (!dubbingProviderModelId && result.data[0]?.id) {
+        setDubbingProviderModelId(result.data[0].id);
+      }
+    } catch {
+      setProviderModels([]);
+    }
+  }, [dubbingProviderModelId, setDubbingProviderModelId]);
+
+  useEffect(() => {
+    void refreshProviderModels();
+  }, [refreshProviderModels]);
+
+  function setDubbingTranslationMode(value: "provider" | "model") {
+    studio.setDubbingTranslationMode(value);
+    if (value === "model" && !studio.dubbingProviderModelId && providerModels[0]?.id) {
+      studio.setDubbingProviderModelId(providerModels[0].id);
+    }
+  }
 
   return (
     <WorkspaceShell
@@ -58,11 +98,51 @@ export default function DubbingPage() {
             options={studio.meta.translation_languages.filter((item) => item.id)}
           />
           <SelectField
-            label="Translation provider"
-            value={studio.dubbingProvider}
-            onChange={studio.setDubbingProvider}
-            options={studio.providers.map((provider) => ({ id: provider.id, label: provider.name }))}
+            label="Translation engine"
+            value={studio.dubbingTranslationMode}
+            onChange={(value) => setDubbingTranslationMode(value as "provider" | "model")}
+            options={[
+              { id: "provider", label: "Translation provider" },
+              { id: "model", label: "Model provider" },
+            ]}
           />
+          {studio.dubbingTranslationMode === "provider" ? (
+            <SelectField
+              label="Translation provider"
+              value={studio.dubbingProvider}
+              onChange={studio.setDubbingProvider}
+              options={(availableProviders.length ? availableProviders : studio.providers).map((provider) => ({
+                id: provider.id,
+                label: provider.available ? provider.name : `${provider.name} (unavailable)`,
+              }))}
+            />
+          ) : (
+            <Paper variant="outlined" sx={{ p: 1.25, bgcolor: "#252526" }}>
+              <Stack spacing={1}>
+                <SelectField
+                  label="Model provider"
+                  value={studio.dubbingProviderModelId}
+                  onChange={studio.setDubbingProviderModelId}
+                  options={
+                    providerModels.length > 0
+                      ? providerModels.map((provider) => ({
+                          id: provider.id,
+                          label: provider.provider_name || provider.base_url || provider.id,
+                        }))
+                      : [{ id: "", label: "No model providers" }]
+                  }
+                />
+                {activeProviderModelOptions.length > 0 && (
+                  <SelectField
+                    label="Model"
+                    value={studio.dubbingProviderModelName}
+                    onChange={studio.setDubbingProviderModelName}
+                    options={[{ id: "", label: "Auto" }, ...activeProviderModelOptions]}
+                  />
+                )}
+              </Stack>
+            </Paper>
+          )}
           <SelectField
             label="ASR model"
             value={studio.asrModel}

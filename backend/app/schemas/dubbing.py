@@ -15,6 +15,8 @@ class DubbingRequest(BaseModel):
     folder_name: str | None = None
     source_language: str | None = None
     translation_provider: str | None = None
+    provider_model_id: str | None = None
+    provider_model_name: str | None = None
     tts_model: str = DEFAULT_MODEL_ID
     asr_model: str = DEFAULT_ASR_MODEL_ID
     effect_preset: Literal["raw", "normalize", "broadcast"] = "raw"

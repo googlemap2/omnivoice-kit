@@ -131,6 +131,12 @@ type StudioContextValue = {
   setDubbingTargetLanguage: (language: string) => void;
   dubbingProvider: string;
   setDubbingProvider: (provider: string) => void;
+  dubbingTranslationMode: "provider" | "model";
+  setDubbingTranslationMode: (value: "provider" | "model") => void;
+  dubbingProviderModelId: string;
+  setDubbingProviderModelId: (value: string) => void;
+  dubbingProviderModelName: string;
+  setDubbingProviderModelName: (value: string) => void;
   dubbingDiarize: boolean;
   setDubbingDiarize: (value: boolean) => void;
   dubbingSpeakerVoiceMap: Record<string, string>;
@@ -231,6 +237,9 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [dubbingSourceLanguage, setDubbingSourceLanguage] = useState("en");
   const [dubbingTargetLanguage, setDubbingTargetLanguage] = useState("vi");
   const [dubbingProvider, setDubbingProvider] = useState("passthrough");
+  const [dubbingTranslationMode, setDubbingTranslationMode] = useState<"provider" | "model">("provider");
+  const [dubbingProviderModelId, setDubbingProviderModelId] = useState("");
+  const [dubbingProviderModelName, setDubbingProviderModelName] = useState("");
   const [dubbingDiarize, setDubbingDiarize] = useState(false);
   const [dubbingSpeakerVoiceMap, setDubbingSpeakerVoiceMap] = useState<Record<string, string>>({});
   const [dubbingQueued, setDubbingQueued] = useState(false);
@@ -697,6 +706,10 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       setError("Choose a voice profile first.");
       return;
     }
+    if (dubbingTranslationMode === "model" && !dubbingProviderModelId) {
+      setError("Choose a model provider for dubbing translation.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -707,7 +720,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       form.set("voice", dubbingVoice);
       form.set("source_language", dubbingSourceLanguage);
       form.set("target_language", dubbingTargetLanguage);
-      form.set("translation_provider", dubbingProvider);
+      if (dubbingTranslationMode === "model") {
+        form.set("provider_model_id", dubbingProviderModelId);
+        form.set("provider_model_name", dubbingProviderModelName);
+      } else {
+        form.set("translation_provider", dubbingProvider);
+      }
       form.set("tts_model", activeModel);
       form.set("asr_model", activeAsrModel);
       form.set("effect_preset", effectPreset);
@@ -1293,6 +1311,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         setDubbingTargetLanguage,
         dubbingProvider,
         setDubbingProvider,
+        dubbingTranslationMode,
+        setDubbingTranslationMode,
+        dubbingProviderModelId,
+        setDubbingProviderModelId,
+        dubbingProviderModelName,
+        setDubbingProviderModelName,
         dubbingDiarize,
         setDubbingDiarize,
         dubbingSpeakerVoiceMap,

@@ -143,6 +143,67 @@ class DubbingAudioTests(unittest.TestCase):
             generate_tts.assert_called_once()
             self.assertEqual(generate_tts.call_args.kwargs["speaker_id"], "alice")
 
+    def test_dub_file_uses_provider_model_translation_when_configured(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            input_audio = tmp_path / "input.wav"
+            sf.write(input_audio, np.zeros(2400, dtype=np.float32), 24000)
+
+            subtitle_segments = [
+                SubtitleSegment(id=0, start=0.0, end=0.5, text="Hello", metadata={})
+            ]
+            translated = TranslationResult(
+                text="Xin chao",
+                source_language="en",
+                target_language="vi",
+                provider="provider-model:model-provider-1",
+                segments=[
+                    TranslationSegment(
+                        id=0,
+                        text="Hello",
+                        start=0.0,
+                        end=0.5,
+                        translated_text="Xin chao",
+                        metadata={},
+                    )
+                ],
+            )
+
+            def fake_extract_audio(_source: Path, destination: Path) -> Path:
+                sf.write(destination, np.zeros(2400, dtype=np.float32), 24000)
+                return destination
+
+            with (
+                patch("backend.services.dubbing_service.get_profile_store") as get_profile_store,
+                patch("backend.services.dubbing_service.extract_audio", side_effect=fake_extract_audio),
+                patch("backend.services.dubbing_service.transcribe_file", return_value=SimpleNamespace(language="en")),
+                patch("backend.services.dubbing_service.from_transcription_result", return_value=subtitle_segments),
+                patch("backend.services.dubbing_service.translate_segments") as translate_segments,
+                patch(
+                    "backend.services.dubbing_service.translate_segments_with_provider_model",
+                    return_value=translated,
+                ) as translate_with_model,
+                patch(
+                    "backend.services.dubbing_service.generate_clone_with_speaker_id",
+                    return_value=((24000, np.ones(12000, dtype=np.int16)), "ok"),
+                ),
+                patch("backend.services.dubbing_service.has_video_stream", return_value=False),
+            ):
+                get_profile_store.return_value.list_profiles.return_value = [SimpleNamespace(id="default")]
+                dub_file(
+                    input_path=input_audio,
+                    voice="default",
+                    target_language="vi",
+                    output_dir=tmp_path / "out",
+                    provider_model_id="model-provider-1",
+                    provider_model_name="gpt-test",
+                )
+
+            translate_segments.assert_not_called()
+            translate_with_model.assert_called_once()
+            self.assertEqual(translate_with_model.call_args.kwargs["provider_model_id"], "model-provider-1")
+            self.assertEqual(translate_with_model.call_args.kwargs["provider_model_name"], "gpt-test")
+
 
 if __name__ == "__main__":
     unittest.main()
