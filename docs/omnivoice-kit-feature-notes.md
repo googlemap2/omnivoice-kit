@@ -39,7 +39,7 @@ provider.
 | Python environment | uv |
 | JavaScript runtime/package manager | Bun |
 
-Current `video-editor/` integration status: OpenCut `v0.3.0` is installed and builds. OmniVoice has not yet been wired into the editor UI after replacing the workspace; next work should add OmniVoice tools inside the existing assets/properties/timeline flow, not as a standalone config page.
+Current `video-editor/` integration status: OpenCut `v0.3.0` is installed and builds. OmniVoice backend endpoint can be configured from the editor Settings view and is saved to localStorage key `omnivoice.apiBaseUrl`. Transcription/TTS timeline integration is still pending.
 | Audio processing | torchaudio, soundfile, pydub, pedalboard |
 | Video/audio processing | FFmpeg |
 | ML runtime | PyTorch, transformers, CTranslate2 |

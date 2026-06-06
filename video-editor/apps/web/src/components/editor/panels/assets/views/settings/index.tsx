@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { PanelView } from "@/components/editor/panels/assets/views/base-panel";
+import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -32,7 +33,10 @@ import { formatNumberForDisplay } from "@/utils/math";
 import { OcSquarePlusIcon } from "@/components/icons";
 import type { TCanvasSize } from "@/lib/project/types";
 
-type SettingsView = "project-info" | "background";
+type SettingsView = "project-info" | "background" | "omnivoice";
+
+const OMNIVOICE_API_BASE_URL_STORAGE_KEY = "omnivoice.apiBaseUrl";
+const DEFAULT_OMNIVOICE_API_BASE_URL = "http://127.0.0.1:8000";
 
 const PRESET_LABELS: Record<string, string> = {
 	"1:1": "1:1",
@@ -66,6 +70,20 @@ function parseCanvasDimension({ input }: { input: string }): number | null {
 	return rounded > 0 ? rounded : null;
 }
 
+function getStoredOmniVoiceApiBaseUrl() {
+	if (typeof window === "undefined") return DEFAULT_OMNIVOICE_API_BASE_URL;
+
+	return (
+		window.localStorage.getItem(OMNIVOICE_API_BASE_URL_STORAGE_KEY) ??
+		DEFAULT_OMNIVOICE_API_BASE_URL
+	);
+}
+
+function normalizeApiBaseUrl(value: string) {
+	const trimmed = value.trim();
+	return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
+}
+
 function useCanvasDimensionDraft({
 	value,
 	onCommit,
@@ -97,6 +115,10 @@ function useCanvasDimensionDraft({
 
 export function SettingsView() {
 	const [view, setView] = useState<SettingsView>("project-info");
+	const [omniVoiceApiBaseUrl, setOmniVoiceApiBaseUrl] = useState(
+		getStoredOmniVoiceApiBaseUrl,
+	);
+	const [omniVoiceSaveStatus, setOmniVoiceSaveStatus] = useState("");
 	const editor = useEditor();
 	const activeProject = useEditor((e) => e.project.getActive());
 	const { canvasPresets } = useEditorStore();
@@ -115,14 +137,15 @@ export function SettingsView() {
 		};
 	});
 
-	const selectedPresetId = canvasSizeMode === "preset"
-		? (presetItems.find((preset) =>
-				areCanvasSizesEqual({
-					left: preset.canvasSize,
-					right: currentCanvasSize,
-				}),
-			)?.id ?? null)
-		: null;
+	const selectedPresetId =
+		canvasSizeMode === "preset"
+			? (presetItems.find((preset) =>
+					areCanvasSizesEqual({
+						left: preset.canvasSize,
+						right: currentCanvasSize,
+					}),
+				)?.id ?? null)
+			: null;
 
 	const updateCustomCanvasSize = ({
 		canvasSize,
@@ -216,6 +239,7 @@ export function SettingsView() {
 					<TabsList>
 						<TabsTrigger value="project-info">Project info</TabsTrigger>
 						<TabsTrigger value="background">Background</TabsTrigger>
+						<TabsTrigger value="omnivoice">OmniVoice</TabsTrigger>
 					</TabsList>
 				</Tabs>
 			}
@@ -233,12 +257,14 @@ export function SettingsView() {
 					<Section showTopBorder={false}>
 						<SectionHeader className="justify-between">
 							<SectionTitle className="flex-1">Frame rate</SectionTitle>
-					<Select
-							value={String(Math.round(frameRateToFloat(activeProject.settings.fps)))}
-							onValueChange={(value) => {
-								const fps = floatToFrameRate(parseFloat(value));
-								editor.project.updateSettings({ settings: { fps } });
-							}}
+							<Select
+								value={String(
+									Math.round(frameRateToFloat(activeProject.settings.fps)),
+								)}
+								onValueChange={(value) => {
+									const fps = floatToFrameRate(parseFloat(value));
+									editor.project.updateSettings({ settings: { fps } });
+								}}
 							>
 								<SelectTrigger className="bg-transparent border-none p-1 h-auto">
 									<SelectValue placeholder="Select a frame rate" />
@@ -309,6 +335,76 @@ export function SettingsView() {
 				</div>
 			)}
 			{view === "background" && <BackgroundContent />}
+			{view === "omnivoice" && (
+				<div className="flex flex-col">
+					<Section showTopBorder={false}>
+						<SectionHeader>
+							<SectionTitle className="flex-1">
+								Backend API endpoint
+							</SectionTitle>
+						</SectionHeader>
+						<SectionContent className="px-3.5 pb-3 flex flex-col gap-3">
+							<p className="text-xs text-muted-foreground">
+								Used by OmniVoice transcription, TTS, diagnostics, and model
+								unload tools. The value is saved locally in this browser.
+							</p>
+							<Input
+								value={omniVoiceApiBaseUrl}
+								placeholder={DEFAULT_OMNIVOICE_API_BASE_URL}
+								onChange={(event) => {
+									setOmniVoiceApiBaseUrl(event.target.value);
+									setOmniVoiceSaveStatus("");
+								}}
+								showClearIcon
+								onClear={() => {
+									setOmniVoiceApiBaseUrl("");
+									setOmniVoiceSaveStatus("");
+								}}
+							/>
+							<div className="flex items-center gap-2">
+								<Button
+									size="sm"
+									onClick={() => {
+										const nextApiBaseUrl = normalizeApiBaseUrl(
+											omniVoiceApiBaseUrl || DEFAULT_OMNIVOICE_API_BASE_URL,
+										);
+										window.localStorage.setItem(
+											OMNIVOICE_API_BASE_URL_STORAGE_KEY,
+											nextApiBaseUrl,
+										);
+										setOmniVoiceApiBaseUrl(nextApiBaseUrl);
+										setOmniVoiceSaveStatus("Saved");
+									}}
+								>
+									Save
+								</Button>
+								<Button
+									size="sm"
+									variant="secondary"
+									onClick={() => {
+										window.localStorage.setItem(
+											OMNIVOICE_API_BASE_URL_STORAGE_KEY,
+											DEFAULT_OMNIVOICE_API_BASE_URL,
+										);
+										setOmniVoiceApiBaseUrl(DEFAULT_OMNIVOICE_API_BASE_URL);
+										setOmniVoiceSaveStatus("Reset to default");
+									}}
+								>
+									Reset
+								</Button>
+								{omniVoiceSaveStatus && (
+									<span className="text-xs text-muted-foreground">
+										{omniVoiceSaveStatus}
+									</span>
+								)}
+							</div>
+							<div className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+								Storage key: <code>{OMNIVOICE_API_BASE_URL_STORAGE_KEY}</code>
+							</div>
+						</SectionContent>
+					</Section>
+				</div>
+			)}
 		</PanelView>
 	);
 }

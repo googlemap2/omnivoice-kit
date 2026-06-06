@@ -174,6 +174,13 @@ Không đặt OmniVoice vào homepage. Không thay route `/`.
 
 UI nên nằm trong editor, ví dụ assets panel tab `OmniVoice` hoặc settings view của editor.
 
+Current implementation:
+
+- `video-editor/apps/web/src/components/editor/panels/assets/views/settings/index.tsx`
+- Settings view has an `OmniVoice` tab.
+- Backend endpoint is saved to localStorage key `omnivoice.apiBaseUrl`.
+- Default endpoint: `http://127.0.0.1:8000`.
+
 State:
 
 - `apiBaseUrl`
@@ -436,7 +443,16 @@ Acceptance:
 
 ### Phase 1: OmniVoice settings tab
 
-Files dự kiến:
+Status: partially done.
+
+Implemented:
+
+- `apps/web/src/components/editor/panels/assets/views/settings/index.tsx`
+- Settings view has an `OmniVoice` tab.
+- Backend endpoint is saved to localStorage key `omnivoice.apiBaseUrl`.
+- Default endpoint: `http://127.0.0.1:8000`.
+
+Files still recommended if the integration grows:
 
 - `apps/web/src/omnivoice/client.ts`
 - `apps/web/src/omnivoice/settings-store.ts`
@@ -445,11 +461,11 @@ Files dự kiến:
 
 Acceptance:
 
-- Có tab/tool `OmniVoice` trong editor.
+- Có tab `OmniVoice` trong editor Settings.
 - User set backend URL.
 - URL lưu localStorage.
-- Health check gọi `/health`.
-- Có ngrok bypass header.
+- Pending: health check gọi `/health`.
+- Pending: shared API client có ngrok bypass header.
 
 ### Phase 2: Transcribe to captions
 
@@ -532,4 +548,4 @@ Manual smoke:
 
 ## 16. Next action
 
-Bước tiếp theo nên làm: Phase 1, tạo OmniVoice tab/tool trong editor assets panel hoặc settings panel. Không thêm homepage config.
+Bước tiếp theo nên làm: hoàn thiện Phase 1 bằng shared OmniVoice API client và nút health check trong Settings, sau đó sang Phase 2 transcription. Không thêm homepage config.
