@@ -11,7 +11,6 @@ import {
 	TextIcon,
 	Settings01Icon,
 	SlidersHorizontalIcon,
-	ColorsIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 
@@ -23,6 +22,7 @@ export const TAB_KEYS = [
 	"effects",
 	"transitions",
 	"captions",
+	"omnivoice",
 	"adjustment",
 	"settings",
 ] as const;
@@ -63,6 +63,10 @@ export const tabs = {
 	captions: {
 		icon: createHugeiconsIcon({ icon: ClosedCaptionIcon }),
 		label: "Captions",
+	},
+	omnivoice: {
+		icon: createHugeiconsIcon({ icon: MagicWand05Icon }),
+		label: "OmniVoice",
 	},
 	adjustment: {
 		icon: createHugeiconsIcon({ icon: SlidersHorizontalIcon }),

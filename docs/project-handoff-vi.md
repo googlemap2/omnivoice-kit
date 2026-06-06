@@ -117,7 +117,7 @@ API liên quan model:
 - `video-editor/` hiện dùng đúng upstream `OpenCut-app/OpenCut` tại tag `v0.3.0`.
 - Đây là bản OpenCut có editor web thực tế: route `/projects`, route `/editor/[project_id]`, assets panel, preview panel, timeline panel, properties panel.
 - Runtime/package manager: Bun workspace + Turbo; app chính là `@opencut/web` trong `video-editor/apps/web`.
-- OmniVoice đã có tab endpoint setting trong `video-editor/apps/web/src/components/editor/panels/assets/views/settings/index.tsx`, lưu backend URL vào `localStorage` key `omnivoice.apiBaseUrl`. Chưa tích hợp transcription/TTS vào timeline.
+- OmniVoice đã có tab item riêng trong Assets `TabBar`, view transcription ở `video-editor/apps/web/src/components/editor/panels/assets/views/omnivoice.tsx`, và endpoint setting trong `SettingsView`. Backend URL lưu vào `localStorage` key `omnivoice.apiBaseUrl`. TTS timeline integration vẫn pending.
 - Lệnh chính:
   - `cd video-editor`
   - `bun install`

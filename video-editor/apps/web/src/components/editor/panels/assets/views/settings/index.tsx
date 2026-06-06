@@ -32,11 +32,12 @@ import { dimensionToAspectRatio } from "@/utils/geometry";
 import { formatNumberForDisplay } from "@/utils/math";
 import { OcSquarePlusIcon } from "@/components/icons";
 import type { TCanvasSize } from "@/lib/project/types";
+import {
+	DEFAULT_OMNIVOICE_API_BASE_URL,
+	OMNIVOICE_API_BASE_URL_STORAGE_KEY,
+} from "@/omnivoice/client";
 
 type SettingsView = "project-info" | "background" | "omnivoice";
-
-const OMNIVOICE_API_BASE_URL_STORAGE_KEY = "omnivoice.apiBaseUrl";
-const DEFAULT_OMNIVOICE_API_BASE_URL = "http://127.0.0.1:8000";
 
 const PRESET_LABELS: Record<string, string> = {
 	"1:1": "1:1",

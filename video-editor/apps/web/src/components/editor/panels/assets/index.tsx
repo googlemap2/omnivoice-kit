@@ -10,6 +10,7 @@ import { SoundsView } from "./views/sounds";
 import { StickersView } from "./views/stickers";
 import { TextView } from "./views/text";
 import { EffectsView } from "./views/effects";
+import { OmniVoiceView } from "./views/omnivoice";
 
 export function AssetsPanel() {
 	const { activeTab } = useAssetsPanelStore();
@@ -26,6 +27,7 @@ export function AssetsPanel() {
 			</div>
 		),
 		captions: <Captions />,
+		omnivoice: <OmniVoiceView />,
 		adjustment: (
 			<div className="text-muted-foreground p-4">
 				Adjustment view coming soon...

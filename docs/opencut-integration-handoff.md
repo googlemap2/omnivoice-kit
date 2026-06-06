@@ -176,6 +176,11 @@ UI nên nằm trong editor, ví dụ assets panel tab `OmniVoice` hoặc setting
 
 Current implementation:
 
+- `video-editor/apps/web/src/omnivoice/client.ts`
+- `video-editor/apps/web/src/components/editor/panels/assets/views/omnivoice.tsx`
+- `video-editor/apps/web/src/stores/assets-panel-store.tsx`
+- Assets `TabBar` has an `OmniVoice` item.
+- OmniVoice view extracts current timeline audio, calls `/v1/audio/transcriptions` with `response_format=srt`, parses SRT, and inserts captions as a text track.
 - `video-editor/apps/web/src/components/editor/panels/assets/views/settings/index.tsx`
 - Settings view has an `OmniVoice` tab.
 - Backend endpoint is saved to localStorage key `omnivoice.apiBaseUrl`.
@@ -468,6 +473,18 @@ Acceptance:
 - Pending: shared API client có ngrok bypass header.
 
 ### Phase 2: Transcribe to captions
+
+Status: initial implementation done.
+
+Implemented:
+
+- `apps/web/src/components/editor/panels/assets/views/omnivoice.tsx`
+- `apps/web/src/omnivoice/client.ts`
+- Dedicated Assets tab `OmniVoice`.
+- Extracts current timeline audio.
+- Calls backend transcription endpoint with `response_format=srt`.
+- Parses returned SRT via existing subtitle parser.
+- Inserts captions with existing `insertCaptionChunksAsTextTrack`.
 
 Files dự kiến:
 
