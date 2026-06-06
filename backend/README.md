@@ -298,6 +298,11 @@ Translation trong Dubbing UI có thể dùng `Translation provider` hoặc `Mode
 Khi chọn `Model provider`, frontend gửi `provider_model_id` và optional
 `provider_model_name` tới `/v1/dubbing/dub-upload`; backend sẽ dịch segment bằng
 provider OpenAI-compatible đã cấu hình trong Settings -> Model Providers.
+Với Ollama, base URL phải là endpoint API OpenAI-compatible có hậu tố `/v1`,
+ví dụ `https://ollama.com/v1` cho Ollama Cloud, `http://127.0.0.1:11434/v1`
+cho Ollama local, hoặc URL tunnel/ngrok trỏ tới Ollama có hậu tố `/v1`.
+Provider Model request timeout mặc định là 300 giây; có thể override bằng
+`request_timeout_seconds` trong provider model config.
 
 Pipeline dubbing v1 chạy tuần tự: extract audio bằng FFmpeg, transcribe, translate,
 generate TTS cho từng segment bằng một voice profile, mix WAV, export SRT/VTT và

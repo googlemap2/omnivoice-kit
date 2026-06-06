@@ -17,7 +17,7 @@ from backend.domain.settings import (
     merge_translation_provider_config,
     save_settings,
 )
-from backend.services.translation_service import provider_model_chat_completion
+from backend.services.translation_service import ProviderModelRequestError, provider_model_chat_completion
 
 router = APIRouter()
 
@@ -179,8 +179,8 @@ def chat_provider_model(request: ProviderModelChatRequest) -> dict:
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except requests.RequestException as e:
-        raise HTTPException(status_code=502, detail=f"Provider model request failed: {e}") from e
+    except (ProviderModelRequestError, requests.RequestException) as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}") from e
     return {

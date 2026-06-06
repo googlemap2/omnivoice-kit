@@ -4,6 +4,7 @@ import json
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 
@@ -25,6 +26,23 @@ TRANSLATION_LANGUAGE_CHOICES = [
     ("Indonesian (id)", "id"),
     ("Auto Detect", ""),
 ]
+
+
+class ProviderModelRequestError(RuntimeError):
+    pass
+
+
+DEFAULT_PROVIDER_MODEL_TIMEOUT_SECONDS = 300
+
+
+def _provider_model_timeout_seconds(config: dict[str, Any]) -> int:
+    raw_value = config.get("request_timeout_seconds")
+    if raw_value is None:
+        return DEFAULT_PROVIDER_MODEL_TIMEOUT_SECONDS
+    try:
+        return max(1, int(raw_value))
+    except (TypeError, ValueError):
+        return DEFAULT_PROVIDER_MODEL_TIMEOUT_SECONDS
 
 
 @dataclass(frozen=True)
@@ -506,6 +524,13 @@ def _provider_model_chat_completion(
     base_url = record.base_url.strip().rstrip("/")
     if not base_url:
         raise ValueError("Provider model base_url is required.")
+    parsed_url = urlparse(base_url)
+    if parsed_url.netloc.lower() in {"ollama.com", "www.ollama.com"} and not parsed_url.path.rstrip("/").endswith("/v1"):
+        raise ProviderModelRequestError(
+            "Ollama provider base_url must point to an OpenAI-compatible API endpoint, "
+            "for example https://ollama.com/v1, http://127.0.0.1:11434/v1, "
+            "or your Colab/ngrok Ollama URL ending in /v1."
+        )
 
     config = record.config or {}
     available_models = config.get("available_models")
@@ -519,21 +544,31 @@ def _provider_model_chat_completion(
     )
     if not selected_model:
         raise ValueError("Provider model has no available chat model. Execute model discovery or choose a model.")
+    timeout_seconds = _provider_model_timeout_seconds(config)
 
     headers = {"Content-Type": "application/json"}
     if record.api_key:
         headers["Authorization"] = f"Bearer {record.api_key}"
-    response = requests.post(
-        f"{base_url}/chat/completions",
-        headers=headers,
-        json={
-            "model": selected_model,
-            "messages": messages,
-            "temperature": temperature,
-        },
-        timeout=120,
-    )
-    response.raise_for_status()
+    endpoint = f"{base_url}/chat/completions"
+    try:
+        response = requests.post(
+            endpoint,
+            headers=headers,
+            json={
+                "model": selected_model,
+                "messages": messages,
+                "temperature": temperature,
+            },
+            timeout=timeout_seconds,
+        )
+        response.raise_for_status()
+    except requests.Timeout as e:
+        raise ProviderModelRequestError(
+            f"Provider model request timed out after {timeout_seconds}s: {endpoint}. "
+            "Check the provider base URL, model name, and network tunnel."
+        ) from e
+    except requests.RequestException as e:
+        raise ProviderModelRequestError(f"Provider model request failed: {e}") from e
     payload = response.json()
     content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
     if not isinstance(content, str) or not content.strip():
