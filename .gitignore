@@ -28,9 +28,8 @@ Thumbs.db
 .app_pid
 .colab_api_pid
 *.log
-data/
 backend/data/
-
+!.opencode
 # Next.js frontend
 frontend/node_modules/
 frontend/.next/
