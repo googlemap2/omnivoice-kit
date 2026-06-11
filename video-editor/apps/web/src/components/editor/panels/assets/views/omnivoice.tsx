@@ -1,8 +1,7 @@
 "use client";
 
-import { useReducer, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PanelView } from "@/components/editor/panels/assets/views/base-panel";
 import {
 	Select,
@@ -30,6 +29,8 @@ import {
 	DEFAULT_TRANSCRIPTION_MODEL,
 	getOmniVoiceApiBaseUrl,
 	transcribeWithOmniVoice,
+	fetchTranscriptionModels,
+	type TranscriptionModel,
 } from "@/omnivoice/client";
 
 type OmniVoiceViewTab = "transcript" | "tts";
@@ -94,6 +95,8 @@ function OmniVoiceTranscriptTab() {
 	const editor = useEditor();
 	const [apiBaseUrl] = useState(getOmniVoiceApiBaseUrl);
 	const [model, setModel] = useState(DEFAULT_TRANSCRIPTION_MODEL);
+	const [transcriptionModels, setTranscriptionModels] = useState<TranscriptionModel[]>([]);
+	const [modelsLoading, setModelsLoading] = useState(true);
 	const [selectedLanguage, setSelectedLanguage] =
 		useState<TranscriptionLanguage>("auto");
 	const [translate, setTranslate] = useState(false);
@@ -103,6 +106,29 @@ function OmniVoiceTranscriptTab() {
 	const isProcessing = processing.status === "processing";
 	const error = processing.status === "idle" ? processing.error : null;
 	const message = processing.status === "idle" ? processing.message : null;
+
+	useEffect(() => {
+		let cancelled = false;
+		setModelsLoading(true);
+		fetchTranscriptionModels(apiBaseUrl)
+			.then((models) => {
+				if (!cancelled) {
+					setTranscriptionModels(models);
+					if (models.length > 0 && model === DEFAULT_TRANSCRIPTION_MODEL) {
+						setModel(models[0].id);
+					}
+				}
+			})
+			.catch((err) => {
+				console.error("Failed to fetch transcription models:", err);
+			})
+			.finally(() => {
+				if (!cancelled) setModelsLoading(false);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [apiBaseUrl]);
 
 	const handleLanguageChange = ({ value }: { value: string }) => {
 		if (value === "auto") {
@@ -186,10 +212,27 @@ function OmniVoiceTranscriptTab() {
 			<SectionContent className="flex flex-col gap-4 h-full pt-1">
 				<SectionFields>
 					<SectionField label="Transcription model">
-						<Input
+						<Select
 							value={model}
-							onChange={(event) => setModel(event.target.value)}
-						/>
+							onValueChange={setModel}
+							disabled={modelsLoading}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder={modelsLoading ? "Loading models..." : "Select a model"} />
+							</SelectTrigger>
+							<SelectContent>
+								{transcriptionModels.map((m) => (
+									<SelectItem key={m.id} value={m.id}>
+										{m.display_name}
+									</SelectItem>
+								))}
+								{transcriptionModels.length === 0 && !modelsLoading && (
+									<SelectItem value={DEFAULT_TRANSCRIPTION_MODEL} disabled>
+										No models available
+									</SelectItem>
+								)}
+							</SelectContent>
+						</Select>
 					</SectionField>
 					<SectionField label="Language">
 						<Select

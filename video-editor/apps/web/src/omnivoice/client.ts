@@ -2,6 +2,11 @@ export const OMNIVOICE_API_BASE_URL_STORAGE_KEY = "omnivoice.apiBaseUrl";
 export const DEFAULT_OMNIVOICE_API_BASE_URL = "http://127.0.0.1:8000";
 export const DEFAULT_TRANSCRIPTION_MODEL = "Systran/faster-whisper-large-v3";
 
+export interface TranscriptionModel {
+	id: string;
+	display_name: string;
+}
+
 export function getOmniVoiceApiBaseUrl() {
 	if (typeof window === "undefined") return DEFAULT_OMNIVOICE_API_BASE_URL;
 
@@ -77,4 +82,13 @@ export async function transcribeWithOmniVoice({
 	);
 
 	return response.text();
+}
+
+export async function fetchTranscriptionModels(apiBaseUrl: string): Promise<TranscriptionModel[]> {
+	const response = await omniVoiceFetch(apiBaseUrl, "/v1/meta");
+	const data = await response.json();
+	return data.asr_models?.map((m: { label: string; id: string }) => ({
+		id: m.id,
+		display_name: m.label,
+	})) || [];
 }
