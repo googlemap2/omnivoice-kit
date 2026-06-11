@@ -31,6 +31,8 @@ setup_logging()
 CORS_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
     "https://5365fbfj-3000.asse.devtunnels.ms",
     "http://localhost:5173",
     # Add your frontend/ngrok domains here, for example:
